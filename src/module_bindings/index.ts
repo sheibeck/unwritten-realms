@@ -38,21 +38,32 @@ import { ClientConnected } from "./client_connected_reducer.ts";
 export { ClientConnected };
 import { ClientDisconnected } from "./client_disconnected_reducer.ts";
 export { ClientDisconnected };
+import { SetName } from "./set_name_reducer.ts";
+export { SetName };
 
 // Import and reexport all table handle types
 import { CharacterTableHandle } from "./character_table.ts";
 export { CharacterTableHandle };
+import { UserTableHandle } from "./user_table.ts";
+export { UserTableHandle };
 
 // Import and reexport all types
 import { Character } from "./character_type.ts";
 export { Character };
+import { User } from "./user_type.ts";
+export { User };
 
 const REMOTE_MODULE = {
   tables: {
-    Character: {
-      tableName: "Character",
+    character: {
+      tableName: "character",
       rowType: Character.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
+      primaryKey: "characterId",
+    },
+    user: {
+      tableName: "user",
+      rowType: User.getTypeScriptAlgebraicType(),
+      primaryKey: "identity",
     },
   },
   reducers: {
@@ -67,6 +78,10 @@ const REMOTE_MODULE = {
     ClientDisconnected: {
       reducerName: "ClientDisconnected",
       argsType: ClientDisconnected.getTypeScriptAlgebraicType(),
+    },
+    SetName: {
+      reducerName: "SetName",
+      argsType: SetName.getTypeScriptAlgebraicType(),
     },
   },
   // Constructors which are used by the DbConnectionImpl to
@@ -98,6 +113,7 @@ export type Reducer = never
 | { name: "Add", args: Add }
 | { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
+| { name: "SetName", args: SetName }
 ;
 
 export class RemoteReducers {
@@ -134,6 +150,23 @@ export class RemoteReducers {
   removeOnClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.offReducer("ClientDisconnected", callback);
   }
+
+  setName(name: string) {
+    const __args = { name };
+    let __writer = new BinaryWriter(1024);
+    SetName.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("SetName", __argsBuffer, this.setCallReducerFlags.setNameFlags);
+  }
+
+  onSetName(callback: (ctx: ReducerEventContext, name: string) => void) {
+    this.connection.onReducer("SetName", callback);
+  }
+
+  removeOnSetName(callback: (ctx: ReducerEventContext, name: string) => void) {
+    this.connection.offReducer("SetName", callback);
+  }
+
 }
 
 export class SetReducerFlags {
@@ -141,13 +174,23 @@ export class SetReducerFlags {
   add(flags: CallReducerFlags) {
     this.addFlags = flags;
   }
+
+  setNameFlags: CallReducerFlags = 'FullUpdate';
+  setName(flags: CallReducerFlags) {
+    this.setNameFlags = flags;
+  }
+
 }
 
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
 
   get character(): CharacterTableHandle {
-    return new CharacterTableHandle(this.connection.clientCache.getOrCreateTable<Character>(REMOTE_MODULE.tables.Character));
+    return new CharacterTableHandle(this.connection.clientCache.getOrCreateTable<Character>(REMOTE_MODULE.tables.character));
+  }
+
+  get user(): UserTableHandle {
+    return new UserTableHandle(this.connection.clientCache.getOrCreateTable<User>(REMOTE_MODULE.tables.user));
   }
 }
 

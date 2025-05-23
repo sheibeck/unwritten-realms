@@ -9,20 +9,20 @@ import {
   AlgebraicValue,
   BinaryReader,
   BinaryWriter,
-  type CallReducerFlags,
+  CallReducerFlags,
   ConnectionId,
   DbConnectionBuilder,
   DbConnectionImpl,
-  type DbContext,
-  type ErrorContextInterface,
-  type Event,
-  type EventContextInterface,
+  DbContext,
+  ErrorContextInterface,
+  Event,
+  EventContextInterface,
   Identity,
   ProductType,
   ProductTypeElement,
-  type ReducerEventContextInterface,
+  ReducerEventContextInterface,
   SubscriptionBuilderImpl,
-  type SubscriptionEventContextInterface,
+  SubscriptionEventContextInterface,
   SumType,
   SumTypeVariant,
   TableCache,
@@ -30,23 +30,23 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { Character } from "./character_type";
+import { User } from "./user_type";
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `character`.
+ * Table handle for the table `user`.
  *
- * Obtain a handle from the [`character`] property on [`RemoteTables`],
- * like `ctx.db.character`.
+ * Obtain a handle from the [`user`] property on [`RemoteTables`],
+ * like `ctx.db.user`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.character.on_insert(...)`.
+ * like `ctx.db.user.on_insert(...)`.
  */
-export class CharacterTableHandle {
-  tableCache: TableCache<Character>;
+export class UserTableHandle {
+  tableCache: TableCache<User>;
 
-  constructor(tableCache: TableCache<Character>) {
+  constructor(tableCache: TableCache<User>) {
     this.tableCache = tableCache;
   }
 
@@ -54,53 +54,53 @@ export class CharacterTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<Character> {
+  iter(): Iterable<User> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `characterId` unique index on the table `character`,
+   * Access to the `identity` unique index on the table `user`,
    * which allows point queries on the field of the same name
-   * via the [`CharacterCharacterIdUnique.find`] method.
+   * via the [`UserIdentityUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.character.characterId().find(...)`.
+   * like `ctx.db.user.identity().find(...)`.
    *
-   * Get a handle on the `characterId` unique index on the table `character`.
+   * Get a handle on the `identity` unique index on the table `user`.
    */
-  characterId = {
-    // Find the subscribed row whose `characterId` column value is equal to `col_val`,
+  identity = {
+    // Find the subscribed row whose `identity` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: string): Character | undefined => {
+    find: (col_val: Identity): User | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.characterId, col_val)) {
+        if (deepEqual(row.identity, col_val)) {
           return row;
         }
       }
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: Character) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: User) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: Character) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: User) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: Character) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: User) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: Character) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: User) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: Character, newRow: Character) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: User, newRow: User) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: Character, newRow: Character) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: User, newRow: User) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}
