@@ -94,7 +94,7 @@ public static partial class Module
     }
 
     [Reducer]
-    public static void Add(ReducerContext ctx, string name, string race, string profession, string specialization, string startingRegion)
+    public static void AddCharacter(ReducerContext ctx, string name, string race, string profession, string specialization, string startingRegion)
     {
         var character = ctx.Db.character.Insert(new Character {
             CharacterId = Guid.NewGuid().ToString("N"),

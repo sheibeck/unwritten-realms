@@ -32,8 +32,8 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
-import { Add } from "./add_reducer.ts";
-export { Add };
+import { AddCharacter } from "./add_character_reducer.ts";
+export { AddCharacter };
 import { ClientConnected } from "./client_connected_reducer.ts";
 export { ClientConnected };
 import { ClientDisconnected } from "./client_disconnected_reducer.ts";
@@ -67,9 +67,9 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
-    Add: {
-      reducerName: "Add",
-      argsType: Add.getTypeScriptAlgebraicType(),
+    AddCharacter: {
+      reducerName: "AddCharacter",
+      argsType: AddCharacter.getTypeScriptAlgebraicType(),
     },
     ClientConnected: {
       reducerName: "ClientConnected",
@@ -110,7 +110,7 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
-| { name: "Add", args: Add }
+| { name: "AddCharacter", args: AddCharacter }
 | { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
 | { name: "SetName", args: SetName }
@@ -119,20 +119,20 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  add(name: string, race: string, profession: string, specialization: string, startingRegion: string) {
+  addCharacter(name: string, race: string, profession: string, specialization: string, startingRegion: string) {
     const __args = { name, race, profession, specialization, startingRegion };
     let __writer = new BinaryWriter(1024);
-    Add.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    AddCharacter.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("Add", __argsBuffer, this.setCallReducerFlags.addFlags);
+    this.connection.callReducer("AddCharacter", __argsBuffer, this.setCallReducerFlags.addCharacterFlags);
   }
 
-  onAdd(callback: (ctx: ReducerEventContext, name: string, race: string, profession: string, specialization: string, startingRegion: string) => void) {
-    this.connection.onReducer("Add", callback);
+  onAddCharacter(callback: (ctx: ReducerEventContext, name: string, race: string, profession: string, specialization: string, startingRegion: string) => void) {
+    this.connection.onReducer("AddCharacter", callback);
   }
 
-  removeOnAdd(callback: (ctx: ReducerEventContext, name: string, race: string, profession: string, specialization: string, startingRegion: string) => void) {
-    this.connection.offReducer("Add", callback);
+  removeOnAddCharacter(callback: (ctx: ReducerEventContext, name: string, race: string, profession: string, specialization: string, startingRegion: string) => void) {
+    this.connection.offReducer("AddCharacter", callback);
   }
 
   onClientConnected(callback: (ctx: ReducerEventContext) => void) {
@@ -170,9 +170,9 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
-  addFlags: CallReducerFlags = 'FullUpdate';
-  add(flags: CallReducerFlags) {
-    this.addFlags = flags;
+  addCharacterFlags: CallReducerFlags = 'FullUpdate';
+  addCharacter(flags: CallReducerFlags) {
+    this.addCharacterFlags = flags;
   }
 
   setNameFlags: CallReducerFlags = 'FullUpdate';
