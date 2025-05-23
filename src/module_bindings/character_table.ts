@@ -31,7 +31,7 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 import { Character } from "./character_type";
-import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
+import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables } from ".";
 
 /**
  * Table handle for the table `character`.

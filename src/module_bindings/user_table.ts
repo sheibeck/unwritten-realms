@@ -9,20 +9,20 @@ import {
   AlgebraicValue,
   BinaryReader,
   BinaryWriter,
-  CallReducerFlags,
+  type CallReducerFlags,
   ConnectionId,
   DbConnectionBuilder,
   DbConnectionImpl,
-  DbContext,
-  ErrorContextInterface,
-  Event,
-  EventContextInterface,
+  type DbContext,
+  type ErrorContextInterface,
+  type Event,
+  type EventContextInterface,
   Identity,
   ProductType,
   ProductTypeElement,
-  ReducerEventContextInterface,
+  type ReducerEventContextInterface,
   SubscriptionBuilderImpl,
-  SubscriptionEventContextInterface,
+  type SubscriptionEventContextInterface,
   SumType,
   SumTypeVariant,
   TableCache,
@@ -31,7 +31,7 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 import { User } from "./user_type";
-import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
+import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables } from ".";
 
 /**
  * Table handle for the table `user`.

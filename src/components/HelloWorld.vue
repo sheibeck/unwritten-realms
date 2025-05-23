@@ -44,6 +44,6 @@ onMounted(async () => {
     .onError((e) => {
       console.log(e);
     })
-    .subscribe(['SELECT * FROM Character']);
+    .subscribe(['SELECT * FROM character']);
 });
 </script>

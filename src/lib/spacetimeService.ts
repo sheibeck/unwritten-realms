@@ -47,7 +47,7 @@ export class SpacetimeService {
               .onApplied(() => {
                 console.log('SDK client cache initialized.');
               })
-              .subscribe(['SELECT * FROM message', 'SELECT * FROM user']);
+              .subscribe(['SELECT * FROM character', 'SELECT * FROM user']);
 
             resolve(this.connection);
           })
