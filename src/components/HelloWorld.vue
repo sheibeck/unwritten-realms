@@ -18,13 +18,11 @@ import { useSpacetime } from '../composable/useSpacetime';
 const { connect, connected, identity, conn } = useSpacetime();
 
 async function addCharacter() {
-  const result = await conn?.reducers.addCharacter("Spillman", "Orc", "Warrior", "Riftbender", "The Rock");
-  console.log(result);
+  await conn?.reducers.addCharacter("Spillman", "Orc", "Warrior", "Riftbender", "The Rock");
 }
 
 async function setName() {
-  const result = await conn?.reducers.setName("Sterling Web");
-  console.log(result);
+  await conn?.reducers.setName("Sterling Web");
 }
 
 onMounted(async () => {
@@ -45,11 +43,23 @@ onMounted(async () => {
 
   conn.subscriptionBuilder()
     .onApplied(() => {
-      console.log('Initial character sync complete.');
+      console.log('Initial sync complete.');
     })
     .onError((e) => {
       console.log(e);
     })
     .subscribe(['SELECT * FROM character']);
+
+  conn.reducers.onAddCharacter((e) => {
+    if (e.event.status.tag === "Failed") {
+      console.error("AddCharacter failed:", e.event.status.value);
+    } else {
+      console.log("AddCharacter succeeded");
+    }
+  });
+
+  conn.reducers.onSetName((e) => {
+    console.log(e.event.status);
+  });
 });
 </script>

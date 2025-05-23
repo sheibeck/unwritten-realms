@@ -84,6 +84,7 @@ public static partial class Module
     {
         [Unique, PrimaryKey]
         public string CharacterId;
+        [Unique]
         public Identity User;
         public string Name;
         public string Race;
@@ -96,6 +97,14 @@ public static partial class Module
     [Reducer]
     public static void AddCharacter(ReducerContext ctx, string name, string race, string profession, string specialization, string startingRegion)
     {
+        var idIndex = ctx.Db.character.User;
+        var existingUserCharacter = idIndex.Find(ctx.Sender);
+        if (existingUserCharacter is not null)
+        {
+            Log.Info($"Inserted failed. User already has a character");
+            throw new Exception("User already has a character.");
+        }
+        
         var character = ctx.Db.character.Insert(new Character {
             CharacterId = Guid.NewGuid().ToString("N"),
             User = ctx.Sender,
