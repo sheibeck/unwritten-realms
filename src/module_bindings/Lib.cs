@@ -98,6 +98,7 @@ public static partial class Module
     {
         var character = ctx.Db.character.Insert(new Character {
             CharacterId = Guid.NewGuid().ToString("N"),
+            User = ctx.Sender,
             Name = name,
             Race = race,
             profession = profession,

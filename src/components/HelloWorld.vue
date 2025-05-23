@@ -6,7 +6,8 @@
     <p v-else>
       🔌 Connecting to SpaceTimeDB...
     </p>
-    <button @click="addCharacter">Add Character</button>
+    <button @click="addCharacter()">Add Character</button>
+    <button @click="setName()">Set Name</button>
   </div>
 </template>
 
@@ -16,10 +17,15 @@ import { useSpacetime } from '../composable/useSpacetime';
 
 const { connect, connected, identity, conn } = useSpacetime();
 
-function addCharacter() {
-  conn?.reducers.add("Spillman " + Math.random(), "Orc", "Warrior", "Riftbender", "The Rock");
+async function addCharacter() {
+  const result = await conn?.reducers.addCharacter("Spillman", "Orc", "Warrior", "Riftbender", "The Rock");
+  console.log(result);
 }
 
+async function setName() {
+  const result = await conn?.reducers.setName("Sterling Web");
+  console.log(result);
+}
 
 onMounted(async () => {
   const conn = await connect();
