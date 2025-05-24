@@ -1,13 +1,14 @@
 <template>
-   <div>
-    <p v-if="connected">
-      ✅ Connected as: {{ identity?.toHexString() }}
+  <div class="home d-flex flex-column flex-fill">
+    <p v-if="!connected">
+      🔌 Connecting to Realm...
     </p>
-    <p v-else>
-    🔌 Connecting to SpaceTimeDB...
-    </p>
-    <button @click="addCharacter()">Add Character</button>
-    <button @click="setName()">Set Name</button>
+    <div v-else class="flex-fill d-flex flex-column">
+      <div class="d-none">
+        ✅ Connected as: {{ identity?.toHexString() }}
+      </div>
+      <GameInterface class="flex-fill d-flex flex-column" />
+    </div>
   </div>
 </template>
 
@@ -15,6 +16,7 @@
 import { onMounted, ref } from 'vue';
 import { useSpacetime } from '../composable/useSpacetime';
 import { getCurrentUser } from '@aws-amplify/auth';
+import GameInterface from '../components/GameInterface.vue';
 
 const user = ref();
 async function getUserAuth() {
@@ -80,3 +82,11 @@ onMounted(async () => {
   await connectSpacetime();
 });
 </script>
+
+<style scoped>
+.home {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* KEY: stretches to fill parent */
+}
+</style>
