@@ -7,15 +7,15 @@ export const auth = defineAuth({
         verificationEmailSubject: "Welcome to Unwritten Worlds!",
         verificationEmailBody: (createCode) => `Use this code to confirm your account: ${createCode()}`,
       },
-      //externalProviders: {
-        // google: {
-        //   clientId: secret('GOOGLE_CLIENT_ID'),
-        //   clientSecret: secret('GOOGLE_CLIENT_SECRET'),
-        //   attributeMapping: {
-        //     email: 'email'
-        //   },
-        //   scopes: ['email']
-        // },
+      externalProviders: {
+        google: {
+          clientId: secret('GOOGLE_CLIENT_ID'),
+          clientSecret: secret('GOOGLE_CLIENT_SECRET'),
+          attributeMapping: {
+            email: 'email'
+          },
+          scopes: ['email']
+        },
         // signInWithApple: {
         //   clientId: secret('SIWA_CLIENT_ID'),
         //   keyId: secret('SIWA_KEY_ID'),
@@ -30,12 +30,11 @@ export const auth = defineAuth({
         //   clientId: secret('FACEBOOK_CLIENT_ID'),
         //   clientSecret: secret('FACEBOOK_CLIENT_SECRET')
         // },
-        // callbackUrls: [
-        //   'https://localhost:5174/campaigns',
-        //   'https://main.d2e92q6lz39lb.amplifyapp.com/campaigns',
-        //   'https://www.5x-companion.com/campaigns'
-        // ],
-        // logoutUrls: ['https://localhost:5174/', 'https://main.d2e92q6lz39lb.amplifyapp.com/', 'https://www.5x-companion.com/'],
-      //}
+        callbackUrls: [
+          'https://localhost:5173',
+          'https://main.d2uz5eq9utaspz.amplifyapp.com',
+        ],
+        logoutUrls: ['https://localhost:5173/', 'https://main.d2uz5eq9utaspz.amplifyapp.com/'],
+      }
     }
   });
