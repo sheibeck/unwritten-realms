@@ -1,5 +1,6 @@
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
 import { DbConnection, type ErrorContext } from '../module_bindings';
+import { fetchAuthSession } from '@aws-amplify/auth';
 
 export class SpacetimeService {
   private connection: DbConnection | null = null;
@@ -27,8 +28,22 @@ export class SpacetimeService {
   }
 
   async connect(maxRetries: number = 20, intervalMs: number = 100): Promise<DbConnection | null> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       let attempts = 0;
+
+      let idToken: string | undefined;
+      try {
+        const session = await fetchAuthSession();
+        idToken = session.tokens?.idToken?.toString();
+
+        if (!idToken) {
+          throw new Error('Cognito idToken is missing.');
+        }
+      } catch (err) {
+        console.error('Failed to get Cognito idToken:', err);
+        reject(err);
+        return;
+      }
 
       const tryConnect = () => {
         console.log(`Attempting connection to SpaceTimeDB (try ${attempts + 1}/${maxRetries})`);
@@ -36,11 +51,10 @@ export class SpacetimeService {
         this.connection = DbConnection.builder()
           .withUri(this.uri)
           .withModuleName(this.moduleName)
-          .withToken(localStorage.getItem('auth_token') || '')
-          .onConnect((conn, identity, token) => {
+          .withToken(idToken)  // ✅ pass the **signed JWT**
+          .onConnect((conn, identity) => {
             this.identity = identity;
             this.connected = true;
-            localStorage.setItem('auth_token', token);
             console.log('Connected to SpaceTimeDB with identity:', identity.toHexString());
 
             conn.subscriptionBuilder()
