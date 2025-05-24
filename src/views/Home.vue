@@ -4,7 +4,7 @@
       ✅ Connected as: {{ identity?.toHexString() }}
     </p>
     <p v-else>
-      🔌 Connecting to SpaceTimeDB...
+    🔌 Connecting to SpaceTimeDB...
     </p>
     <button @click="addCharacter()">Add Character</button>
     <button @click="setName()">Set Name</button>
@@ -12,8 +12,20 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useSpacetime } from '../composable/useSpacetime';
+import { getCurrentUser } from '@aws-amplify/auth';
+
+const user = ref();
+async function getUserAuth() {
+  try {
+    const { userId } = await getCurrentUser();
+    user.value = userId;
+  }
+  catch {
+    user.value = null;
+  }
+}
 
 const { connect, connected, identity, conn } = useSpacetime();
 
@@ -25,7 +37,7 @@ async function setName() {
   await conn?.reducers.setName("Sterling Web");
 }
 
-onMounted(async () => {
+async function connectSpacetime() {
   const conn = await connect();
 
   if (!conn) {
@@ -61,5 +73,10 @@ onMounted(async () => {
   conn.reducers.onSetName((e) => {
     console.log(e.event.status);
   });
+}
+
+onMounted(async () => {
+  await getUserAuth();
+  await connectSpacetime();
 });
 </script>
