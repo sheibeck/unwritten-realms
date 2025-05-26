@@ -42,7 +42,7 @@
         <!-- Right Nav (Sign-In or Sign-Out Button) -->
         <ul class="navbar-nav ms-auto">
           <li class="nav-item" v-if="user">
-            <button @click="doSignOut()" class="btn btn-outline-light">Sign out</button>
+            <button @click="doSignOut()" class="btn btn-outline-light">Logout</button>
           </li>
           <li class="nav-item" v-else>
             <router-link to="/signin" class="nav-link">Sign-In</router-link>
