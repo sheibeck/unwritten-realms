@@ -27,16 +27,7 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <!-- Left Nav -->
         <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link" href="https://github.com/sheibeck/5xfromx-companion/wiki/5x-Companion" target="_blank">
-              <i class="bi bi-info-circle"></i> About
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="https://github.com/sheibeck/5xfromx-companion/issues" target="_blank">
-              <i class="bi bi-bug"></i> Bug
-            </a>
-          </li>
+         
         </ul>
 
         <!-- Right Nav (Sign-In or Sign-Out Button) -->

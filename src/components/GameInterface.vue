@@ -2,19 +2,22 @@
   <div class="game-interface">
     <!-- Main Chat / Play Area -->
     <div class="chat-window" ref="chatContainer">
-      <div v-for="(msg, index) in messages" :key="index" class="chat-message">
-        {{ msg }}
+     <div v-for="(msg, index) in messages" :key="index" class="message" v-html="msg.html"></div>
+      <div v-if="isLoading" class="loading-spinner">
+        ⏳ Waiting for response...
       </div>
     </div>
 
     <!-- Chat Input Area -->
     <div class="chat-input-area">
       <input
+        ref="chatInput"
         v-model="userInput"
         @keyup.enter="sendMessage"
         class="form-control"
         type="text"
         placeholder="Type your command..."
+        :disabled="isLoading"
       />
       <button class="btn btn-primary" @click="sendMessage">Send</button>
     </div>
@@ -38,53 +41,168 @@
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue';
+import { marked } from 'marked';
 
-const messages = ref<string[]>([
-  '🌟 Welcome, adventurer!',
-  'Type a command below to begin your journey...',
-]);
+const props = defineProps<{ character: any }>();
+const emit = defineEmits(['characterCreated']);
 
+const messages = ref<{ raw: string; html: string }[]>([]);
 const userInput = ref('');
+const isLoading = ref(false);
+
+// Resolver ref (set when waiting for next input)
+let nextUserInputResolver: ((msg: string) => void) | null = null;
 const chatContainer = ref<HTMLDivElement | null>(null);
+const scrollAnchor = ref<HTMLDivElement | null>(null);
+
+if (props.character) {
+  pushMessage(`🌟 Welcome back, ${props.character.name}!`);
+  pushMessage(`The realms stir with possibility — what adventure will you spark next?`);
+} else {
+  pushMessage('✨ Welcome, brave soul, to Unwritten Worlds!');
+  pushMessage('Your story has yet to be inked across the stars.');
+  pushMessage('Type `Awaken` to forge your destiny and begin your journey.');
+}
+
+let threadId: string | null = localStorage.getItem('characterThreadId') ?? null;
+
+let characterCreated = false;
 
 async function sendMessage() {
   const message = userInput.value.trim();
   if (!message) return;
 
-  messages.value.push(`🗨️ You: ${message}`);
+  if (nextUserInputResolver) {
+    // We are waiting in character creation loop → pass back user input
+    nextUserInputResolver(message);
+    nextUserInputResolver = null;
+    userInput.value = '';
+    return;
+  }
+
+  pushMessage(`🗨️ You: ${message}`);
+  userInput.value = '';
+
+  let action = '';
+  if (message.toLowerCase() == ('awaken') && !characterCreated) {
+    action = 'create-character';
+  } else {
+    action = 'general-action';
+  }
+
+  const proxiedUrl = `/webhook/${action}`;
 
   try {
-    const response = await fetch('https://YOUR_N8N_WEBHOOK_URL', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
-    });
+    if (action === 'create-character') {
+      let currentMessage = message;
 
-    if (response.ok) {
-      const result = await response.json();
-      if (result.reply) {
-        messages.value.push(`🤖 ${result.reply}`);
-      } else {
-        messages.value.push('✅ Command sent!');
+      while (!characterCreated) {
+        await handleRequest(proxiedUrl, currentMessage);
+
+        if (!characterCreated) {
+          currentMessage = await getNextUserInput();
+          pushMessage(`🗨️ You: ${currentMessage}`);
+        }
       }
     } else {
-      messages.value.push('❌ Failed to send message (server error).');
+      await handleRequest(proxiedUrl, message);
     }
   } catch (error) {
     console.error('Fetch error:', error);
-    messages.value.push('❌ Failed to send message (network error).');
+    pushMessage('❌ Failed to send message (network error).');
   }
-
-  userInput.value = '';
 
   await nextTick();
   scrollToBottom();
 }
 
-function scrollToBottom() {
-  if (chatContainer.value) {
-    chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+
+// Helper to handle API requests
+async function handleRequest(url: string, messageContent: string) {
+  const payload: Record<string, any> = { message: messageContent };
+  if (threadId) {
+    payload.threadId = threadId;
   }
+
+  isLoading.value = true;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
+    body: JSON.stringify(payload),
+  });
+
+  isLoading.value = false;
+
+  if (response.ok) {
+    const result = await response.json();
+    const assistantOutput = result[0].output || '';
+    threadId = result[0].threadId || threadId;
+
+    if(threadId) {
+      localStorage.setItem('characterThreadIdId', threadId);
+    }
+
+    const jsonOutput = parseOutput(assistantOutput);
+
+    pushMessage(`🧙 ${jsonOutput.narrative}`);
+
+    if (jsonOutput.actions) {
+      if (jsonOutput.actions && jsonOutput.actions.createCharacter) {
+      const character = jsonOutput.actions.createCharacter;
+
+      const hasAllValues = character.id &&
+                          character.name &&
+                          character.race &&
+                          character.profession &&
+                          character.specialization &&
+                          character.startingRegionId;
+
+      if (hasAllValues) {
+        AddCharacter(character);
+        characterCreated = true;
+      }
+    }
+
+      // You can handle other actions here too:
+      // if (jsonOutput.actions.logEvent) { ... }
+    }
+  } else {
+    pushMessage('❌ Failed to send message (server error).');
+  }
+}
+
+async function pushMessage(message: string) {
+  const html = await marked.parse(message);
+  messages.value.push({ raw: `${message}`, html });
+
+  await nextTick();
+  scrollToBottom(); 
+}
+
+function parseOutput(output: string) {
+  const json = JSON.parse(output);
+  return json;
+}
+
+// Waits for next user input during loop
+function getNextUserInput(): Promise<string> {
+  return new Promise((resolve) => {
+    nextUserInputResolver = resolve;
+  });
+}
+
+const chatInput = ref<HTMLInputElement | null>(null);
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (chatContainer.value) {
+      chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+    }
+    if (chatInput.value) {
+      chatInput.value.focus();
+    }
+  });
 }
 
 function showCharacter() {
@@ -97,6 +215,13 @@ function showQuests() {
 
 function showFactions() {
   console.log('Faction standings opened');
+}
+
+async function AddCharacter(characterData: any) {
+  console.log('🚀 Emitting characterCreated event:', characterData);
+  emit('characterCreated', characterData);
+
+  pushMessage(`🎉 Character ${characterData.name} has been created!`);
 }
 </script>
 
@@ -117,7 +242,10 @@ $toolbar-height: 60px;
     color: #f8f9fa;
     font-family: monospace;
     padding: 1rem;
-    margin-bottom: calc(#{$input-area-height} + #{$toolbar-height}); // reserve space for fixed input + toolbar
+
+    // Reserve space so content doesn’t disappear under fixed bottom bars
+    padding-bottom: calc(#{$input-area-height} + #{$toolbar-height});
+    box-sizing: border-box;
   }
 
   .chat-input-area {
@@ -129,7 +257,6 @@ $toolbar-height: 60px;
     display: flex;
     align-items: center;
     padding: 0.5rem;
-    margin: 0; // outer margin removed; you can add inner spacing if desired
     background-color: #444;
     border-top: 1px solid #555;
 
@@ -165,6 +292,19 @@ $toolbar-height: 60px;
       }
     }
   }
+}
+
+.loading-spinner {
+  margin-top: 10px;
+  font-style: italic;
+  color: #888;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
 }
 
 </style>

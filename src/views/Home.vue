@@ -7,7 +7,7 @@
       <div class="d-none">
         ✅ Connected as: {{ identity?.toHexString() }}
       </div>
-      <GameInterface class="flex-fill d-flex flex-column" />
+      <GameInterface class="flex-fill d-flex flex-column" :character="character" @characterCreated="onCharacterCreated" />
     </div>
   </div>
 </template>
@@ -31,8 +31,17 @@ async function getUserAuth() {
 
 const { connect, connected, identity, conn } = useSpacetime();
 
-async function addCharacter() {
-  await conn?.reducers.addCharacter("Spillman", "Orc", "Warrior", "Riftbender", "The Rock");
+function onCharacterCreated(charData: any) {
+  console.log('⚡ Character created event received:', charData);
+
+  // Call your reducer or connection method
+  conn?.reducers.addCharacter(
+    charData.name,
+    charData.race,
+    charData.profession,
+    charData.specialization,
+    charData.startingRegionId
+  );
 }
 
 async function setName() {
@@ -58,6 +67,17 @@ async function connectSpacetime() {
   conn.subscriptionBuilder()
     .onApplied(() => {
       console.log('Initial sync complete.');
+
+      const myCharacter = [...conn.db.character.iter()].find(
+        (c) => c.user.toHexString() === conn.identity?.toHexString()
+      );
+
+      if (myCharacter) {
+        console.log('🎉 Loaded my character:', myCharacter);
+        character.value(myCharacter);
+      } else {
+        console.log('⚠️ No character found');
+      }
     })
     .onError((e) => {
       console.log(e);
@@ -76,6 +96,9 @@ async function connectSpacetime() {
     console.log(e.event.status);
   });
 }
+
+const character = ref();
+
 
 onMounted(async () => {
   await getUserAuth();
