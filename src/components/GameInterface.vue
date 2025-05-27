@@ -53,9 +53,11 @@ const isLoading = ref(false);
 // Resolver ref (set when waiting for next input)
 let nextUserInputResolver: ((msg: string) => void) | null = null;
 const chatContainer = ref<HTMLDivElement | null>(null);
-const scrollAnchor = ref<HTMLDivElement | null>(null);
+
+let characterCreated = false;
 
 if (props.character) {
+  characterCreated = true;
   pushMessage(`🌟 Welcome back, ${props.character.name}!`);
   pushMessage(`The realms stir with possibility — what adventure will you spark next?`);
 } else {
@@ -66,7 +68,7 @@ if (props.character) {
 
 let threadId: string | null = localStorage.getItem('characterThreadId') ?? null;
 
-let characterCreated = false;
+
 
 async function sendMessage() {
   const message = userInput.value.trim();
@@ -151,8 +153,7 @@ async function handleRequest(url: string, messageContent: string) {
       if (jsonOutput.actions && jsonOutput.actions.createCharacter) {
       const character = jsonOutput.actions.createCharacter;
 
-      const hasAllValues = character.id &&
-                          character.name &&
+      const hasAllValues = character.name &&
                           character.race &&
                           character.profession &&
                           character.specialization &&
@@ -197,7 +198,10 @@ const chatInput = ref<HTMLInputElement | null>(null);
 function scrollToBottom() {
   nextTick(() => {
     if (chatContainer.value) {
-      chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+      chatContainer.value.scrollTo({
+        top: chatContainer.value.scrollHeight,
+        behavior: 'smooth', // ✨ makes the scroll animate!
+      });
     }
     if (chatInput.value) {
       chatInput.value.focus();
@@ -230,30 +234,23 @@ $input-area-height: 60px;
 $toolbar-height: 60px;
 
 .game-interface {
-  position: relative;
-  flex: 1; // fills parent
   display: flex;
   flex-direction: column;
+  height: 100%;
+  min-height: 0; // ✨ important to allow inner flex children to shrink
+  overflow: hidden;
 
   .chat-window {
-    flex: 1;
-    overflow-y: auto;
+    flex: 1 1 0; // ✨ allows shrinking
+    min-height: 0; // ✨ prevents overflow growth
+    overflow-y: auto; // only this scrolls
     background-color: #1c1c1c;
-    color: #f8f9fa;
-    font-family: monospace;
     padding: 1rem;
-
-    // Reserve space so content doesn’t disappear under fixed bottom bars
-    padding-bottom: calc(#{$input-area-height} + #{$toolbar-height});
     box-sizing: border-box;
   }
 
   .chat-input-area {
-    position: fixed;
-    bottom: $toolbar-height; // sit right above toolbar
-    left: 0;
-    width: 100%;
-    height: $input-area-height;
+    flex: 0 0 60px; // fixed height
     display: flex;
     align-items: center;
     padding: 0.5rem;
@@ -271,11 +268,7 @@ $toolbar-height: 60px;
   }
 
   .toolbar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: $toolbar-height;
+    flex: 0 0 60px; // fixed height
     display: flex;
     align-items: center;
     padding: 0.5rem;
@@ -293,6 +286,7 @@ $toolbar-height: 60px;
     }
   }
 }
+
 
 .loading-spinner {
   margin-top: 10px;

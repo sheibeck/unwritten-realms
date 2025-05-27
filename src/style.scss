@@ -23,12 +23,13 @@ a {
   }
 }
 
-body {
+body, html {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   background-color: #242424;
   color: #ffffff;
+  overflow: hidden; /* prevent window/page scroll */
 }
 
 button {
@@ -75,6 +76,7 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .app-header {
