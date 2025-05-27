@@ -141,13 +141,36 @@
               ],
               "additionalProperties": false
             }
+          },
+          "updateConnectedRegions": {
+            "type": "array",
+            "description": "List of updates for existing connected regions to include this new region in their connections.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "regionId": {
+                  "type": "string",
+                  "description": "The ID of the connected region being updated."
+                },
+                "addConnectedRegionId": {
+                  "type": "string",
+                  "description": "The ID of the new region being added to the connected region's connections."
+                }
+              },
+              "required": [
+                "regionId",
+                "addConnectedRegionId"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
           "createRegion",
           "logEvent",
           "updateCharacter",
-          "createNpc"
+          "createNpc",
+          "updateConnectedRegions"
         ],
         "additionalProperties": false
       }
