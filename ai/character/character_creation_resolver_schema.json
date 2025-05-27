@@ -1,0 +1,257 @@
+{
+  "name": "character_creation",
+  "strict": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "narrative": {
+        "type": "string",
+        "description": "The AI generated narrative of the character creation or related output."
+      },
+      "actions": {
+        "type": "object",
+        "description": "Actions associated with the character creation.",
+        "properties": {
+          "createCharacter": {
+            "type": "object",
+            "description": "Details for creating a character.",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The chosen name for the character."
+              },
+              "race": {
+                "type": "string",
+                "description": "Identifier for chosen race for the character."
+              },
+              "profession": {
+                "type": "string",
+                "description": "Identifier for chosen profession for the character."
+              },
+              "specialization": {
+                "type": "string",
+                "description": "Identifier for chosen specialization for the character."
+              },
+              "startingRegionId": {
+                "type": "string",
+                "description": "lowercase region name with non-alphanumeric characters and spaces replaced with _"
+              },
+              "strength": {
+                "type": "integer",
+                "description": "Strength attribute of the character."
+              },
+              "dexterity": {
+                "type": "integer",
+                "description": "Dexterity attribute of the character."
+              },
+              "intelligence": {
+                "type": "integer",
+                "description": "Intelligence attribute of the character."
+              },
+              "constitution": {
+                "type": "integer",
+                "description": "Constitution attribute of the character."
+              },
+              "wisdom": {
+                "type": "integer",
+                "description": "Wisdom attribute of the character."
+              },
+              "willpower": {
+                "type": "integer",
+                "description": "Willpower attribute of the character."
+              },
+              "charisma": {
+                "type": "integer",
+                "description": "Charisma attribute of the character."
+              },
+              "maxHealth": {
+                "type": "integer",
+                "description": "Maximum health of the character."
+              },
+              "currentHealth": {
+                "type": "integer",
+                "description": "Current health of the character."
+              },
+              "classAbilities": {
+                "type": "string",
+                "description": "Abilities associated with the character's class."
+              },
+              "raceAbilities": {
+                "type": "string",
+                "description": "Abilities associated with the character's race."
+              },
+              "specializationAbilities": {
+                "type": "string",
+                "description": "Abilities associated with the character's specialization."
+              },
+              "level": {
+                "type": "integer",
+                "description": "Level of the character."
+              },
+              "xp": {
+                "type": "integer",
+                "description": "Experience points of the character."
+              },
+              "primaryWeapon": {
+                "type": "string",
+                "description": "Primary weapon used by the character."
+              },
+              "secondaryWeapon": {
+                "type": "string",
+                "description": "Secondary weapon used by the character."
+              }
+            },
+            "required": [
+              "name",
+              "race",
+              "profession",
+              "specialization",
+              "startingRegionId",
+              "strength",
+              "dexterity",
+              "intelligence",
+              "constitution",
+              "wisdom",
+              "willpower",
+              "charisma",
+              "maxHealth",
+              "currentHealth",
+              "classAbilities",
+              "raceAbilities",
+              "specializationAbilities",
+              "level",
+              "xp",
+              "primaryWeapon",
+              "secondaryWeapon"
+            ],
+            "additionalProperties": false
+          },
+          "createRace": {
+            "type": "object",
+            "description": "Details for creating a race.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "race name with non-alphanumeric characters and spaces replaced with _"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the race."
+              },
+              "abilities": {
+                "type": "string",
+                "description": "Starting abilities of the race."
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "abilities"
+            ],
+            "additionalProperties": false
+          },
+          "createProfession": {
+            "type": "object",
+            "description": "Details for creating a profession.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "lowercase profession name with non-alphanumeric characters and spaces replaced with _"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the profession."
+              },
+              "abilities": {
+                "type": "string",
+                "description": "Starting abilities of the profession."
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "abilities"
+            ],
+            "additionalProperties": false
+          },
+          "createProfessionSpecialization": {
+            "type": "object",
+            "description": "Details for creating a profession specialization.",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "lowercase specialization name with non-alphanumeric characters and spaces replaced with _"
+              },
+              "professionId": {
+                "type": "string",
+                "description": "Identifier of the parent profession."
+              },
+              "name": {
+                "type": "string",
+                "description": "The name of the specialization."
+              },
+              "abilities": {
+                "type": "string",
+                "description": "Starting abilities of the specialization."
+              }
+            },
+            "required": [
+              "id",
+              "professionId",
+              "name",
+              "abilities"
+            ],
+            "additionalProperties": false
+          },
+          "logEvent": {
+            "type": "object",
+            "description": "Logging the event details after character creation.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Type of the log event."
+              },
+              "details": {
+                "type": "object",
+                "description": "Details of the log event.",
+                "properties": {
+                  "character": {
+                    "type": "string",
+                    "description": "Name of created character"
+                  },
+                  "startingRegionId": {
+                    "type": "string",
+                    "description": "Identifier for the starting region."
+                  }
+                },
+                "required": [
+                  "character",
+                  "startingRegionId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "details"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "createCharacter",
+          "createRace",
+          "createProfession",
+          "createProfessionSpecialization",
+          "logEvent"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required": [
+      "narrative",
+      "actions"
+    ],
+    "additionalProperties": false
+  }
+}

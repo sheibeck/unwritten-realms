@@ -1,0 +1,34 @@
+{
+  "name": "get_races",
+  "description": "Retrieves a list of available races in the game",
+  "strict": true,
+  "parameters": {
+    "type": "object",
+    "required": [
+      "available_races"
+    ],
+    "properties": {
+      "available_races": {
+        "type": "array",
+        "description": "List of available races",
+        "items": {
+          "type": "string",
+          "enum": [
+            "Human",
+            "Hollowborn",
+            "Emberkin",
+            "Stoneblood",
+            "Sylvarin",
+            "Glimmerfen",
+            "Ashenforged",
+            "Stormbound",
+            "Whisperkin",
+            "Blightmarked",
+            "Custom"
+          ]
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}

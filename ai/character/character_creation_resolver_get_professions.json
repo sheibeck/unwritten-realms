@@ -1,0 +1,29 @@
+{
+  "name": "get_professions",
+  "description": "Retrieves a list of professions available",
+  "strict": true,
+  "parameters": {
+    "type": "object",
+    "required": [
+      "professions"
+    ],
+    "properties": {
+      "professions": {
+        "type": "array",
+        "description": "List of available professions",
+        "items": {
+          "type": "string",
+          "enum": [
+            "Warrior",
+            "Arcane",
+            "Decay",
+            "Aether",
+            "Temporal",
+            "Custom"
+          ]
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}
