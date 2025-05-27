@@ -30,7 +30,7 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { type Character } from "./character_type";
+import { Character } from "./character_type";
 import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables } from ".";
 
 /**

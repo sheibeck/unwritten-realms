@@ -120,6 +120,9 @@ public static partial class Module
         public string RaceAbilities;           // e.g., "Night Vision, Stone Endurance"
         public string SpecializationAbilities;// e.g., "Runescribe, Mana Surge"
 
+        public int Level;
+        public int XP;
+
         // 🎒 Inventory
         public string InventoryItems;         // e.g., JSON array or comma-separated: "[{\"item\":\"Health Potion\",\"qty\":3}]"
 
@@ -159,6 +162,8 @@ public static partial class Module
             Race = race,
             Profession = profession,
             Specialization = specialization,
+            Level = 1,
+            XP = 0,
             StartingRegion = startingRegion,
             CurrentLocation = startingRegion,
             CreatedAt = DateTimeOffset.UtcNow.ToString("o")
