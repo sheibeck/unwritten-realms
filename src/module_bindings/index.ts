@@ -34,6 +34,10 @@ import {
 // Import and reexport all reducer arg types
 import { AddCharacter } from "./add_character_reducer.ts";
 export { AddCharacter };
+import { ClearCharacters } from "./clear_characters_reducer.ts";
+export { ClearCharacters };
+import { ClearUsers } from "./clear_users_reducer.ts";
+export { ClearUsers };
 import { ClientConnected } from "./client_connected_reducer.ts";
 export { ClientConnected };
 import { ClientDisconnected } from "./client_disconnected_reducer.ts";
@@ -70,6 +74,14 @@ const REMOTE_MODULE = {
     AddCharacter: {
       reducerName: "AddCharacter",
       argsType: AddCharacter.getTypeScriptAlgebraicType(),
+    },
+    ClearCharacters: {
+      reducerName: "ClearCharacters",
+      argsType: ClearCharacters.getTypeScriptAlgebraicType(),
+    },
+    ClearUsers: {
+      reducerName: "ClearUsers",
+      argsType: ClearUsers.getTypeScriptAlgebraicType(),
     },
     ClientConnected: {
       reducerName: "ClientConnected",

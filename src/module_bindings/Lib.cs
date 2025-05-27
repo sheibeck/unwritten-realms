@@ -84,15 +84,62 @@ public static partial class Module
     {
         [Unique]
         public Identity UserId;
+
         [Unique, PrimaryKey]
         public string CharacterId;
+
         public string Name;
         public string Race;
         public string Profession;
         public string Specialization;
         public string StartingRegion;
         public string CreatedAt;
+
+        // 📍 Current Location
+        public string CurrentLocation;
+
+        // 💪 Core Attributes
+        public int Strength;
+        public int Dexterity;
+        public int Intelligence;
+        public int Constitution;
+        public int Wisdom;
+        public int Willpower;
+        public int Charisma;
+
+        // ❤️ Health
+        public int MaxHealth;
+        public int CurrentHealth;
+
+        // 🔮 Mana
+        public int MaxMana;
+        public int CurrentMana;
+
+        // 🛡 Abilities (stored as JSON strings or comma-separated for simplicity)
+        public string ClassAbilities;          // e.g., "Fireball, Arcane Shield"
+        public string RaceAbilities;           // e.g., "Night Vision, Stone Endurance"
+        public string SpecializationAbilities;// e.g., "Runescribe, Mana Surge"
+
+        // 🎒 Inventory
+        public string InventoryItems;         // e.g., JSON array or comma-separated: "[{\"item\":\"Health Potion\",\"qty\":3}]"
+
+        // 🗡 Equipped Items (slots)
+        public string Head;
+        public string Shoulders;
+        public string Back;
+        public string Chest;
+        public string Arms;
+        public string Hands;
+        public string Legs;
+        public string Feet;
+        public string Rings;
+        public string Necklace;
+        public string Earrings;
+        public string Relic;
+        public string PrimaryWeapon;
+        public string SecondaryWeapon;
     }
+
 
     [Reducer]
     public static void AddCharacter(ReducerContext ctx, string name, string race, string profession, string specialization, string startingRegion)
@@ -113,6 +160,7 @@ public static partial class Module
             Profession = profession,
             Specialization = specialization,
             StartingRegion = startingRegion,
+            CurrentLocation = startingRegion,
             CreatedAt = DateTimeOffset.UtcNow.ToString("o")
         });
 
