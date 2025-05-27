@@ -12,7 +12,7 @@
       🔌 Connecting to Realm...
     </p>
     <div v-else class="flex-fill d-flex flex-column">
-      <button class="d-none" @click="addCharacterTest()">Add Test Character</button>
+      <button class="" @click="addCharacterTest()">Add Test Character</button>
       <GameInterface
         v-if="initialized"
         class="flex-fill d-flex flex-column"
@@ -62,7 +62,7 @@ function onCharacterCreated(charData: any) {
   );
 }
 
-import type { AddCharacterInput } from '../module_bindings/client';
+import type { AddCharacterInput, DbConnection } from '../module_bindings/client';
 
 function addCharacterTest() {
   const testCharacter: AddCharacterInput = {
@@ -95,8 +95,6 @@ function addCharacterTest() {
   characters.value.addCharacter(testCharacter);
 }
 
-
-
 async function connectSpacetime() {
   const connectedConn = await connect();
 
@@ -105,14 +103,34 @@ async function connectSpacetime() {
     return;
   }
 
-  connectedConn.subscriptionBuilder()
+  subscribeToUser(connectedConn);
+  subscribeToCharacter(connectedConn);
+  subscribeToRegion(connectedConn);
+
+  connectedConn.reducers.onSetName((e) => {
+    console.log(e.event.status);
+  });
+}
+
+function subscribeToUser(conn: DbConnection) {
+  conn.subscriptionBuilder()
     .onApplied(() => {
-      users.value = useUsers(connectedConn);
-      characters.value = useCharacters(connectedConn);
+      users.value = useUsers(conn);
+      console.log('✅ User subscription initialized.');
+    })
+    .onError((e) => {
+      console.error('User subscription error:', e);
+    })
+    .subscribe([`SELECT * FROM user WHERE UserId = '${conn.identity?.toHexString()}'`]);
+}
 
-      console.log('Initial sync complete.');
+function subscribeToCharacter(conn: DbConnection) {
+  conn.subscriptionBuilder()
+    .onApplied(() => {
+      characters.value = useCharacters(conn);
+      console.log('✅ Character subscription initialized.');
 
-      const iterator = connectedConn.db.character.iter()[Symbol.iterator]();
+      const iterator = conn.db.character.iter()[Symbol.iterator]();
       const firstResult = iterator.next();
 
       if (firstResult.done) {
@@ -126,14 +144,23 @@ async function connectSpacetime() {
       initialized.value = true;
     })
     .onError((e) => {
-      console.error(e);
+      console.error('Character subscription error:', e);
     })
-    .subscribe([`SELECT * FROM character WHERE UserId = '${connectedConn.identity?.toHexString()}'`]);
-
-  connectedConn.reducers.onSetName((e) => {
-    console.log(e.event.status);
-  });
+    .subscribe([`SELECT * FROM character WHERE UserId = '${conn.identity?.toHexString()}'`]);
 }
+
+function subscribeToRegion(conn: DbConnection) {
+  conn.subscriptionBuilder()
+    .onApplied(() => {
+      console.log('✅ Region subscription initialized.');
+      // Add your useRegions(conn) or similar if you have a region composable
+    })
+    .onError((e) => {
+      console.error('Region subscription error:', e);
+    })
+    .subscribe(['SELECT * FROM region']);
+}
+
 
 onMounted(async () => {
   await getUserAuth();
