@@ -7,7 +7,15 @@
       <div class="d-none">
         ✅ Connected as: {{ identity?.toHexString() }}
       </div>
-      <GameInterface class="flex-fill d-flex flex-column" :character="character" @characterCreated="onCharacterCreated" />
+      <button @click="addCharacterTest()">Add Character</button>
+
+      <!-- ✅ Only load GameInterface once initialized is true -->
+      <GameInterface
+        v-if="initialized"
+        class="flex-fill d-flex flex-column"
+        :character="character"
+        @characterCreated="onCharacterCreated"
+      />
     </div>
   </div>
 </template>
@@ -15,27 +23,33 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useSpacetime } from '../composable/useSpacetime';
+import { useUsers } from '../composable/useUsers';
+import { useCharacters } from '../composable/useCharacters';
 import { getCurrentUser } from '@aws-amplify/auth';
 import GameInterface from '../components/GameInterface.vue';
 
 const user = ref();
+const character = ref();
+const initialized = ref(false);  // ✅ NEW: track when subscriptions finish
+const { connect, connected, identity, conn } = useSpacetime();
+
+const users = ref();
+const characters = ref();
+
 async function getUserAuth() {
   try {
     const { userId } = await getCurrentUser();
     user.value = userId;
-  }
-  catch {
+  } catch {
     user.value = null;
   }
 }
 
-const { connect, connected, identity, conn } = useSpacetime();
-
 function onCharacterCreated(charData: any) {
   console.log('⚡ Character created event received:', charData);
+  console.log('🚀 Event-driven call:', JSON.stringify(charData, null, 2));
 
-  // Call your reducer or connection method
-  conn?.reducers.addCharacter(
+  characters.value.addCharacter(
     charData.name,
     charData.race,
     charData.profession,
@@ -44,67 +58,74 @@ function onCharacterCreated(charData: any) {
   );
 }
 
-async function setName() {
-  await conn?.reducers.setName("Sterling Web");
+function addCharacterTest() {
+  const jsonString = `{
+    "name": "Jouctas",
+    "race": "Hollowborn",
+    "profession": "Arcane",
+    "specialization": "Runescribe",
+    "startingRegionId": "anything"
+  }`;
+  const charData = JSON.parse(jsonString);
+
+  characters.value.addCharacter(
+    String(charData.name).trim(),
+    String(charData.race).trim(),
+    String(charData.profession).trim(),
+    String(charData.specialization).trim(),
+    String(charData.startingRegionId).trim()
+  );
 }
 
 async function connectSpacetime() {
-  const conn = await connect();
+  const connectedConn = await connect();
 
-  if (!conn) {
+  if (!connectedConn) {
     console.warn('Could not connect to SpaceTimeDB');
     return;
   }
 
-  conn.db.character.onInsert((_ctx, row) => {
-    console.log('🧙‍♂️ New character inserted:', row);
-  });
-
-  conn.db.character.onUpdate((_ctx, row) => {
-    console.log('🧙‍♂️ Updated character:', row);
-  });
-
-  conn.subscriptionBuilder()
+  connectedConn.subscriptionBuilder()
     .onApplied(() => {
+
+      users.value = useUsers(connectedConn);
+      characters.value = useCharacters(connectedConn);
+
       console.log('Initial sync complete.');
 
-      const myCharacter = [...conn.db.character.iter()].find(
-        (c) => c.user.toHexString() === conn.identity?.toHexString()
+      const myCharacter = [...connectedConn.db.character.iter()].find(
+        (c) => c.user.toHexString() === connectedConn.identity?.toHexString()
       );
 
       if (myCharacter) {
         console.log('🎉 Loaded my character:', myCharacter);
-        character.value(myCharacter);
+        character.value = myCharacter;
       } else {
         console.log('⚠️ No character found');
       }
+
+      initialized.value = true;
     })
     .onError((e) => {
       console.log(e);
     })
-    .subscribe(['SELECT * FROM character']);
+    .subscribe([`SELECT * FROM character WHERE User = '${connectedConn.identity?.toHexString()}'`]);
 
-  conn.reducers.onAddCharacter((e) => {
-    if (e.event.status.tag === "Failed") {
-      console.error("AddCharacter failed:", e.event.status.value);
-    } else {
-      console.log("AddCharacter succeeded");
-    }
-  });
-
-  conn.reducers.onSetName((e) => {
+  connectedConn.reducers.onSetName((e) => {
     console.log(e.event.status);
   });
 }
 
-const character = ref();
-
-
 onMounted(async () => {
   await getUserAuth();
   await connectSpacetime();
+
+
+  console.log('Users:', users.value);
+  console.log('Characters:', characters.value);
 });
 </script>
+
 
 <style scoped>
 .home {

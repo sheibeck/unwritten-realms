@@ -9,20 +9,20 @@ import {
   AlgebraicValue,
   BinaryReader,
   BinaryWriter,
-  type CallReducerFlags,
+  CallReducerFlags,
   ConnectionId,
   DbConnectionBuilder,
   DbConnectionImpl,
-  type DbContext,
-  type ErrorContextInterface,
-  type Event,
-  type EventContextInterface,
+  DbContext,
+  ErrorContextInterface,
+  Event,
+  EventContextInterface,
   Identity,
   ProductType,
   ProductTypeElement,
-  type ReducerEventContextInterface,
+  ReducerEventContextInterface,
   SubscriptionBuilderImpl,
-  type SubscriptionEventContextInterface,
+  SubscriptionEventContextInterface,
   SumType,
   SumTypeVariant,
   TableCache,
@@ -31,7 +31,7 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 export type User = {
-  identity: Identity,
+  userId: Identity,
   name: string | undefined,
   online: boolean,
 };
@@ -46,7 +46,7 @@ export namespace User {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("identity", AlgebraicType.createIdentityType()),
+      new ProductTypeElement("userId", AlgebraicType.createIdentityType()),
       new ProductTypeElement("name", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
       new ProductTypeElement("online", AlgebraicType.createBoolType()),
     ]);

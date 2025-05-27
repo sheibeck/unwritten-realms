@@ -58,6 +58,28 @@ export class CharacterTableHandle {
     return this.tableCache.iter();
   }
   /**
+   * Access to the `userId` unique index on the table `character`,
+   * which allows point queries on the field of the same name
+   * via the [`CharacterUserIdUnique.find`] method.
+   *
+   * Users are encouraged not to explicitly reference this type,
+   * but to directly chain method calls,
+   * like `ctx.db.character.userId().find(...)`.
+   *
+   * Get a handle on the `userId` unique index on the table `character`.
+   */
+  userId = {
+    // Find the subscribed row whose `userId` column value is equal to `col_val`,
+    // if such a row is present in the client cache.
+    find: (col_val: Identity): Character | undefined => {
+      for (let row of this.tableCache.iter()) {
+        if (deepEqual(row.userId, col_val)) {
+          return row;
+        }
+      }
+    },
+  };
+  /**
    * Access to the `characterId` unique index on the table `character`,
    * which allows point queries on the field of the same name
    * via the [`CharacterCharacterIdUnique.find`] method.
@@ -74,28 +96,6 @@ export class CharacterTableHandle {
     find: (col_val: string): Character | undefined => {
       for (let row of this.tableCache.iter()) {
         if (deepEqual(row.characterId, col_val)) {
-          return row;
-        }
-      }
-    },
-  };
-  /**
-   * Access to the `user` unique index on the table `character`,
-   * which allows point queries on the field of the same name
-   * via the [`CharacterUserUnique.find`] method.
-   *
-   * Users are encouraged not to explicitly reference this type,
-   * but to directly chain method calls,
-   * like `ctx.db.character.user().find(...)`.
-   *
-   * Get a handle on the `user` unique index on the table `character`.
-   */
-  user = {
-    // Find the subscribed row whose `user` column value is equal to `col_val`,
-    // if such a row is present in the client cache.
-    find: (col_val: Identity): Character | undefined => {
-      for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.user, col_val)) {
           return row;
         }
       }

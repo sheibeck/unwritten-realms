@@ -6,7 +6,7 @@ public static partial class Module
     public partial class User
     {
         [PrimaryKey]
-        public Identity Identity;
+        public Identity UserId;
         public string? Name;
         public bool Online;
     }
@@ -16,11 +16,11 @@ public static partial class Module
     {
         name = ValidateName(name);
 
-        var user = ctx.Db.user.Identity.Find(ctx.Sender);
+        var user = ctx.Db.user.UserId.Find(ctx.Sender);
         if (user is not null)
         {
             user.Name = name;
-            ctx.Db.user.Identity.Update(user);
+            ctx.Db.user.UserId.Update(user);
         }
     }
 
@@ -28,14 +28,14 @@ public static partial class Module
     public static void ClientConnected(ReducerContext ctx)
     {
         Log.Info($"Connect {ctx.Sender}");
-        var user = ctx.Db.user.Identity.Find(ctx.Sender);
+        var user = ctx.Db.user.UserId.Find(ctx.Sender);
 
         if (user is not null)
         {
             // If this is a returning user, i.e., we already have a `User` with this `Identity`,
             // set `Online: true`, but leave `Name` and `Identity` unchanged.
             user.Online = true;
-            ctx.Db.user.Identity.Update(user);
+            ctx.Db.user.UserId.Update(user);
         }
         else
         {
@@ -45,7 +45,7 @@ public static partial class Module
                 new User
                 {
                     Name = null,
-                    Identity = ctx.Sender,
+                    UserId = ctx.Sender,
                     Online = true,
                 }
             );
@@ -55,13 +55,13 @@ public static partial class Module
     [Reducer(ReducerKind.ClientDisconnected)]
     public static void ClientDisconnected(ReducerContext ctx)
     {
-        var user = ctx.Db.user.Identity.Find(ctx.Sender);
+        var user = ctx.Db.user.UserId.Find(ctx.Sender);
 
         if (user is not null)
         {
             // This user should exist, so set `Online: false`.
             user.Online = false;
-            ctx.Db.user.Identity.Update(user);
+            ctx.Db.user.UserId.Update(user);
         }
         else
         {
@@ -82,13 +82,13 @@ public static partial class Module
     [Table(Name = "character", Public = true)]
     public partial struct Character
     {
+        [Unique]
+        public Identity UserId;
         [Unique, PrimaryKey]
         public string CharacterId;
-        [Unique]
-        public Identity User;
         public string Name;
         public string Race;
-        public string profession;
+        public string Profession;
         public string Specialization;
         public string StartingRegion;
         public string CreatedAt;
@@ -97,7 +97,7 @@ public static partial class Module
     [Reducer]
     public static void AddCharacter(ReducerContext ctx, string name, string race, string profession, string specialization, string startingRegion)
     {
-        var idIndex = ctx.Db.character.User;
+        var idIndex = ctx.Db.character.UserId;
         var existingUserCharacter = idIndex.Find(ctx.Sender);
         if (existingUserCharacter is not null)
         {
@@ -107,16 +107,36 @@ public static partial class Module
         
         var character = ctx.Db.character.Insert(new Character {
             CharacterId = Guid.NewGuid().ToString("N"),
-            User = ctx.Sender,
+            UserId = ctx.Sender,
             Name = name,
             Race = race,
-            profession = profession,
+            Profession = profession,
             Specialization = specialization,
             StartingRegion = startingRegion,
             CreatedAt = DateTimeOffset.UtcNow.ToString("o")
         });
 
-        Log.Info($"Inserted {character.Name} under #{character.CharacterId}");
+        Log.Info($"Inserted {character.Name} for userId {ctx.Sender}");
+    }
+
+    [Reducer]
+    public static void ClearUsers(ReducerContext ctx)
+    {
+        foreach (var user in ctx.Db.user.Iter())
+        {
+            ctx.Db.user.UserId.Delete(user.UserId);
+        }
+        Log.Info("All users cleared.");
+    }
+
+    [Reducer]
+    public static void ClearCharacters(ReducerContext ctx)
+    {
+        foreach (var character in ctx.Db.character.Iter())
+        {
+            ctx.Db.character.CharacterId.Delete(character.CharacterId);
+        }
+        Log.Info("All characters cleared.");
     }
 
     [Reducer(ReducerKind.Init)]

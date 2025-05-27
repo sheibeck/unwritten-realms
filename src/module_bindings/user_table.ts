@@ -9,20 +9,20 @@ import {
   AlgebraicValue,
   BinaryReader,
   BinaryWriter,
-  type CallReducerFlags,
+  CallReducerFlags,
   ConnectionId,
   DbConnectionBuilder,
   DbConnectionImpl,
-  type DbContext,
-  type ErrorContextInterface,
-  type Event,
-  type EventContextInterface,
+  DbContext,
+  ErrorContextInterface,
+  Event,
+  EventContextInterface,
   Identity,
   ProductType,
   ProductTypeElement,
-  type ReducerEventContextInterface,
+  ReducerEventContextInterface,
   SubscriptionBuilderImpl,
-  type SubscriptionEventContextInterface,
+  SubscriptionEventContextInterface,
   SumType,
   SumTypeVariant,
   TableCache,
@@ -31,7 +31,7 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 import { User } from "./user_type";
-import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables } from ".";
+import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
  * Table handle for the table `user`.
@@ -58,22 +58,22 @@ export class UserTableHandle {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `identity` unique index on the table `user`,
+   * Access to the `userId` unique index on the table `user`,
    * which allows point queries on the field of the same name
-   * via the [`UserIdentityUnique.find`] method.
+   * via the [`UserUserIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.user.identity().find(...)`.
+   * like `ctx.db.user.userId().find(...)`.
    *
-   * Get a handle on the `identity` unique index on the table `user`.
+   * Get a handle on the `userId` unique index on the table `user`.
    */
-  identity = {
-    // Find the subscribed row whose `identity` column value is equal to `col_val`,
+  userId = {
+    // Find the subscribed row whose `userId` column value is equal to `col_val`,
     // if such a row is present in the client cache.
     find: (col_val: Identity): User | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.identity, col_val)) {
+        if (deepEqual(row.userId, col_val)) {
           return row;
         }
       }

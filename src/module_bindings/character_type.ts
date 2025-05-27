@@ -31,8 +31,8 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 export type Character = {
+  userId: Identity,
   characterId: string,
-  user: Identity,
   name: string,
   race: string,
   profession: string,
@@ -51,8 +51,8 @@ export namespace Character {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("userId", AlgebraicType.createIdentityType()),
       new ProductTypeElement("characterId", AlgebraicType.createStringType()),
-      new ProductTypeElement("user", AlgebraicType.createIdentityType()),
       new ProductTypeElement("name", AlgebraicType.createStringType()),
       new ProductTypeElement("race", AlgebraicType.createStringType()),
       new ProductTypeElement("profession", AlgebraicType.createStringType()),

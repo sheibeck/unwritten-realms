@@ -34,6 +34,10 @@ import {
 // Import and reexport all reducer arg types
 import { AddCharacter } from "./add_character_reducer.ts";
 export { AddCharacter };
+import { ClearCharacters } from "./clear_characters_reducer.ts";
+export { ClearCharacters };
+import { ClearUsers } from "./clear_users_reducer.ts";
+export { ClearUsers };
 import { ClientConnected } from "./client_connected_reducer.ts";
 export { ClientConnected };
 import { ClientDisconnected } from "./client_disconnected_reducer.ts";
@@ -63,13 +67,21 @@ const REMOTE_MODULE = {
     user: {
       tableName: "user",
       rowType: User.getTypeScriptAlgebraicType(),
-      primaryKey: "identity",
+      primaryKey: "userId",
     },
   },
   reducers: {
     AddCharacter: {
       reducerName: "AddCharacter",
       argsType: AddCharacter.getTypeScriptAlgebraicType(),
+    },
+    ClearCharacters: {
+      reducerName: "ClearCharacters",
+      argsType: ClearCharacters.getTypeScriptAlgebraicType(),
+    },
+    ClearUsers: {
+      reducerName: "ClearUsers",
+      argsType: ClearUsers.getTypeScriptAlgebraicType(),
     },
     ClientConnected: {
       reducerName: "ClientConnected",
@@ -111,6 +123,8 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "AddCharacter", args: AddCharacter }
+| { name: "ClearCharacters", args: ClearCharacters }
+| { name: "ClearUsers", args: ClearUsers }
 | { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
 | { name: "SetName", args: SetName }
@@ -133,6 +147,30 @@ export class RemoteReducers {
 
   removeOnAddCharacter(callback: (ctx: ReducerEventContext, name: string, race: string, profession: string, specialization: string, startingRegion: string) => void) {
     this.connection.offReducer("AddCharacter", callback);
+  }
+
+  clearCharacters() {
+    this.connection.callReducer("ClearCharacters", new Uint8Array(0), this.setCallReducerFlags.clearCharactersFlags);
+  }
+
+  onClearCharacters(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("ClearCharacters", callback);
+  }
+
+  removeOnClearCharacters(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("ClearCharacters", callback);
+  }
+
+  clearUsers() {
+    this.connection.callReducer("ClearUsers", new Uint8Array(0), this.setCallReducerFlags.clearUsersFlags);
+  }
+
+  onClearUsers(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("ClearUsers", callback);
+  }
+
+  removeOnClearUsers(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("ClearUsers", callback);
   }
 
   onClientConnected(callback: (ctx: ReducerEventContext) => void) {
@@ -173,6 +211,16 @@ export class SetReducerFlags {
   addCharacterFlags: CallReducerFlags = 'FullUpdate';
   addCharacter(flags: CallReducerFlags) {
     this.addCharacterFlags = flags;
+  }
+
+  clearCharactersFlags: CallReducerFlags = 'FullUpdate';
+  clearCharacters(flags: CallReducerFlags) {
+    this.clearCharactersFlags = flags;
+  }
+
+  clearUsersFlags: CallReducerFlags = 'FullUpdate';
+  clearUsers(flags: CallReducerFlags) {
+    this.clearUsersFlags = flags;
   }
 
   setNameFlags: CallReducerFlags = 'FullUpdate';
