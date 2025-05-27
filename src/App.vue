@@ -36,7 +36,7 @@
             <button @click="doSignOut()" class="btn btn-outline-light">Logout</button>
           </li>
           <li class="nav-item" v-else>
-            <router-link to="/signin" class="nav-link">Sign-In</router-link>
+            <router-link to="/signin" class="nav-link">Login</router-link>
           </li>
         </ul>
       </div>
