@@ -31,12 +31,10 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 
+import { AddCharacterInput as __AddCharacterInput } from "./add_character_input_type";
+
 export type AddCharacter = {
-  name: string,
-  race: string,
-  profession: string,
-  specialization: string,
-  startingRegion: string,
+  inputCharacter: __AddCharacterInput,
 };
 
 /**
@@ -49,11 +47,7 @@ export namespace AddCharacter {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("name", AlgebraicType.createStringType()),
-      new ProductTypeElement("race", AlgebraicType.createStringType()),
-      new ProductTypeElement("profession", AlgebraicType.createStringType()),
-      new ProductTypeElement("specialization", AlgebraicType.createStringType()),
-      new ProductTypeElement("startingRegion", AlgebraicType.createStringType()),
+      new ProductTypeElement("inputCharacter", __AddCharacterInput.getTypeScriptAlgebraicType()),
     ]);
   }
 

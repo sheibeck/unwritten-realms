@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import type { DbConnection, Character } from '../module_bindings';
+import type { DbConnection, Character, AddCharacterInput } from '../module_bindings';
 
 export function useCharacters(conn: DbConnection | null) {
   const characters = ref<Map<string, Character>>(new Map());
@@ -43,14 +43,14 @@ export function useCharacters(conn: DbConnection | null) {
     }
   });
 
-  // ✅ Provide reducer call as part of the composable's return
-  function addCharacter(name: string, race: string, profession: string, specialization: string, startingRegion: string) {
+  // ✅ Updated: Accept a Character-like object and pass it directly
+  function addCharacter(character: AddCharacterInput) {
     if (!conn) {
       console.warn('No active SpaceTimeDB connection');
       return;
     }
 
-    conn.reducers.addCharacter(name, race, profession, specialization, startingRegion);
+    conn.reducers.addCharacter(character);
   }
 
   return {

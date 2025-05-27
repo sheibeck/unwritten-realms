@@ -42,6 +42,7 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue';
 import { marked } from 'marked';
+import type { Character } from '../module_bindings/character_type';
 
 const props = defineProps<{ character: any }>();
 const emit = defineEmits(['characterCreated']);
@@ -150,20 +151,16 @@ async function handleRequest(url: string, messageContent: string) {
     pushMessage(`🧙 ${jsonOutput.narrative}`);
 
     if (jsonOutput.actions) {
-      if (jsonOutput.actions && jsonOutput.actions.createCharacter) {
-      const character = jsonOutput.actions.createCharacter;
+     if (jsonOutput.actions && jsonOutput.actions.createCharacter) {
+        const character = jsonOutput.actions.createCharacter;
 
-      const hasAllValues = character.name &&
-                          character.race &&
-                          character.profession &&
-                          character.specialization &&
-                          character.startingRegionId;
+        const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined);
 
-      if (hasAllValues) {
-        AddCharacter(character);
-        characterCreated = true;
+        if (allPropsHaveValues) {
+          AddCharacter(character);
+          characterCreated = true;
+        }
       }
-    }
 
       // You can handle other actions here too:
       // if (jsonOutput.actions.logEvent) { ... }
@@ -221,7 +218,7 @@ function showFactions() {
   console.log('Faction standings opened');
 }
 
-async function AddCharacter(characterData: any) {
+async function AddCharacter(characterData: Character) {
   console.log('🚀 Emitting characterCreated event:', characterData);
   emit('characterCreated', characterData);
 

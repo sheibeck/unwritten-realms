@@ -12,6 +12,7 @@
       🔌 Connecting to Realm...
     </p>
     <div v-else class="flex-fill d-flex flex-column">
+      <button class="d-none" @click="addCharacterTest()">Add Test Character</button>
       <GameInterface
         v-if="initialized"
         class="flex-fill d-flex flex-column"
@@ -61,24 +62,40 @@ function onCharacterCreated(charData: any) {
   );
 }
 
-function addCharacterTest() {
-  const jsonString = `{
-    "name": "Jouctas",
-    "race": "Hollowborn",
-    "profession": "Arcane",
-    "specialization": "Runescribe",
-    "startingRegionId": "anything"
-  }`;
-  const charData = JSON.parse(jsonString);
+import type { AddCharacterInput } from '../module_bindings';
 
-  characters.value.addCharacter(
-    String(charData.name).trim(),
-    String(charData.race).trim(),
-    String(charData.profession).trim(),
-    String(charData.specialization).trim(),
-    String(charData.startingRegionId).trim()
-  );
+function addCharacterTest() {
+  const testCharacter: AddCharacterInput = {
+    // These will be set server-side:
+    name: 'Jouctas',
+    race: 'Hollowborn',
+    profession: 'Arcane',
+    specialization: 'Runescribe',
+    startingRegion: 'dread_crags',
+    strength: 6,
+    dexterity: 5,
+    intelligence: 10,
+    constitution: 4,
+    wisdom: 7,
+    willpower: 8,
+    charisma: 4,
+    maxHealth: 40,
+    currentHealth: 40,
+    maxMana: 40,
+    currentMana: 40,
+    classAbilities: "Runescript Engraving: Inscribe powerful runes that enhance spells.",
+    raceAbilities: "Spectral Shift: Blend with shadows, becoming partially incorporeal. Memories of the Past: Recall hidden knowledge from your history.",
+    specializationAbilities: "Runic Inscription: Create powerful runes that alter the flow of magic; Glyph of Focus: Permanently enhance one stat for a brief period; Arcane Echo: Briefly project your energy toward a target.",
+    level: 1,
+    xp: 0,
+    primaryWeapon: 'Arcane Quill',
+    secondaryWeapon: 'Ethereal Dagger',
+  };
+
+  characters.value.addCharacter(testCharacter);
 }
+
+
 
 async function connectSpacetime() {
   const connectedConn = await connect();

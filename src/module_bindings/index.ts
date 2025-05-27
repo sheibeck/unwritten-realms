@@ -52,6 +52,8 @@ import { UserTableHandle } from "./user_table.ts";
 export { UserTableHandle };
 
 // Import and reexport all types
+import { AddCharacterInput } from "./add_character_input_type.ts";
+export { AddCharacterInput };
 import { Character } from "./character_type.ts";
 export { Character };
 import { User } from "./user_type.ts";
@@ -133,19 +135,19 @@ export type Reducer = never
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  addCharacter(name: string, race: string, profession: string, specialization: string, startingRegion: string) {
-    const __args = { name, race, profession, specialization, startingRegion };
+  addCharacter(inputCharacter: AddCharacterInput) {
+    const __args = { inputCharacter };
     let __writer = new BinaryWriter(1024);
     AddCharacter.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("AddCharacter", __argsBuffer, this.setCallReducerFlags.addCharacterFlags);
   }
 
-  onAddCharacter(callback: (ctx: ReducerEventContext, name: string, race: string, profession: string, specialization: string, startingRegion: string) => void) {
+  onAddCharacter(callback: (ctx: ReducerEventContext, inputCharacter: AddCharacterInput) => void) {
     this.connection.onReducer("AddCharacter", callback);
   }
 
-  removeOnAddCharacter(callback: (ctx: ReducerEventContext, name: string, race: string, profession: string, specialization: string, startingRegion: string) => void) {
+  removeOnAddCharacter(callback: (ctx: ReducerEventContext, inputCharacter: AddCharacterInput) => void) {
     this.connection.offReducer("AddCharacter", callback);
   }
 

@@ -99,6 +99,58 @@ public static partial class Module
         public string CurrentLocation;
 
         // 💪 Core Attributes
+        public int? Strength;
+        public int? Dexterity;
+        public int? Intelligence;
+        public int? Constitution;
+        public int? Wisdom;
+        public int? Willpower;
+        public int? Charisma;
+
+        // ❤️ Health
+        public int? MaxHealth;
+        public int? CurrentHealth;
+
+        // 🔮 Mana
+        public int? MaxMana;
+        public int? CurrentMana;
+
+        // 🛡 Abilities (stored as JSON strings or comma-separated for simplicity)
+        public string? ClassAbilities;          // e.g., "Fireball, Arcane Shield"
+        public string? RaceAbilities;           // e.g., "Night Vision, Stone Endurance"
+        public string? SpecializationAbilities;// e.g., "Runescribe, Mana Surge"
+
+        public int? Level;
+        public int? XP;
+
+        // 🎒 Inventory
+        public string? InventoryItems;         // e.g., JSON array or comma-separated: "[{\"item\":\"Health Potion\",\"qty\":3}]"
+
+        // 🗡 Equipped Items (slots)
+        public string? Head;
+        public string? Shoulders;
+        public string? Back;
+        public string? Chest;
+        public string? Arms;
+        public string? Hands;
+        public string? Legs;
+        public string? Feet;
+        public string? Rings;
+        public string? Necklace;
+        public string? Earrings;
+        public string? Relic;
+        public string? PrimaryWeapon;
+        public string? SecondaryWeapon;
+    }
+
+    [Type]
+    public partial struct AddCharacterInput
+    {
+        public string Name;
+        public string Race;
+        public string Profession;
+        public string Specialization;
+        public string StartingRegion;
         public int Strength;
         public int Dexterity;
         public int Intelligence;
@@ -106,71 +158,85 @@ public static partial class Module
         public int Wisdom;
         public int Willpower;
         public int Charisma;
-
-        // ❤️ Health
         public int MaxHealth;
         public int CurrentHealth;
-
-        // 🔮 Mana
         public int MaxMana;
         public int CurrentMana;
-
-        // 🛡 Abilities (stored as JSON strings or comma-separated for simplicity)
-        public string ClassAbilities;          // e.g., "Fireball, Arcane Shield"
-        public string RaceAbilities;           // e.g., "Night Vision, Stone Endurance"
-        public string SpecializationAbilities;// e.g., "Runescribe, Mana Surge"
-
+        public string ClassAbilities;
+        public string RaceAbilities;
+        public string SpecializationAbilities;
         public int Level;
         public int XP;
-
-        // 🎒 Inventory
-        public string InventoryItems;         // e.g., JSON array or comma-separated: "[{\"item\":\"Health Potion\",\"qty\":3}]"
-
-        // 🗡 Equipped Items (slots)
-        public string Head;
-        public string Shoulders;
-        public string Back;
-        public string Chest;
-        public string Arms;
-        public string Hands;
-        public string Legs;
-        public string Feet;
-        public string Rings;
-        public string Necklace;
-        public string Earrings;
-        public string Relic;
         public string PrimaryWeapon;
         public string SecondaryWeapon;
     }
 
-
     [Reducer]
-    public static void AddCharacter(ReducerContext ctx, string name, string race, string profession, string specialization, string startingRegion)
+    public static void AddCharacter(ReducerContext ctx, AddCharacterInput inputCharacter)
     {
         var idIndex = ctx.Db.character.UserId;
         var existingUserCharacter = idIndex.Find(ctx.Sender);
         if (existingUserCharacter is not null)
         {
-            Log.Info($"Inserted failed. User already has a character");
+            Log.Info($"Insert failed. User already has a character");
             throw new Exception("User already has a character.");
         }
-        
-        var character = ctx.Db.character.Insert(new Character {
+
+        var character = ctx.Db.character.Insert(new Character
+        {
             CharacterId = Guid.NewGuid().ToString("N"),
             UserId = ctx.Sender,
-            Name = name,
-            Race = race,
-            Profession = profession,
-            Specialization = specialization,
+            Name = inputCharacter.Name,
+            Race = inputCharacter.Race,
+            Profession = inputCharacter.Profession,
+            Specialization = inputCharacter.Specialization,
+            StartingRegion = inputCharacter.StartingRegion,
+            CurrentLocation = inputCharacter.StartingRegion,
+            CreatedAt = DateTimeOffset.UtcNow.ToString("o"),
+
+            // Optional or additional fields
+            Strength = inputCharacter.Strength,
+            Dexterity = inputCharacter.Dexterity,
+            Intelligence = inputCharacter.Intelligence,
+            Constitution = inputCharacter.Constitution,
+            Wisdom = inputCharacter.Wisdom,
+            Willpower = inputCharacter.Willpower,
+            Charisma = inputCharacter.Charisma,
+
+            MaxHealth = inputCharacter.MaxHealth,
+            CurrentHealth = inputCharacter.CurrentHealth,
+
+            MaxMana = inputCharacter.MaxMana,
+            CurrentMana = inputCharacter.CurrentMana,
+
+            ClassAbilities = inputCharacter.ClassAbilities,
+            RaceAbilities = inputCharacter.RaceAbilities,
+            SpecializationAbilities = inputCharacter.SpecializationAbilities,
+
+            // InventoryItems = inputCharacter.InventoryItems,
+
+            // Head = inputCharacter.Head,
+            // Shoulders = inputCharacter.Shoulders,
+            // Back = inputCharacter.Back,
+            // Chest = inputCharacter.Chest,
+            // Arms = inputCharacter.Arms,
+            // Hands = inputCharacter.Hands,
+            // Legs = inputCharacter.Legs,
+            // Feet = inputCharacter.Feet,
+            // Rings = inputCharacter.Rings,
+            // Necklace = inputCharacter.Necklace,
+            // Earrings = inputCharacter.Earrings,
+            // Relic = inputCharacter.Relic,
+            PrimaryWeapon = inputCharacter.PrimaryWeapon,
+            SecondaryWeapon = inputCharacter.SecondaryWeapon,
+
             Level = 1,
             XP = 0,
-            StartingRegion = startingRegion,
-            CurrentLocation = startingRegion,
-            CreatedAt = DateTimeOffset.UtcNow.ToString("o")
         });
 
         Log.Info($"Inserted {character.Name} for userId {ctx.Sender}");
     }
+
 
     [Reducer]
     public static void ClearUsers(ReducerContext ctx)
