@@ -38,6 +38,7 @@ const { connect, connected } = useSpacetime();
 
 const users = ref();
 const characters = ref();
+const regions = ref();
 
 async function getUserAuth() {
   try {
@@ -63,6 +64,7 @@ function onCharacterCreated(charData: any) {
 }
 
 import type { AddCharacterInput, DbConnection } from '../module_bindings/client';
+import { useRegions } from '../composable/useRegions';
 
 function addCharacterTest() {
   const testCharacter: AddCharacterInput = {
@@ -152,6 +154,7 @@ function subscribeToCharacter(conn: DbConnection) {
 function subscribeToRegion(conn: DbConnection) {
   conn.subscriptionBuilder()
     .onApplied(() => {
+      regions.value = useRegions(conn);
       console.log('✅ Region subscription initialized.');
       // Add your useRegions(conn) or similar if you have a region composable
     })
@@ -167,8 +170,6 @@ onMounted(async () => {
 
   if (user.value) {
     await connectSpacetime();
-    console.log('Users:', users.value);
-    console.log('Characters:', characters.value);
   } else {
     console.warn('User is not logged in — skipping SpaceTimeDB connection.');
   }
