@@ -1,12 +1,11 @@
 {
   "name": "region_creation",
-  "strict": true,
   "schema": {
     "type": "object",
     "properties": {
       "narrative": {
         "type": "string",
-        "description": "The AI generated narrative of the region creation or related output."
+        "description": "The AI-generated narrative of the region creation or related output."
       },
       "actions": {
         "type": "object",
@@ -16,39 +15,18 @@
             "type": "object",
             "description": "Details for creating a region.",
             "properties": {
-              "name": {
-                "type": "string",
-                "description": "The chosen name for the region."
-              },
-              "id": {
-                "type": "string",
-                "description": "Identifier for the region with non-alphanumeric characters and spaces replaced with _."
-              },
-              "description": {
-                "type": "string",
-                "description": "Description of the region."
-              },
-              "climate": {
-                "type": "string",
-                "description": "Climate type of the region."
-              },
+              "name": { "type": "string" },
+              "id": { "type": "string" },
+              "description": { "type": "string" },
+              "climate": { "type": "string" },
               "resources": {
                 "type": "array",
-                "description": "Resources available in the region.",
-                "items": {
-                  "type": "string"
-                }
+                "items": { "type": "string" }
               },
-              "levelTier": {
-                "type": "integer",
-                "description": "The level tier of the region (1–5)."
-              },
+              "levelTier": { "type": "integer" },
               "connectedRegions": {
                 "type": "array",
-                "description": "List of connected region IDs this region links to.",
-                "items": {
-                  "type": "string"
-                }
+                "items": { "type": "string" }
               }
             },
             "required": [
@@ -66,48 +44,27 @@
             "type": "object",
             "description": "Logging the event details after region creation.",
             "properties": {
-              "type": {
-                "type": "string",
-                "description": "Type of the log event."
-              },
+              "type": { "type": "string" },
               "details": {
                 "type": "object",
-                "description": "Details of the log event.",
                 "properties": {
-                  "region": {
-                    "type": "string",
-                    "description": "Name of created region."
-                  }
+                  "region": { "type": "string" }
                 },
-                "required": [
-                  "region"
-                ],
+                "required": ["region"],
                 "additionalProperties": false
               }
             },
-            "required": [
-              "type",
-              "details"
-            ],
+            "required": ["type", "details"],
             "additionalProperties": false
           },
           "updateCharacter": {
             "type": "object",
             "description": "Updating the character's new location after moving into the region.",
             "properties": {
-              "characterId": {
-                "type": "string",
-                "description": "Unique identifier for the character."
-              },
-              "newRegionId": {
-                "type": "string",
-                "description": "The region ID where the character has moved."
-              }
+              "characterId": { "type": "string" },
+              "newRegionId": { "type": "string" }
             },
-            "required": [
-              "characterId",
-              "newRegionId"
-            ],
+            "required": ["characterId", "newRegionId"],
             "additionalProperties": false
           },
           "createNpc": {
@@ -116,29 +73,12 @@
             "items": {
               "type": "object",
               "properties": {
-                "npcId": {
-                  "type": "string",
-                  "description": "Unique identifier for the NPC."
-                },
-                "name": {
-                  "type": "string",
-                  "description": "The name of the NPC."
-                },
-                "role": {
-                  "type": "string",
-                  "description": "The role or function of the NPC (e.g., merchant, guard, quest-giver)."
-                },
-                "description": {
-                  "type": "string",
-                  "description": "A short description of the NPC's appearance or personality."
-                }
+                "npcId": { "type": "string" },
+                "name": { "type": "string" },
+                "role": { "type": "string" },
+                "description": { "type": "string" }
               },
-              "required": [
-                "npcId",
-                "name",
-                "role",
-                "description"
-              ],
+              "required": ["npcId", "name", "role", "description"],
               "additionalProperties": false
             }
           },
@@ -148,37 +88,18 @@
             "items": {
               "type": "object",
               "properties": {
-                "regionId": {
-                  "type": "string",
-                  "description": "The ID of the connected region being updated."
-                },
-                "addConnectedRegionId": {
-                  "type": "string",
-                  "description": "The ID of the new region being added to the connected region's connections."
-                }
+                "regionId": { "type": "string" },
+                "addConnectedRegionId": { "type": "string" }
               },
-              "required": [
-                "regionId",
-                "addConnectedRegionId"
-              ],
+              "required": ["regionId", "addConnectedRegionId"],
               "additionalProperties": false
             }
           }
         },
-        "required": [
-          "createRegion",
-          "logEvent",
-          "updateCharacter",
-          "createNpc",
-          "updateConnectedRegions"
-        ],
         "additionalProperties": false
       }
     },
-    "required": [
-      "narrative",
-      "actions"
-    ],
+    "required": ["narrative"],
     "additionalProperties": false
   }
 }
