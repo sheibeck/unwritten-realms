@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import type { DbConnection, User } from '../module_bindings';
+import type { DbConnection, User } from '../module_bindings/client';
 
 export function useUsers(conn: DbConnection | null) {
   const users = ref<Map<string, User>>(new Map());

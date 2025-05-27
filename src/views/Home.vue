@@ -62,7 +62,7 @@ function onCharacterCreated(charData: any) {
   );
 }
 
-import type { AddCharacterInput } from '../module_bindings';
+import type { AddCharacterInput } from '../module_bindings/client';
 
 function addCharacterTest() {
   const testCharacter: AddCharacterInput = {

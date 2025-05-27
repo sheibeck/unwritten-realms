@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue';
 import { marked } from 'marked';
-import type { Character } from '../module_bindings/character_type';
+import type { Character } from '../module_bindings/client/character_type';
 
 const props = defineProps<{ character: any }>();
 const emit = defineEmits(['characterCreated']);

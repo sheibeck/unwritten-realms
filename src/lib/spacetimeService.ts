@@ -1,5 +1,5 @@
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
-import { DbConnection, type ErrorContext } from '../module_bindings';
+import { DbConnection, type ErrorContext } from '../module_bindings/client';
 import { fetchAuthSession } from '@aws-amplify/auth';
 
 export class SpacetimeService {

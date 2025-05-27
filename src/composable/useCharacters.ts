@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import type { DbConnection, Character, AddCharacterInput } from '../module_bindings';
+import type { DbConnection, Character, AddCharacterInput } from '../module_bindings/client';
 
 export function useCharacters(conn: DbConnection | null) {
   const characters = ref<Map<string, Character>>(new Map());
