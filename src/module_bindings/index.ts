@@ -44,6 +44,8 @@ import { ClientDisconnected } from "./client_disconnected_reducer.ts";
 export { ClientDisconnected };
 import { SetName } from "./set_name_reducer.ts";
 export { SetName };
+import { UpdateCharacter } from "./update_character_reducer.ts";
+export { UpdateCharacter };
 
 // Import and reexport all table handle types
 import { CharacterTableHandle } from "./character_table.ts";
@@ -56,6 +58,8 @@ import { AddCharacterInput } from "./add_character_input_type.ts";
 export { AddCharacterInput };
 import { Character } from "./character_type.ts";
 export { Character };
+import { UpdateCharacterInput } from "./update_character_input_type.ts";
+export { UpdateCharacterInput };
 import { User } from "./user_type.ts";
 export { User };
 
@@ -97,6 +101,10 @@ const REMOTE_MODULE = {
       reducerName: "SetName",
       argsType: SetName.getTypeScriptAlgebraicType(),
     },
+    UpdateCharacter: {
+      reducerName: "UpdateCharacter",
+      argsType: UpdateCharacter.getTypeScriptAlgebraicType(),
+    },
   },
   // Constructors which are used by the DbConnectionImpl to
   // extract type information from the generated RemoteModule.
@@ -130,6 +138,7 @@ export type Reducer = never
 | { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
 | { name: "SetName", args: SetName }
+| { name: "UpdateCharacter", args: UpdateCharacter }
 ;
 
 export class RemoteReducers {
@@ -207,6 +216,22 @@ export class RemoteReducers {
     this.connection.offReducer("SetName", callback);
   }
 
+  updateCharacter(input: UpdateCharacterInput) {
+    const __args = { input };
+    let __writer = new BinaryWriter(1024);
+    UpdateCharacter.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("UpdateCharacter", __argsBuffer, this.setCallReducerFlags.updateCharacterFlags);
+  }
+
+  onUpdateCharacter(callback: (ctx: ReducerEventContext, input: UpdateCharacterInput) => void) {
+    this.connection.onReducer("UpdateCharacter", callback);
+  }
+
+  removeOnUpdateCharacter(callback: (ctx: ReducerEventContext, input: UpdateCharacterInput) => void) {
+    this.connection.offReducer("UpdateCharacter", callback);
+  }
+
 }
 
 export class SetReducerFlags {
@@ -228,6 +253,11 @@ export class SetReducerFlags {
   setNameFlags: CallReducerFlags = 'FullUpdate';
   setName(flags: CallReducerFlags) {
     this.setNameFlags = flags;
+  }
+
+  updateCharacterFlags: CallReducerFlags = 'FullUpdate';
+  updateCharacter(flags: CallReducerFlags) {
+    this.updateCharacterFlags = flags;
   }
 
 }
