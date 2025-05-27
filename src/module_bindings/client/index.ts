@@ -42,6 +42,12 @@ import { ClientConnected } from "./client_connected_reducer.ts";
 export { ClientConnected };
 import { ClientDisconnected } from "./client_disconnected_reducer.ts";
 export { ClientDisconnected };
+import { CreateAndLinkNewRegion } from "./create_and_link_new_region_reducer.ts";
+export { CreateAndLinkNewRegion };
+import { CreateStarterRegion } from "./create_starter_region_reducer.ts";
+export { CreateStarterRegion };
+import { LinkRegions } from "./link_regions_reducer.ts";
+export { LinkRegions };
 import { SetName } from "./set_name_reducer.ts";
 export { SetName };
 import { UpdateCharacter } from "./update_character_reducer.ts";
@@ -50,6 +56,8 @@ export { UpdateCharacter };
 // Import and reexport all table handle types
 import { CharacterTableHandle } from "./character_table.ts";
 export { CharacterTableHandle };
+import { RegionTableHandle } from "./region_table.ts";
+export { RegionTableHandle };
 import { UserTableHandle } from "./user_table.ts";
 export { UserTableHandle };
 
@@ -58,6 +66,8 @@ import { AddCharacterInput } from "./add_character_input_type.ts";
 export { AddCharacterInput };
 import { Character } from "./character_type.ts";
 export { Character };
+import { Region } from "./region_type.ts";
+export { Region };
 import { UpdateCharacterInput } from "./update_character_input_type.ts";
 export { UpdateCharacterInput };
 import { User } from "./user_type.ts";
@@ -69,6 +79,11 @@ const REMOTE_MODULE = {
       tableName: "character",
       rowType: Character.getTypeScriptAlgebraicType(),
       primaryKey: "characterId",
+    },
+    region: {
+      tableName: "region",
+      rowType: Region.getTypeScriptAlgebraicType(),
+      primaryKey: "regionId",
     },
     user: {
       tableName: "user",
@@ -96,6 +111,18 @@ const REMOTE_MODULE = {
     ClientDisconnected: {
       reducerName: "ClientDisconnected",
       argsType: ClientDisconnected.getTypeScriptAlgebraicType(),
+    },
+    CreateAndLinkNewRegion: {
+      reducerName: "CreateAndLinkNewRegion",
+      argsType: CreateAndLinkNewRegion.getTypeScriptAlgebraicType(),
+    },
+    CreateStarterRegion: {
+      reducerName: "CreateStarterRegion",
+      argsType: CreateStarterRegion.getTypeScriptAlgebraicType(),
+    },
+    LinkRegions: {
+      reducerName: "LinkRegions",
+      argsType: LinkRegions.getTypeScriptAlgebraicType(),
     },
     SetName: {
       reducerName: "SetName",
@@ -137,6 +164,9 @@ export type Reducer = never
 | { name: "ClearUsers", args: ClearUsers }
 | { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
+| { name: "CreateAndLinkNewRegion", args: CreateAndLinkNewRegion }
+| { name: "CreateStarterRegion", args: CreateStarterRegion }
+| { name: "LinkRegions", args: LinkRegions }
 | { name: "SetName", args: SetName }
 | { name: "UpdateCharacter", args: UpdateCharacter }
 ;
@@ -200,6 +230,54 @@ export class RemoteReducers {
     this.connection.offReducer("ClientDisconnected", callback);
   }
 
+  createAndLinkNewRegion(fromRegionId: string, name: string, climate: string, culture: string, tier: number, travelEnergyCost: number) {
+    const __args = { fromRegionId, name, climate, culture, tier, travelEnergyCost };
+    let __writer = new BinaryWriter(1024);
+    CreateAndLinkNewRegion.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("CreateAndLinkNewRegion", __argsBuffer, this.setCallReducerFlags.createAndLinkNewRegionFlags);
+  }
+
+  onCreateAndLinkNewRegion(callback: (ctx: ReducerEventContext, fromRegionId: string, name: string, climate: string, culture: string, tier: number, travelEnergyCost: number) => void) {
+    this.connection.onReducer("CreateAndLinkNewRegion", callback);
+  }
+
+  removeOnCreateAndLinkNewRegion(callback: (ctx: ReducerEventContext, fromRegionId: string, name: string, climate: string, culture: string, tier: number, travelEnergyCost: number) => void) {
+    this.connection.offReducer("CreateAndLinkNewRegion", callback);
+  }
+
+  createStarterRegion(name: string, climate: string, culture: string) {
+    const __args = { name, climate, culture };
+    let __writer = new BinaryWriter(1024);
+    CreateStarterRegion.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("CreateStarterRegion", __argsBuffer, this.setCallReducerFlags.createStarterRegionFlags);
+  }
+
+  onCreateStarterRegion(callback: (ctx: ReducerEventContext, name: string, climate: string, culture: string) => void) {
+    this.connection.onReducer("CreateStarterRegion", callback);
+  }
+
+  removeOnCreateStarterRegion(callback: (ctx: ReducerEventContext, name: string, climate: string, culture: string) => void) {
+    this.connection.offReducer("CreateStarterRegion", callback);
+  }
+
+  linkRegions(regionAId: string, regionBId: string) {
+    const __args = { regionAId, regionBId };
+    let __writer = new BinaryWriter(1024);
+    LinkRegions.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("LinkRegions", __argsBuffer, this.setCallReducerFlags.linkRegionsFlags);
+  }
+
+  onLinkRegions(callback: (ctx: ReducerEventContext, regionAId: string, regionBId: string) => void) {
+    this.connection.onReducer("LinkRegions", callback);
+  }
+
+  removeOnLinkRegions(callback: (ctx: ReducerEventContext, regionAId: string, regionBId: string) => void) {
+    this.connection.offReducer("LinkRegions", callback);
+  }
+
   setName(name: string) {
     const __args = { name };
     let __writer = new BinaryWriter(1024);
@@ -250,6 +328,21 @@ export class SetReducerFlags {
     this.clearUsersFlags = flags;
   }
 
+  createAndLinkNewRegionFlags: CallReducerFlags = 'FullUpdate';
+  createAndLinkNewRegion(flags: CallReducerFlags) {
+    this.createAndLinkNewRegionFlags = flags;
+  }
+
+  createStarterRegionFlags: CallReducerFlags = 'FullUpdate';
+  createStarterRegion(flags: CallReducerFlags) {
+    this.createStarterRegionFlags = flags;
+  }
+
+  linkRegionsFlags: CallReducerFlags = 'FullUpdate';
+  linkRegions(flags: CallReducerFlags) {
+    this.linkRegionsFlags = flags;
+  }
+
   setNameFlags: CallReducerFlags = 'FullUpdate';
   setName(flags: CallReducerFlags) {
     this.setNameFlags = flags;
@@ -267,6 +360,10 @@ export class RemoteTables {
 
   get character(): CharacterTableHandle {
     return new CharacterTableHandle(this.connection.clientCache.getOrCreateTable<Character>(REMOTE_MODULE.tables.character));
+  }
+
+  get region(): RegionTableHandle {
+    return new RegionTableHandle(this.connection.clientCache.getOrCreateTable<Region>(REMOTE_MODULE.tables.region));
   }
 
   get user(): UserTableHandle {

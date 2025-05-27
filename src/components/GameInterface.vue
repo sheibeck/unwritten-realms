@@ -34,8 +34,20 @@
         <button class="btn btn-dark" @click="showFactions" title="Factions">
           <i class="bi bi-people-fill"></i>
         </button>
+        <button class="btn btn-dark" @click="toggleTravelPanel" title="Travel">
+          <i class="bi bi-globe"></i>
+        </button>
       </div>
     </div>
+
+    <!-- Panels -->
+    <TravelPanel
+      v-if="showTravel"
+      :currentRegion="currentRegion"
+      :linkedRegions="linkedRegions"
+      :playerEnergy="playerEnergy"
+      @travel="handleTravel"
+    />
   </div>
 </template>
 
@@ -43,6 +55,7 @@
 import { ref, nextTick } from 'vue';
 import { marked } from 'marked';
 import type { Character } from '../module_bindings/client/character_type';
+import TravelPanel from './TravelPanel.vue';
 
 const props = defineProps<{ character: any }>();
 const emit = defineEmits(['characterCreated']);
@@ -224,6 +237,22 @@ async function AddCharacter(characterData: Character) {
 
   pushMessage(`🎉 Character ${characterData.name} has been created!`);
 }
+
+//Travel
+const showTravel = ref(false);
+const currentRegion = ref<any>(null); // replace with proper type
+const linkedRegions = ref<any[]>([]); // fetched from SpaceTimeDB or passed in
+const playerEnergy = ref<number>(0);  // tracked on client
+
+function toggleTravelPanel() {
+  showTravel.value = !showTravel.value;
+}
+
+function handleTravel(targetRegionId: string) {
+  console.log(`Traveling to region ${targetRegionId}`);
+  // TODO: call reducer or n8n workflow here
+  showTravel.value = false;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -281,6 +310,16 @@ $toolbar-height: 60px;
         height: 48px;
       }
     }
+  }
+
+  .travel-panel {
+    position: absolute;
+    top: 10%;
+    left: 10%;
+    right: 10%;
+    bottom: 10%;
+    background: #222;
+    z-index: 1000;
   }
 }
 
