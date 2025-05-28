@@ -1,5 +1,6 @@
 {
   "name": "region_creation",
+  "strict": false,
   "schema": {
     "type": "object",
     "properties": {
@@ -15,18 +16,32 @@
             "type": "object",
             "description": "Details for creating a region.",
             "properties": {
-              "name": { "type": "string" },
-              "id": { "type": "string" },
-              "description": { "type": "string" },
-              "climate": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "climate": {
+                "type": "string"
+              },
               "resources": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               },
-              "levelTier": { "type": "integer" },
+              "levelTier": {
+                "type": "integer"
+              },
               "connectedRegions": {
                 "type": "array",
-                "items": { "type": "string" }
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
@@ -44,27 +59,43 @@
             "type": "object",
             "description": "Logging the event details after region creation.",
             "properties": {
-              "type": { "type": "string" },
+              "type": {
+                "type": "string"
+              },
               "details": {
                 "type": "object",
                 "properties": {
-                  "region": { "type": "string" }
+                  "region": {
+                    "type": "string"
+                  }
                 },
-                "required": ["region"],
+                "required": [
+                  "region"
+                ],
                 "additionalProperties": false
               }
             },
-            "required": ["type", "details"],
+            "required": [
+              "type",
+              "details"
+            ],
             "additionalProperties": false
           },
           "updateCharacter": {
             "type": "object",
             "description": "Updating the character's new location after moving into the region.",
             "properties": {
-              "characterId": { "type": "string" },
-              "newRegionId": { "type": "string" }
+              "characterId": {
+                "type": "string"
+              },
+              "newRegionId": {
+                "type": "string"
+              }
             },
-            "required": ["characterId", "newRegionId"],
+            "required": [
+              "characterId",
+              "newRegionId"
+            ],
             "additionalProperties": false
           },
           "createNpc": {
@@ -73,12 +104,29 @@
             "items": {
               "type": "object",
               "properties": {
-                "npcId": { "type": "string" },
-                "name": { "type": "string" },
-                "role": { "type": "string" },
-                "description": { "type": "string" }
+                "npcId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "regionId": {
+                  "type": "string"
+                }
               },
-              "required": ["npcId", "name", "role", "description"],
+              "required": [
+                "npcId",
+                "name",
+                "role",
+                "description",
+                "regionId"
+              ],
               "additionalProperties": false
             }
           },
@@ -88,10 +136,17 @@
             "items": {
               "type": "object",
               "properties": {
-                "regionId": { "type": "string" },
-                "addConnectedRegionId": { "type": "string" }
+                "regionId": {
+                  "type": "string"
+                },
+                "addConnectedRegionId": {
+                  "type": "string"
+                }
               },
-              "required": ["regionId", "addConnectedRegionId"],
+              "required": [
+                "regionId",
+                "addConnectedRegionId"
+              ],
               "additionalProperties": false
             }
           }
@@ -99,7 +154,9 @@
         "additionalProperties": false
       }
     },
-    "required": ["narrative"],
+    "required": [
+      "narrative"
+    ],
     "additionalProperties": false
   }
 }

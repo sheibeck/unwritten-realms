@@ -113,13 +113,17 @@
                 },
                 "description": {
                   "type": "string"
+                },
+                "regionId": {
+                  "type": "string"
                 }
               },
               "required": [
                 "npcId",
                 "name",
                 "role",
-                "description"
+                "description",
+                "regionId"
               ],
               "additionalProperties": false
             }
