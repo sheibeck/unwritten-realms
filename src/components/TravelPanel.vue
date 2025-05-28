@@ -64,12 +64,14 @@ const props = defineProps<{
   linkedRegions: Region[];
   playerEnergy: number;
 }>();
+console.log(`Props initialized`, props);
 
 const emit = defineEmits<{
   (e: 'travel', toRegion: Region, fromRegion: Region): void;
   (e: 'explore', fromRegion: Region): void;
   (e: 'close'): void;
 }>();
+console.log(`Emits initialized`, emit);
 </script>
 
 <style scoped>
