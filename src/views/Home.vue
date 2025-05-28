@@ -17,6 +17,7 @@
         v-if="initialized"
         class="flex-fill d-flex flex-column"
         :character="character"
+        :currentRegion="currentRegion"
         @characterCreated="onCharacterCreated"
       />
     </div>
@@ -33,6 +34,7 @@ import GameInterface from '../components/GameInterface.vue';
 
 const user = ref();
 const character = ref();
+const currentRegion = ref();
 const initialized = ref(false);  // ✅ NEW: track when subscriptions finish
 const { connect, connected } = useSpacetime();
 
@@ -73,7 +75,7 @@ function addCharacterTest() {
     race: 'Hollowborn',
     profession: 'Arcane',
     specialization: 'Runescribe',
-    startingRegion: 'dread_crags',
+    startingRegion: '0c469743fdc14578b70463cadcddf88b',
     strength: 6,
     dexterity: 5,
     intelligence: 10,
@@ -106,9 +108,7 @@ async function connectSpacetime() {
   }
 
   subscribeToUser(connectedConn);
-  subscribeToCharacter(connectedConn);
-  subscribeToRegion(connectedConn);
-
+  
   connectedConn.reducers.onSetName((e) => {
     console.log(e.event.status);
   });
@@ -119,6 +119,8 @@ function subscribeToUser(conn: DbConnection) {
     .onApplied(() => {
       users.value = useUsers(conn);
       console.log('✅ User subscription initialized.');
+
+      subscribeToCharacter(conn);
     })
     .onError((e) => {
       console.error('User subscription error:', e);
@@ -138,10 +140,11 @@ function subscribeToCharacter(conn: DbConnection) {
       if (firstResult.done) {
         console.log('⚠️ No character found');
       } else {
-        const myCharacter = firstResult.value;
-        console.log('🎉 Loaded my character:', myCharacter);
-        character.value = myCharacter;
+        console.log('🎉 Loaded my character:', firstResult.value);
+        character.value = firstResult.value;
       }
+
+      subscribeToRegion(conn);
 
       initialized.value = true;
     })
@@ -156,12 +159,22 @@ function subscribeToRegion(conn: DbConnection) {
     .onApplied(() => {
       regions.value = useRegions(conn);
       console.log('✅ Region subscription initialized.');
-      // Add your useRegions(conn) or similar if you have a region composable
+
+      const iterator = conn.db.region.iter()[Symbol.iterator]();
+      const firstResult = iterator.next();
+
+      if (firstResult.done) {
+        console.log('⚠️ No starting region found');
+      } else {
+        console.log('🎉 Loaded current region:', firstResult.value);
+        currentRegion.value = firstResult.value;
+      }
+      
     })
     .onError((e) => {
       console.error('Region subscription error:', e);
     })
-    .subscribe(['SELECT * FROM region']);
+    .subscribe([`SELECT * FROM region Where RegionId = '${character.value.currentLocation}'`]);
 }
 
 

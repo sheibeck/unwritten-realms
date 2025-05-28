@@ -47,6 +47,7 @@
       :linkedRegions="linkedRegions"
       :playerEnergy="playerEnergy"
       @travel="handleTravel"
+      @close="showTravel = false"
     />
   </div>
 </template>
@@ -57,7 +58,7 @@ import { marked } from 'marked';
 import type { Character } from '../module_bindings/client/character_type';
 import TravelPanel from './TravelPanel.vue';
 
-const props = defineProps<{ character: any }>();
+const props = defineProps<{ character: any, currentRegion: any }>();
 const emit = defineEmits(['characterCreated']);
 
 const messages = ref<{ raw: string; html: string }[]>([]);
@@ -81,8 +82,6 @@ if (props.character) {
 }
 
 let threadId: string | null = localStorage.getItem('characterThreadId') ?? null;
-
-
 
 async function sendMessage() {
   const message = userInput.value.trim();
@@ -240,17 +239,19 @@ async function AddCharacter(characterData: Character) {
 
 //Travel
 const showTravel = ref(false);
-const currentRegion = ref<any>(null); // replace with proper type
-const linkedRegions = ref<any[]>([]); // fetched from SpaceTimeDB or passed in
-const playerEnergy = ref<number>(0);  // tracked on client
+const linkedRegions = ref([]);
+const playerEnergy = ref(100); // pull from DB or props
 
 function toggleTravelPanel() {
   showTravel.value = !showTravel.value;
 }
 
-function handleTravel(targetRegionId: string) {
+async function handleTravel(targetRegionId: string) {
   console.log(`Traveling to region ${targetRegionId}`);
-  // TODO: call reducer or n8n workflow here
+
+  // Example: Call reducer or n8n workflow here
+  //await callTravelReducerOrWorkflow(targetRegionId);
+
   showTravel.value = false;
 }
 </script>
