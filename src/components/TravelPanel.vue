@@ -15,7 +15,7 @@
           <button
             class="btn btn-sm btn-primary"
             :disabled="playerEnergy < region.travelEnergyCost"
-            @click="$emit('travel', region.regionId)"
+            @click="$emit('travel', region, currentRegion)"
           >
             Travel
           </button>
@@ -31,7 +31,7 @@
           <button
             class="btn btn-sm btn-primary"
             :disabled="playerEnergy < 200"
-            @click="$emit('explore')"
+            @click="$emit('explore', currentRegion)"
           >
             Travel
           </button>
@@ -43,17 +43,18 @@
 </template>
 
 <script setup lang="ts">
+import type { Region } from '../module_bindings/client';
 
 const props = defineProps<{
-  currentRegion: any;
-  linkedRegions: any;
+  currentRegion: Region;
+  linkedRegions: Region[];
   playerEnergy: number;
 }>();
 console.log("Travel panel props initialized", props);
 
 const emit = defineEmits<{
-  (e: 'travel', regionId: string): void;
-  (e: 'explore'): void;
+  (e: 'travel', toRegion: Region, fromRegion: Region): void;
+  (e: 'explore', fromRegion: Region): void;
   (e: 'close'): void;
 }>();
 

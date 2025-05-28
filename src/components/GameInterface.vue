@@ -47,6 +47,7 @@
       :linkedRegions="linkedRegions"
       :playerEnergy="playerEnergy"
       @travel="handleTravel"
+      @explore="handleExplore"
       @close="showTravel = false"
     />
   </div>
@@ -57,6 +58,7 @@ import { ref, nextTick } from 'vue';
 import { marked } from 'marked';
 import type { Character } from '../module_bindings/client/character_type';
 import TravelPanel from './TravelPanel.vue';
+import type { Region } from '../module_bindings/client';
 
 const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
 const emit = defineEmits(['characterCreated']);
@@ -69,10 +71,11 @@ const isLoading = ref(false);
 let nextUserInputResolver: ((msg: string) => void) | null = null;
 const chatContainer = ref<HTMLDivElement | null>(null);
 
-let characterCreated = false;
+const hasActiveCharacter = ref(false);
+const newCharacter = ref(false);
 
 if (props.character) {
-  characterCreated = true;
+  hasActiveCharacter.value = true;
   pushMessage(`🌟 Welcome back, ${props.character.name}!`);
   pushMessage(`The realms stir with possibility — what adventure will you spark next?`);
 } else {
@@ -81,7 +84,7 @@ if (props.character) {
   pushMessage('Type `Awaken` to forge your destiny and begin your journey.');
 }
 
-let threadId: string | null = localStorage.getItem('characterThreadId') ?? null;
+let threadId: string | null = localStorage.getItem('unwrittenRealmsThreadId') ?? null;
 
 async function sendMessage() {
   const message = userInput.value.trim();
@@ -99,7 +102,7 @@ async function sendMessage() {
   userInput.value = '';
 
   let action = '';
-  if (message.toLowerCase() == ('awaken') && !characterCreated) {
+  if (message.toLowerCase() == ('awaken') && !hasActiveCharacter.value) {
     action = 'create-character';
   } else {
     action = 'general-action';
@@ -111,10 +114,10 @@ async function sendMessage() {
     if (action === 'create-character') {
       let currentMessage = message;
 
-      while (!characterCreated) {
+      while (!hasActiveCharacter.value) {
         await handleRequest(proxiedUrl, currentMessage);
 
-        if (!characterCreated) {
+        if (!hasActiveCharacter.value) {
           currentMessage = await getNextUserInput();
           pushMessage(`🗨️ You: ${currentMessage}`);
         }
@@ -155,7 +158,7 @@ async function handleRequest(url: string, messageContent: string) {
     threadId = result[0].threadId || threadId;
 
     if(threadId) {
-      localStorage.setItem('characterThreadIdId', threadId);
+      localStorage.setItem('unwrittenRealmsThreadId', threadId);
     }
 
     const jsonOutput = parseOutput(assistantOutput);
@@ -170,7 +173,8 @@ async function handleRequest(url: string, messageContent: string) {
 
         if (allPropsHaveValues) {
           AddCharacter(character);
-          characterCreated = true;
+          hasActiveCharacter.value = true;
+          newCharacter.value = true;
         }
       }
 
@@ -245,9 +249,21 @@ function toggleTravelPanel() {
   showTravel.value = !showTravel.value;
 }
 
-async function handleTravel(targetRegionId: string) {
-  console.log(`Traveling to region ${targetRegionId}`);
+async function handleTravel(targetRegion: Region, originRegion: Region) {
+  const msg = `Traveling from ${targetRegion.name} to ${originRegion.name}`;
+  
+  pushMessage(msg);
 
+  // Example: Call reducer or n8n workflow here
+  //await callTravelReducerOrWorkflow(targetRegionId);
+
+  showTravel.value = false;
+}
+
+async function handleExplore(originRegion: Region) {
+  const msg = `Exploring from ${originRegion.name}`;
+
+  pushMessage(msg);
   // Example: Call reducer or n8n workflow here
   //await callTravelReducerOrWorkflow(targetRegionId);
 
