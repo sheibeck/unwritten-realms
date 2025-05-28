@@ -32,6 +32,7 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 export type Region = {
   regionId: string,
+  description: string,
   name: string,
   climate: string,
   culture: string,
@@ -52,6 +53,7 @@ export namespace Region {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("regionId", AlgebraicType.createStringType()),
+      new ProductTypeElement("description", AlgebraicType.createStringType()),
       new ProductTypeElement("name", AlgebraicType.createStringType()),
       new ProductTypeElement("climate", AlgebraicType.createStringType()),
       new ProductTypeElement("culture", AlgebraicType.createStringType()),

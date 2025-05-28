@@ -33,6 +33,7 @@ import {
 
 export type CreateStarterRegion = {
   name: string,
+  description: string,
   climate: string,
   culture: string,
 };
@@ -48,6 +49,7 @@ export namespace CreateStarterRegion {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("name", AlgebraicType.createStringType()),
+      new ProductTypeElement("description", AlgebraicType.createStringType()),
       new ProductTypeElement("climate", AlgebraicType.createStringType()),
       new ProductTypeElement("culture", AlgebraicType.createStringType()),
     ]);

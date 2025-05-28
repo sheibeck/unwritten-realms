@@ -34,6 +34,7 @@ import {
 export type CreateAndLinkNewRegion = {
   fromRegionId: string,
   name: string,
+  description: string,
   climate: string,
   culture: string,
   tier: number,
@@ -52,6 +53,7 @@ export namespace CreateAndLinkNewRegion {
     return AlgebraicType.createProductType([
       new ProductTypeElement("fromRegionId", AlgebraicType.createStringType()),
       new ProductTypeElement("name", AlgebraicType.createStringType()),
+      new ProductTypeElement("description", AlgebraicType.createStringType()),
       new ProductTypeElement("climate", AlgebraicType.createStringType()),
       new ProductTypeElement("culture", AlgebraicType.createStringType()),
       new ProductTypeElement("tier", AlgebraicType.createI32Type()),
