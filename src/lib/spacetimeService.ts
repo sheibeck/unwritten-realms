@@ -86,4 +86,21 @@ export class SpacetimeService {
       tryConnect();
     });
   }
+
+  async disconnect(): Promise<void> {
+    if (this.connection) {
+      try {
+        console.log('🔌 Disconnecting from SpaceTimeDB...');
+        await this.connection.disconnect();  // <-- check if this exists in SDK
+      } catch (err) {
+        console.warn('⚠️ Error while disconnecting:', err);
+      } finally {
+        this.connection = null;
+        this.identity = null;
+        this.connected = false;
+      }
+    } else {
+      console.log('⚠️ No active SpaceTimeDB connection to disconnect.');
+    }
+  }
 }

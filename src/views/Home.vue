@@ -30,20 +30,21 @@ import { onMounted, ref } from 'vue';
 import { useSpacetime } from '../composable/useSpacetime';
 import { useUsers } from '../composable/useUsers';
 import { useCharacters } from '../composable/useCharacters';
+import { useRegions } from '../composable/useRegions';
 import { getCurrentUser } from '@aws-amplify/auth';
 import GameInterface from '../components/GameInterface.vue';
+import type { AddCharacterInput, DbConnection, Region } from '../module_bindings/client';
+
+const { connect, connected } = useSpacetime();
+const usersComposable = ref();
+const charactersComposable = ref();
+const regionsComposable = ref();
 
 const user = ref();
 const character = ref();
 const currentRegion = ref();
 const linkedRegions = ref<Region[]>([]);
-const initialized = ref(false);  // ✅ NEW: track when subscriptions finish
-const { connect, connected } = useSpacetime();
-
-const users = ref();
-const characters = ref();
-const regions = ref();
-const linkedRegionDetails = ref();
+const initialized = ref(false);
 
 async function getUserAuth() {
   try {
@@ -59,7 +60,7 @@ function onCharacterCreated(charData: any) {
   console.log('⚡ Character created event received:', charData);
   console.log('🚀 Event-driven call:', JSON.stringify(charData, null, 2));
 
-  characters.value.addCharacter(
+  charactersComposable.value.addCharacter(
     charData.name,
     charData.race,
     charData.profession,
@@ -67,9 +68,6 @@ function onCharacterCreated(charData: any) {
     charData.startingRegionId
   );
 }
-
-import type { AddCharacterInput, DbConnection, Region } from '../module_bindings/client';
-import { useRegions } from '../composable/useRegions';
 
 function addCharacterTest() {
   const testCharacter: AddCharacterInput = {
@@ -99,7 +97,7 @@ function addCharacterTest() {
     secondaryWeapon: 'Ethereal Dagger',
   };
 
-  characters.value.addCharacter(testCharacter);
+  charactersComposable.value.addCharacter(testCharacter);
 }
 
 async function connectSpacetime() {
@@ -110,105 +108,58 @@ async function connectSpacetime() {
     return;
   }
 
+  usersComposable.value = useUsers(connectedConn);
+  charactersComposable.value = useCharacters(connectedConn);
+  regionsComposable.value = useRegions(connectedConn);
+
   subscribeToUser(connectedConn);
-  
+
   connectedConn.reducers.onSetName((e) => {
     console.log(e.event.status);
   });
 }
 
 function subscribeToUser(conn: DbConnection) {
-  conn.subscriptionBuilder()
-    .onApplied(() => {
-      users.value = useUsers(conn);
-      console.log('✅ User subscription initialized.');
+  const subscriptions = conn.subscriptionBuilder()
+    .onApplied((ctx) => {
+      console.log('✅ Subscription initialized.');
 
-      subscribeToCharacter(conn);
-    })
-    .onError((e) => {
-      console.error('User subscription error:', e);
-    })
-    .subscribe([`SELECT * FROM user WHERE UserId = '${conn.identity?.toHexString()}'`]);
-}
+      user.value = Array.from(ctx.db.user.iter()).find(
+        u => u.userId.toHexString() === conn.identity?.toHexString()
+      ) || null;
 
-function subscribeToCharacter(conn: DbConnection) {
-  conn.subscriptionBuilder()
-    .onApplied(() => {
-      characters.value = useCharacters(conn);
-      console.log('✅ Character subscription initialized.');
+      character.value = Array.from(ctx.db.character.iter()).find(
+        c => c.userId.toHexString() === conn.identity?.toHexString()
+      ) || null;
 
-      const iterator = conn.db.character.iter()[Symbol.iterator]();
-      const firstResult = iterator.next();
+      if (character.value) {
+        currentRegion.value = Array.from(ctx.db.region.iter()).find(
+          r => character.value.currentLocation === r.regionId
+        ) || null;
 
-      if (firstResult.done) {
-        console.log('⚠️ No character found');
+        const filteredRegions = Array.from(ctx.db.region.iter()).filter(
+          r => currentRegion.value?.linkedRegionIds.includes(r.regionId)
+        );
+
+        // ✅ Update array in place to preserve reactivity
+        linkedRegions.value.splice(0, linkedRegions.value.length, ...filteredRegions);
       } else {
-        console.log('🎉 Loaded my character:', firstResult.value);
-        character.value = firstResult.value;
+        currentRegion.value = null;
+        linkedRegions.value.splice(0, linkedRegions.value.length); // clear array
       }
-
-      subscribeToRegion(conn);
 
       initialized.value = true;
     })
     .onError((e) => {
-      console.error('Character subscription error:', e);
+      console.error('Subscription error:', e);
     })
-    .subscribe([`SELECT * FROM character WHERE UserId = '${conn.identity?.toHexString()}'`]);
-}
+    .subscribe([
+      `SELECT * FROM user WHERE UserId = '${conn.identity?.toHexString()}'`,
+      `SELECT * FROM character WHERE UserId = '${conn.identity?.toHexString()}'`,
+      `SELECT * FROM region`,
+    ]);
 
-const linkedRegionIds = ref();
-function subscribeToRegion(conn: DbConnection) {
-  conn.subscriptionBuilder()
-    .onApplied(() => {
-      regions.value = useRegions(conn);
-      console.log('✅ Region subscription initialized.');
-
-      const iterator = conn.db.region.iter()[Symbol.iterator]();
-      const firstResult = iterator.next();
-
-      if (firstResult.done) {
-        console.log('⚠️ No starting region found');
-      } else {
-        console.log('🎉 Loaded current region:', firstResult.value);
-        currentRegion.value = firstResult.value;
-
-        linkedRegionIds.value = currentRegion.value.linkedRegionIds;
-        subscribeToLinkedRegions(conn);
-      }
-      
-    })
-    .onError((e) => {
-      console.error('Region subscription error:', e);
-    })
-    .subscribe([`SELECT * FROM region Where RegionId = '${character.value.currentLocation}'`]);
-}
-
-function subscribeToLinkedRegions(conn: DbConnection) {
-    conn.subscriptionBuilder()
-      .onApplied(() => {
-        linkedRegionDetails.value = useRegions(conn);        
-        
-        const iterator = conn.db.region.iter()[Symbol.iterator]();
-        let result = iterator.next();
-
-        linkedRegions.value.splice(0, linkedRegions.value.length);
-
-        while (!result.done) {
-          const region = result.value;
-
-          if (linkedRegionIds.value.includes(region.regionId)) {
-            linkedRegions.value.push(region);
-          }
-
-          result = iterator.next();
-        }
-        console.log('🎉 Loaded linked regions:', linkedRegions.value);
-      })
-      .onError((e) => {
-        console.error('Region subscription error:', e);
-      })
-      .subscribe([`SELECT * FROM region`]);
+  console.log(`Subscriptions active`, subscriptions);
 }
 
 

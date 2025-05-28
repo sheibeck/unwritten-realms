@@ -31,5 +31,6 @@ export function useSpacetime() {
     identity,
     conn: service.conn,
     service,
+    disconnect: service.disconnect
   };
 }

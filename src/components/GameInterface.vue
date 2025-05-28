@@ -34,7 +34,7 @@
         <button class="btn btn-dark" @click="showFactions" title="Factions">
           <i class="bi bi-people-fill"></i>
         </button>
-        <button class="btn btn-dark" @click="toggleTravelPanel" title="Travel">
+        <button class="btn btn-dark" :disabled="!currentRegion" @click="toggleTravelPanel" title="Travel">
           <i class="bi bi-globe"></i>
         </button>
       </div>
