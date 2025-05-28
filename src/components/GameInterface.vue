@@ -58,7 +58,7 @@ import { marked } from 'marked';
 import type { Character } from '../module_bindings/client/character_type';
 import TravelPanel from './TravelPanel.vue';
 
-const props = defineProps<{ character: any, currentRegion: any }>();
+const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
 const emit = defineEmits(['characterCreated']);
 
 const messages = ref<{ raw: string; html: string }[]>([]);
@@ -239,7 +239,6 @@ async function AddCharacter(characterData: Character) {
 
 //Travel
 const showTravel = ref(false);
-const linkedRegions = ref([]);
 const playerEnergy = ref(100); // pull from DB or props
 
 function toggleTravelPanel() {

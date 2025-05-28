@@ -18,6 +18,7 @@
         class="flex-fill d-flex flex-column"
         :character="character"
         :currentRegion="currentRegion"
+        :linkedRegions="linkedRegions"
         @characterCreated="onCharacterCreated"
       />
     </div>
@@ -35,12 +36,14 @@ import GameInterface from '../components/GameInterface.vue';
 const user = ref();
 const character = ref();
 const currentRegion = ref();
+const linkedRegions = ref<Region[]>([]);
 const initialized = ref(false);  // ✅ NEW: track when subscriptions finish
 const { connect, connected } = useSpacetime();
 
 const users = ref();
 const characters = ref();
 const regions = ref();
+const linkedRegionDetails = ref();
 
 async function getUserAuth() {
   try {
@@ -65,7 +68,7 @@ function onCharacterCreated(charData: any) {
   );
 }
 
-import type { AddCharacterInput, DbConnection } from '../module_bindings/client';
+import type { AddCharacterInput, DbConnection, Region } from '../module_bindings/client';
 import { useRegions } from '../composable/useRegions';
 
 function addCharacterTest() {
@@ -154,6 +157,7 @@ function subscribeToCharacter(conn: DbConnection) {
     .subscribe([`SELECT * FROM character WHERE UserId = '${conn.identity?.toHexString()}'`]);
 }
 
+const linkedRegionIds = ref();
 function subscribeToRegion(conn: DbConnection) {
   conn.subscriptionBuilder()
     .onApplied(() => {
@@ -168,6 +172,9 @@ function subscribeToRegion(conn: DbConnection) {
       } else {
         console.log('🎉 Loaded current region:', firstResult.value);
         currentRegion.value = firstResult.value;
+
+        linkedRegionIds.value = currentRegion.value.linkedRegionIds;
+        subscribeToLinkedRegions(conn);
       }
       
     })
@@ -175,6 +182,33 @@ function subscribeToRegion(conn: DbConnection) {
       console.error('Region subscription error:', e);
     })
     .subscribe([`SELECT * FROM region Where RegionId = '${character.value.currentLocation}'`]);
+}
+
+function subscribeToLinkedRegions(conn: DbConnection) {
+    conn.subscriptionBuilder()
+      .onApplied(() => {
+        linkedRegionDetails.value = useRegions(conn);        
+        
+        const iterator = conn.db.region.iter()[Symbol.iterator]();
+        let result = iterator.next();
+
+        linkedRegions.value.splice(0, linkedRegions.value.length);
+
+        while (!result.done) {
+          const region = result.value;
+
+          if (linkedRegionIds.value.includes(region.regionId)) {
+            linkedRegions.value.push(region);
+          }
+
+          result = iterator.next();
+        }
+        console.log('🎉 Loaded linked regions:', linkedRegions.value);
+      })
+      .onError((e) => {
+        console.error('Region subscription error:', e);
+      })
+      .subscribe([`SELECT * FROM region`]);
 }
 
 
