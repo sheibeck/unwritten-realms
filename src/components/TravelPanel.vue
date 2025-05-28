@@ -21,8 +21,23 @@
           </button>
         </div>
       </li>
+      <li>
+        <div class="region-entry">
+          <div class="region-info">
+            <strong>Explore a New Region</strong> (Tier Unknown)
+            <br />
+            Cost: ⚡ 200
+          </div>
+          <button
+            class="btn btn-sm btn-primary"
+            :disabled="playerEnergy < 200"
+            @click="$emit('explore')"
+          >
+            Travel
+          </button>
+        </div>
+      </li>
     </ul>
-
     <button class="btn btn-secondary close-btn" @click="$emit('close')">Close</button>
   </div>
 </template>
@@ -38,12 +53,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'travel', regionId: string): void;
+  (e: 'explore'): void;
   (e: 'close'): void;
 }>();
 
-onMounted(() => {
-    const x = 1;
-});
 </script>
 
 <style scoped>
