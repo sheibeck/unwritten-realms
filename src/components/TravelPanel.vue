@@ -43,19 +43,21 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
 
 const props = defineProps<{
   currentRegion: any;
   linkedRegions: any;
   playerEnergy: number;
 }>();
+console.log("Travel panel props initialized", props);
 
 const emit = defineEmits<{
   (e: 'travel', regionId: string): void;
   (e: 'explore'): void;
   (e: 'close'): void;
 }>();
+
+console.log("Emitters initialized", emit);
 
 </script>
 
