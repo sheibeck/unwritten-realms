@@ -25,13 +25,13 @@
     <!-- Fixed Bottom Toolbar -->
     <div class="toolbar">
       <div class="toolbar-icons">
-        <button class="btn btn-dark" @click="showCharacter" title="Character">
+        <button class="btn btn-dark" :disabled="!character" @click="toggleCharacterPanel" title="Character">
           <i class="bi bi-person-fill"></i>
         </button>
-        <button class="btn btn-dark" @click="showQuests" title="Quests">
+        <button class="btn btn-dark" @click="" title="Quests">
           <i class="bi bi-journal-text"></i>
         </button>
-        <button class="btn btn-dark" @click="showFactions" title="Factions">
+        <button class="btn btn-dark" @click="" title="Factions">
           <i class="bi bi-people-fill"></i>
         </button>
         <button class="btn btn-dark" :disabled="!currentRegion" @click="toggleTravelPanel" title="Travel">
@@ -50,6 +50,11 @@
       @explore="handleExplore"
       @close="showTravel = false"
     />
+    <CharacterPanel
+      v-if="showCharacter"
+      :character="character"
+      @close="showCharacter = false"
+    />
   </div>
 </template>
 
@@ -57,8 +62,9 @@
 import { ref, nextTick } from 'vue';
 import { marked } from 'marked';
 import type { Character } from '../module_bindings/client/character_type';
-import TravelPanel from './TravelPanel.vue';
 import type { Region } from '../module_bindings/client';
+import TravelPanel from './TravelPanel.vue';
+import CharacterPanel from './CharacterPanel.vue';
 
 const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
 const emit = defineEmits(['characterCreated']);
@@ -222,23 +228,17 @@ function scrollToBottom() {
   });
 }
 
-function showCharacter() {
-  console.log('Character details opened');
-}
-
-function showQuests() {
-  console.log('Quest log opened');
-}
-
-function showFactions() {
-  console.log('Faction standings opened');
-}
-
 async function AddCharacter(characterData: Character) {
   console.log('🚀 Emitting characterCreated event:', characterData);
   emit('characterCreated', characterData);
 
   pushMessage(`🎉 Character ${characterData.name} has been created!`);
+}
+
+//Character
+const showCharacter = ref(false);
+function toggleCharacterPanel() {
+  showCharacter.value = !showCharacter.value;
 }
 
 //Travel
