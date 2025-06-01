@@ -20,7 +20,7 @@
                 <!-- Basic Info -->
                 <section class="mb-4">
                   <h3 class="h5">Basic Info</h3>
-                  <p>{{ character.race }} &mdash; {{ character.specialization }} ({{ character.profession }})</p>
+                  <p>{{ character.race }} &mdash; {{ character.profession }} ({{ character.archetype }})</p>
                   <div class="row">
                     <div class="col-6">
                          <p>Health: {{ character.currentHealth ?? '—' }} / {{ character.maxHealth ?? '—' }}</p>
@@ -40,12 +40,11 @@
                     <div class="col-6">
                       <p>💪 Strength: {{ character.strength ?? '—' }}</p>
                       <p>🏃 Dexterity: {{ character.dexterity ?? '—' }}</p>
-                      <p>🧠 Intelligence: {{ character.intelligence ?? '—' }}</p>
                       <p>❤️ Constitution: {{ character.constitution ?? '—' }}</p>
                     </div>
                     <div class="col-6">
+                      <p>🧠 Intelligence: {{ character.intelligence ?? '—' }}</p>
                       <p>👁️ Wisdom: {{ character.wisdom ?? '—' }}</p>
-                      <p>🔥 Willpower: {{ character.willpower ?? '—' }}</p>
                       <p>😎 Charisma: {{ character.charisma ?? '—' }}</p>
                     </div>
                   </div>
@@ -54,9 +53,8 @@
                 <!-- Abilities -->
                 <section class="mb-4">
                   <h3 class="h5">Abilities</h3>
-                  <p><strong>Class:</strong> {{ character.classAbilities || '—' }}</p>
+                  <p><strong>Class:</strong> {{ character.professionAbilities || '—' }}</p>
                   <p><strong>Race:</strong> {{ character.raceAbilities || '—' }}</p>
-                  <p><strong>Specialization:</strong> {{ character.specializationAbilities || '—' }}</p>
                 </section>
               </div>
 
@@ -77,8 +75,7 @@
                   <p>Necklace: {{ character.necklace || '—' }}</p>
                   <p>Earrings: {{ character.earrings || '—' }}</p>
                   <p>Relic: {{ character.relic || '—' }}</p>
-                  <p>Primary Weapon: {{ character.primaryWeapon || '—' }}</p>
-                  <p>Secondary Weapon: {{ character.secondaryWeapon || '—' }}</p>
+                  <p>Equipped Weapon: {{ character.equippedWeapon || '—' }}</p>
                 </section>
 
                 <!-- Inventory -->
