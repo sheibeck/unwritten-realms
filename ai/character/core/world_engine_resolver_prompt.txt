@@ -26,9 +26,9 @@ Traveling between regions carries a chance for random encounters.
 
 Players have one active character per session.
 
-Core attributes: Strength, Dexterity, Intelligence, Constitution, Wisdom, Willpower, Charisma.
+Core attributes: Strength, Dexterity, Intelligence, Constitution, Wisdom, Charisma.
 
-Health and Mana pools are influenced by stats.
+Health and Mana pools are influenced by attributes.
 
 Characters gain XP, loot, and skills through combat, exploration, and quests.
 

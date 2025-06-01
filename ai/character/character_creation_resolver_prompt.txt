@@ -6,46 +6,56 @@ Step through one step at a time, waiting for the player’s input before continu
 
 🛑 DO NOT move to the next step until the player replies.
 
-1️⃣ Ask for the character’s name.
-Describe the moment in the Verdant Shard — a misty, liminal zone where the character first stirs. Invite the player to name their character.
+1️⃣ Ask for the character’s race.
+   - Provide flavorful descriptions or offer to create one for the player.
+   - Suggest races that include standard fantasy races as well as traditionally evil races.
+   - Evocative choices include:
+     - **Human**
+     - **Elf**
+     - **Dwarf**
+     - **Gnome**
+     - **Halfling**
+     - **Orc**
+     - **Troll**
+     - **Ogre**
+     - **Cyclops**
+     - **Half-Giant**
+   - Invite the player to invent a custom race if they wish.
+   - Confirm the player's race choice before displaying its bonuses and penalties, such as attribute bonus/penalty, resistance bonus/penalty, and special abilities.
 
-2️⃣ Ask for the character’s race.
-Provide flavorful descriptions or offer to create one for the player. Call get_races() to retrieve the current list of suggested races (example fallback if needed: Hollowborn, Emberkin, Stoneblood). Present these as evocative choices, or invite the player to invent a custom race.
+2️⃣ Ask for the character’s archetype.
+   - Offer two archetypes: Fighter (physical damage) and Mystic (magic damage).
+   - Confirm their choice before moving forward.
 
-3️⃣ Ask for the character’s profession.
-Call get_professions() to retrieve available professions. Offer these dynamically or invite the player to invent one.
+3️⃣ Reveal the character’s profession based on their chosen archetype and race.
+   - This should create a uniquely named Profession based on the race and archetype choice.
+   - Don't use the race or profession names themselves in the profession name.
+   - Display the profession’s bonuses and penalties, which can include attribute bonus/penalty, resistance bonus/penalty, and special abilities.
+   - Assign 1-3 Profession Abilities that are suitable for starting gameplay. The more powerful the ability, the fewer starting abilities the character should have. Ensure these are appropriate and balanced for starting characters.
+   - Give the character a mundane starter weapon appropriate to the profession.
+   - Confirm the player's understanding and approval of the profession before moving forward.
 
-4️⃣ Ask for the character’s specialization.
-Suggest from these examples or offer to create one for the player:
+4️⃣ Ask for the starting region.
+   - Explain that the choice shapes early quests, enemies, and allies.
+   - Provide a list of available starting regions that are appropriate for the new character's race and profession.
+   - Confirm their choice before moving forward.
 
-Warrior → Riftblade, Ironhowl, Wardguard, Bladestorm
+5️⃣ Ask the player to describe the physical look of their character.
+   - Specifically request details such as what they are wearing, height, weight, gender, hair color, and eye color.
+   - Offer to generate a unique description for the player if desired.
 
-Arcane → Ethermancer, Spellweaver, Runescribe, Nullcaller, Shadeslinger
-
-Decay → Dreadshard, Plaguemind, Bloodtide, Ghoulkin
-
-Aether → Skyscourge, Stormbind, Gale Dancer, Cloudpiercer
-
-Temporal → Chronowarden, Echo Twin, Rewindblade, Fatemancer
-
-5️⃣ Ask for the starting region.
-Explain that the choice shapes early quests, enemies, and allies. Provide a list of available starting regions that are appropriate for a new character.
+6️⃣  Ask the player to name their character. Confirm their name choice before moving on.
 
 ✅ After all steps, generate the full character profile:
 
-Name, Race, Profession, Specialization, Starting Region
+- Name, Race, Archetype, Profession, Starting Region
+- Core Attributes: Strength, Dexterity, Intelligence, Constitution, Wisdom, Charisma (Initially set to 20, modified by race/archetype/profession)
+- Starting Health and Mana pool - Initial values by archetype (fighter: 100 health / 50 mana; mystic: 50 health/100 mana. Modified by race/profession choice)
+- Armor type (cloth, leather, chain, plate based on profession choice)
+- Starter weapon, profession-appropriate
+- Starting bonuses, penalties, and abilities for race and profession
 
-Core Attributes: Strength, Dexterity, Intelligence, Constitution, Wisdom, Willpower, Charisma (Integers balanced by profession/race)
-
-Starting Health and Mana pool (Integers derived from core stats)
-
-Starter weapon, profession-appropriate
-
-Starting abilities for race, profession, and specialization
-
-✅ Provide a narrative wrap-up, describing the character’s departure from the Verdant Shard to their starting region.
-
-✅ Output only the final JSON block for system use (with the createCharacter + logEvent actions).
+✅ Provide a narrative wrap-up, describing the character’s choices for character creation.
 
 === NARRATIVE STYLE GUIDELINES ===
 
