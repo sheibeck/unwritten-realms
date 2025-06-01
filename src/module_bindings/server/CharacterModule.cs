@@ -12,9 +12,10 @@ public static partial class Module
         public string CharacterId;
 
         public string Name;
+        public string Description;
         public string Race;
+        public string Archetype;
         public string Profession;
-        public string Specialization;
         public string StartingRegion;
         public string CreatedAt;
 
@@ -27,7 +28,6 @@ public static partial class Module
         public int? Intelligence;
         public int? Constitution;
         public int? Wisdom;
-        public int? Willpower;
         public int? Charisma;
 
         // ❤️ Health
@@ -38,10 +38,10 @@ public static partial class Module
         public int? MaxMana;
         public int? CurrentMana;
 
-        // 🛡 Abilities (stored as JSON strings or comma-separated for simplicity)
-        public string? ClassAbilities;          // e.g., "Fireball, Arcane Shield"
-        public string? RaceAbilities;           // e.g., "Night Vision, Stone Endurance"
-        public string? SpecializationAbilities;// e.g., "Runescribe, Mana Surge"
+        // 🛡 Abilities
+        public string? RaceAbilities;
+        public string? ProfessionAbilities;
+        public string? ArmorType;
 
         public int? Level;
         public int? XP;
@@ -62,8 +62,7 @@ public static partial class Module
         public string? Necklace;
         public string? Earrings;
         public string? Relic;
-        public string? PrimaryWeapon;
-        public string? SecondaryWeapon;
+        public string? EquippedWeapon;
     }
 
     [Type]
@@ -72,6 +71,7 @@ public static partial class Module
         public string CharacterId;
 
         public string? Name;
+        public string? Description;
         public string? CurrentLocation;
 
         public int? Strength;
@@ -79,7 +79,6 @@ public static partial class Module
         public int? Intelligence;
         public int? Constitution;
         public int? Wisdom;
-        public int? Willpower;
         public int? Charisma;
 
         public int? MaxHealth;
@@ -88,9 +87,9 @@ public static partial class Module
         public int? MaxMana;
         public int? CurrentMana;
 
-        public string? ClassAbilities;
         public string? RaceAbilities;
-        public string? SpecializationAbilities;
+        public string? ProfessionAbilities;
+        public string? ArmorType;
 
         public int? Level;
         public int? XP;
@@ -109,8 +108,7 @@ public static partial class Module
         public string? Necklace;
         public string? Earrings;
         public string? Relic;
-        public string? PrimaryWeapon;
-        public string? SecondaryWeapon;
+        public string? EquippedWeapon;
     }
 
     [Reducer]
@@ -133,6 +131,7 @@ public static partial class Module
         // Now safe to access fields like character.Wisdom, character.Name, etc.
 
         if (input.Name != null) character.Name = input.Name;
+        if (input.Description != null) character.Description = input.Description;
         if (input.CurrentLocation != null) character.CurrentLocation = input.CurrentLocation;
 
         if (input.Strength.HasValue) character.Strength = input.Strength;
@@ -140,7 +139,6 @@ public static partial class Module
         if (input.Intelligence.HasValue) character.Intelligence = input.Intelligence;
         if (input.Constitution.HasValue) character.Constitution = input.Constitution;
         if (input.Wisdom.HasValue) character.Wisdom = input.Wisdom;
-        if (input.Willpower.HasValue) character.Willpower = input.Willpower;
         if (input.Charisma.HasValue) character.Charisma = input.Charisma;
 
         if (input.MaxHealth.HasValue) character.MaxHealth = input.MaxHealth;
@@ -149,9 +147,8 @@ public static partial class Module
         if (input.MaxMana.HasValue) character.MaxMana = input.MaxMana;
         if (input.CurrentMana.HasValue) character.CurrentMana = input.CurrentMana;
 
-        if (input.ClassAbilities != null) character.ClassAbilities = input.ClassAbilities;
         if (input.RaceAbilities != null) character.RaceAbilities = input.RaceAbilities;
-        if (input.SpecializationAbilities != null) character.SpecializationAbilities = input.SpecializationAbilities;
+        if (input.ProfessionAbilities != null) character.ProfessionAbilities = input.ProfessionAbilities;
 
         if (input.Level.HasValue) character.Level = input.Level;
         if (input.XP.HasValue) character.XP = input.XP;
@@ -170,8 +167,7 @@ public static partial class Module
         if (input.Necklace != null) character.Necklace = input.Necklace;
         if (input.Earrings != null) character.Earrings = input.Earrings;
         if (input.Relic != null) character.Relic = input.Relic;
-        if (input.PrimaryWeapon != null) character.PrimaryWeapon = input.PrimaryWeapon;
-        if (input.SecondaryWeapon != null) character.SecondaryWeapon = input.SecondaryWeapon;
+        if (input.EquippedWeapon != null) character.EquippedWeapon = input.EquippedWeapon;
 
         ctx.Db.character.CharacterId.Update(character);
         Log.Info($"Updated character {character.CharacterId} by user {ctx.Sender}");
@@ -182,28 +178,26 @@ public static partial class Module
     public partial struct AddCharacterInput
     {
         public string Name;
+        public string Description;
         public string Race;
+        public string Archetype;
         public string Profession;
-        public string Specialization;
         public string StartingRegion;
         public int Strength;
         public int Dexterity;
         public int Intelligence;
         public int Constitution;
         public int Wisdom;
-        public int Willpower;
         public int Charisma;
         public int MaxHealth;
         public int CurrentHealth;
         public int MaxMana;
         public int CurrentMana;
-        public string ClassAbilities;
         public string RaceAbilities;
-        public string SpecializationAbilities;
+        public string ProfessionAbilities;
         public int Level;
         public int XP;
-        public string PrimaryWeapon;
-        public string SecondaryWeapon;
+        public string EquippedWeapon;
     }
 
     [Reducer]
@@ -222,9 +216,9 @@ public static partial class Module
             CharacterId = Guid.NewGuid().ToString("N"),
             UserId = ctx.Sender,
             Name = inputCharacter.Name,
+            Description = inputCharacter.Description,
             Race = inputCharacter.Race,
             Profession = inputCharacter.Profession,
-            Specialization = inputCharacter.Specialization,
             StartingRegion = inputCharacter.StartingRegion,
             CurrentLocation = inputCharacter.StartingRegion,
             CreatedAt = DateTimeOffset.UtcNow.ToString("o"),
@@ -235,7 +229,6 @@ public static partial class Module
             Intelligence = inputCharacter.Intelligence,
             Constitution = inputCharacter.Constitution,
             Wisdom = inputCharacter.Wisdom,
-            Willpower = inputCharacter.Willpower,
             Charisma = inputCharacter.Charisma,
 
             MaxHealth = inputCharacter.MaxHealth,
@@ -244,9 +237,8 @@ public static partial class Module
             MaxMana = inputCharacter.MaxMana,
             CurrentMana = inputCharacter.CurrentMana,
 
-            ClassAbilities = inputCharacter.ClassAbilities,
             RaceAbilities = inputCharacter.RaceAbilities,
-            SpecializationAbilities = inputCharacter.SpecializationAbilities,
+            ProfessionAbilities = inputCharacter.ProfessionAbilities,
 
             // InventoryItems = inputCharacter.InventoryItems,
 
@@ -262,8 +254,7 @@ public static partial class Module
             // Necklace = inputCharacter.Necklace,
             // Earrings = inputCharacter.Earrings,
             // Relic = inputCharacter.Relic,
-            PrimaryWeapon = inputCharacter.PrimaryWeapon,
-            SecondaryWeapon = inputCharacter.SecondaryWeapon,
+            EquippedWeapon = inputCharacter.EquippedWeapon,
 
             Level = 1,
             XP = 0,
