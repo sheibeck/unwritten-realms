@@ -78,13 +78,14 @@ let nextUserInputResolver: ((msg: string) => void) | null = null;
 const chatContainer = ref<HTMLDivElement | null>(null);
 
 const hasActiveCharacter = ref(false);
-const newCharacter = ref(false);
+const newCharacter = ref(true);
 
 if (props.character) {
   hasActiveCharacter.value = true;
   pushMessage(`🌟 Welcome back, ${props.character.name}!`);
   pushMessage(`The realms stir with possibility — what adventure will you spark next?`);
 } else {
+  newCharacter.value = true;
   pushMessage('✨ Welcome, brave soul, to Unwritten Worlds!');
   pushMessage('Your story has yet to be inked across the stars.');
   pushMessage('Type `Awaken` to forge your destiny and begin your journey.');
@@ -175,7 +176,7 @@ async function handleRequest(url: string, messageContent: string) {
      if (jsonOutput.actions && jsonOutput.actions.createCharacter) {
         const character = jsonOutput.actions.createCharacter;
 
-        const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined);
+        const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined && value !== 0 && value != "");
 
         if (allPropsHaveValues) {
           AddCharacter(character);

@@ -21,6 +21,7 @@
                 <section class="mb-4">
                   <h3 class="h5">Basic Info</h3>
                   <p>{{ character.race }} &mdash; {{ character.profession }} ({{ character.archetype }})</p>
+                  <p>{{ character.description }}</p>
                   <div class="row">
                     <div class="col-6">
                          <p>Health: {{ character.currentHealth ?? '—' }} / {{ character.maxHealth ?? '—' }}</p>
@@ -63,6 +64,7 @@
                 <!-- Equipment -->
                 <section class="mb-4">
                   <h3 class="h5">Equipment</h3>
+                  <p>Equipped Weapon: {{ character.equippedWeapon || '—' }}</p>
                   <p>Head: {{ character.head || '—' }}</p>
                   <p>Shoulders: {{ character.shoulders || '—' }}</p>
                   <p>Back: {{ character.back || '—' }}</p>
@@ -75,7 +77,6 @@
                   <p>Necklace: {{ character.necklace || '—' }}</p>
                   <p>Earrings: {{ character.earrings || '—' }}</p>
                   <p>Relic: {{ character.relic || '—' }}</p>
-                  <p>Equipped Weapon: {{ character.equippedWeapon || '—' }}</p>
                 </section>
 
                 <!-- Inventory -->

@@ -218,6 +218,7 @@ public static partial class Module
             Name = inputCharacter.Name,
             Description = inputCharacter.Description,
             Race = inputCharacter.Race,
+            Archetype = inputCharacter.Archetype,
             Profession = inputCharacter.Profession,
             StartingRegion = inputCharacter.StartingRegion,
             CurrentLocation = inputCharacter.StartingRegion,
