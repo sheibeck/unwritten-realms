@@ -56,17 +56,11 @@ async function getUserAuth() {
   }
 }
 
-function onCharacterCreated(charData: any) {
+function onCharacterCreated(charData: AddCharacterInput) {
   console.log('⚡ Character created event received:', charData);
   console.log('🚀 Event-driven call:', JSON.stringify(charData, null, 2));
 
-  charactersComposable.value.addCharacter(
-    charData.name,
-    charData.race,
-    charData.profession,
-    charData.specialization,
-    charData.startingRegionId
-  );
+  charactersComposable.value.addCharacter(charData);
 }
 
 function addCharacterTest() {
@@ -91,7 +85,7 @@ function addCharacterTest() {
     raceAbilities: "Spectral Shift: Blend with shadows, becoming partially incorporeal. Memories of the Past: Recall hidden knowledge from your history.",
     professionAbilities: "Runescript Engraving: Inscribe powerful runes that enhance spells.",
     level: 1,
-    xp: 0,
+    xp: 1,
     equippedWeapon: 'Arcane Quill',
   };
 

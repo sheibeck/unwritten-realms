@@ -62,7 +62,7 @@
 import { ref, nextTick } from 'vue';
 import { marked } from 'marked';
 import type { Character } from '../module_bindings/client/character_type';
-import type { Region } from '../module_bindings/client';
+import type { AddCharacterInput, Region } from '../module_bindings/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
 
@@ -174,9 +174,9 @@ async function handleRequest(url: string, messageContent: string) {
 
     if (jsonOutput.actions) {
      if (jsonOutput.actions && jsonOutput.actions.createCharacter) {
-        const character = jsonOutput.actions.createCharacter;
+        const character: AddCharacterInput = jsonOutput.actions.createCharacter;
 
-        const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined && value !== 0 && value != "");
+        const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined && value !== 0 && value !== "");
 
         if (allPropsHaveValues) {
           AddCharacter(character);
@@ -229,7 +229,7 @@ function scrollToBottom() {
   });
 }
 
-async function AddCharacter(characterData: Character) {
+async function AddCharacter(characterData: AddCharacterInput) {
   console.log('🚀 Emitting characterCreated event:', characterData);
   emit('characterCreated', characterData);
 
