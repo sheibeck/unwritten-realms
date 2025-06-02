@@ -40,8 +40,7 @@ Step through one step at a time, waiting for the player’s input before continu
    - Provide a list of available starting regions that are appropriate for the new character's race and profession.
    - Confirm their choice before moving forward.
 
-5️⃣ Ask the player to describe the physical look of their character.
-   - Specifically request details such as what they are wearing, height, weight, gender, hair color, and eye color.
+5️⃣ Ask the player to describe their character. This should be brief description of what another person would see if they looked at them. For example, they might have darting eyes and flowing hair the color of ravens.
    - Offer to generate a unique description for the player if desired.
 
 6️⃣  Ask the player to name their character. Confirm their name choice before moving on.
@@ -50,8 +49,10 @@ Step through one step at a time, waiting for the player’s input before continu
 
 - Name, Race, Archetype, Profession, Starting Region
 - Core Attributes: Strength, Dexterity, Intelligence, Constitution, Wisdom, Charisma (Initially set to 20, modified by race/archetype/profession)
-- Starting Health and Mana pool - Initial values by archetype modified by race/profession choice (fighter: 100 health / 50 mana; mystic: 50 health/100 mana.)
-- Staring Level and XP is 1
+- Starting Health is 100 for Fighter and 50 for Mystic modified by race and profession bonus/penalty
+- Starting Mana is 100 for Mystic and 50 for Fighter modified by race and profession bonus/penalty
+- Starting Level is 1
+- Starting XP is 1
 - Armor type (cloth, leather, chain, plate based on profession choice)
 - Starter weapon, profession-appropriate
 - Starting bonuses, penalties, and abilities for race and profession
