@@ -88,13 +88,13 @@
               "characterId": {
                 "type": "string"
               },
-              "newRegionId": {
+              "regionId": {
                 "type": "string"
               }
             },
             "required": [
               "characterId",
-              "newRegionId"
+              "regionId"
             ],
             "additionalProperties": false
           },

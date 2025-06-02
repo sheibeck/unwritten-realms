@@ -50,12 +50,13 @@ Step through one step at a time, waiting for the player’s input before continu
 
 - Name, Race, Archetype, Profession, Starting Region
 - Core Attributes: Strength, Dexterity, Intelligence, Constitution, Wisdom, Charisma (Initially set to 20, modified by race/archetype/profession)
-- Starting Health and Mana pool - Initial values by archetype (fighter: 100 health / 50 mana; mystic: 50 health/100 mana. Modified by race/profession choice)
+- Starting Health and Mana pool - Initial values by archetype modified by race/profession choice (fighter: 100 health / 50 mana; mystic: 50 health/100 mana.)
+- Staring Level and XP is 1
 - Armor type (cloth, leather, chain, plate based on profession choice)
 - Starter weapon, profession-appropriate
 - Starting bonuses, penalties, and abilities for race and profession
 
-✅ Provide a narrative wrap-up, describing the character’s choices for character creation.
+✅ Provide a narrative wrap-up, describing the character’s departure from the Verdant Shard to their starting region.
 
 === NARRATIVE STYLE GUIDELINES ===
 

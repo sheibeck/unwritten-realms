@@ -263,6 +263,22 @@
               ],
               "additionalProperties": false
             }
+          },
+          "travel": {
+            "type": "object",
+            "properties": {
+              "characterId": {
+                "type": "string"
+              },
+              "regionId": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "characterId",
+              "regionId"
+            ],
+            "additionalProperties": false
           }
         },
         "additionalProperties": false
