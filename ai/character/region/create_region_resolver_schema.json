@@ -151,6 +151,12 @@
             }
           }
         },
+        "required": [
+          "logEvent",
+          "createRegion",
+          "updateCharacter",
+          "updateConnectedRegions"
+        ],
         "additionalProperties": false
       }
     },

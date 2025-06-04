@@ -13,13 +13,13 @@
       <input
         ref="chatInput"
         v-model="userInput"
-        @keyup.enter="sendMessage"
+        @keyup.enter="sendMessage()"
         class="form-control"
         type="text"
         placeholder="Type your command..."
         :disabled="isLoading"
       />
-      <button class="btn btn-primary" @click="sendMessage">Send</button>
+      <button class="btn btn-primary" @click="sendMessage()">Send</button>
     </div>
 
     <!-- Fixed Bottom Toolbar -->
@@ -92,8 +92,9 @@ if (props.character) {
 
 let threadId: string | null = localStorage.getItem('unwrittenRealmsThreadId') ?? null;
 
-async function sendMessage(overrideMesage?: string) {
-  const message = overrideMesage ?? userInput.value.trim();
+async function sendMessage(overrideMessage?: boolean = false, msg?: string = "", additionalData?: Record<string, any> = {}) {
+  const message = overrideMessage ? msg : userInput.value.trim();
+  
   if (!message) return;
 
   if (nextUserInputResolver) {
@@ -111,8 +112,11 @@ async function sendMessage(overrideMesage?: string) {
   if (message.toLowerCase() == ('awaken') && !hasActiveCharacter.value) {
     action = 'create-character';
   } 
-  else if (message.toLocaleLowerCase().indexOf("travel") > -1) {
+  else if (message.toLocaleLowerCase().indexOf("traveling from") > -1) {
     action = 'travel';
+  }
+  else if (message.toLocaleLowerCase().indexOf("exploring from") > -1) {
+    action = 'explore';
   }
   else {
     action = 'general-action';
@@ -127,7 +131,8 @@ async function sendMessage(overrideMesage?: string) {
           let currentMessage = message;
 
           while (!hasActiveCharacter.value) {
-            await handleRequest(proxiedUrl, currentMessage);
+            const payload = buildPayload(currentMessage, additionalData);
+            await handleRequest(proxiedUrl, payload);
 
             if (!hasActiveCharacter.value) {
               currentMessage = await getNextUserInput();
@@ -137,14 +142,16 @@ async function sendMessage(overrideMesage?: string) {
         }
         break;
     case 'travel':
+    case 'explore':
         {
-          let currentMessage = message;
-          await handleRequest(proxiedUrl, currentMessage);  
+          const payload = buildPayload(message, additionalData);
+          await handleRequest(proxiedUrl, payload);  
         }
         break;
     default:
       {
-        await handleRequest(proxiedUrl, message);
+        const payload = buildPayload(message, additionalData);
+        await handleRequest(proxiedUrl, payload);
       }
       break;
     }
@@ -159,8 +166,8 @@ async function sendMessage(overrideMesage?: string) {
 
 
 // Helper to handle API requests
-async function handleRequest(url: string, messageContent: string) {
-  const payload: Record<string, any> = { message: messageContent };
+async function handleRequest(url: string, payload: Record<string, any>) {
+
   if (threadId) {
     payload.threadId = threadId;
   }
@@ -268,23 +275,22 @@ function toggleTravelPanel() {
 
 async function handleTravel(targetRegion: Region, originRegion: Region) {
   const msg = `Traveling from ${originRegion.name} to ${targetRegion.name}`;
-  
-  sendMessage(msg);
-
-  // Example: Call reducer or n8n workflow here
-  //await callTravelReducerOrWorkflow(targetRegionId);
-
+  sendMessage(true, msg, { targetRegion: targetRegion, originRegion: originRegion });
   showTravel.value = false;
 }
 
 async function handleExplore(originRegion: Region) {
   const msg = `Exploring from ${originRegion.name}`;
-
-  pushMessage(msg);
-  // Example: Call reducer or n8n workflow here
-  //await callTravelReducerOrWorkflow(targetRegionId);
-
+  sendMessage(true, msg, { originRegion: originRegion });
   showTravel.value = false;
+}
+
+function buildPayload(messageContent: string, additionalData: Record<string, any> = {}): Record<string, any> {
+  const payload: Record<string, any> = {
+    message: messageContent,
+    context: additionalData,
+  };
+  return payload;
 }
 </script>
 

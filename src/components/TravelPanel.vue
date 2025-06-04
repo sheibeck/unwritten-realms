@@ -36,11 +36,11 @@
             <li class="list-group-item bg-secondary d-flex justify-content-between align-items-center">
               <div>
                 <strong>Explore a New Region</strong> (Tier Unknown)<br />
-                Cost: ⚡ 200
+                Cost: ⚡ 100
               </div>
               <button
                 class="btn btn-sm btn-primary"
-                :disabled="playerEnergy < 200"
+                :disabled="playerEnergy < 100"
                 @click="$emit('explore', currentRegion)"
               >
                 Travel

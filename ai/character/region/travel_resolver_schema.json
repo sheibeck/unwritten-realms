@@ -1,59 +1,17 @@
 {
-  "name": "region_creation",
+  "name": "region_travel",
+  "strict": false,
   "schema": {
     "type": "object",
     "properties": {
       "narrative": {
         "type": "string",
-        "description": "The AI-generated narrative of the region creation or related output."
+        "description": "The AI-generated narrative of the region travel or related output."
       },
       "actions": {
         "type": "object",
-        "description": "Actions associated with the region creation.",
+        "description": "Actions associated with the region travel.",
         "properties": {
-          "updateRegion": {
-            "type": "object",
-            "description": "Details for updating a region.",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "id": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "climate": {
-                "type": "string"
-              },
-              "resources": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "levelTier": {
-                "type": "integer"
-              },
-              "connectedRegions": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "name",
-              "id",
-              "description",
-              "climate",
-              "resources",
-              "levelTier",
-              "connectedRegions"
-            ],
-            "additionalProperties": false
-          },
           "logEvent": {
             "type": "object",
             "description": "Logging the event details after region creation.",
@@ -87,13 +45,13 @@
               "characterId": {
                 "type": "string"
               },
-              "newRegionId": {
+              "regionId": {
                 "type": "string"
               }
             },
             "required": [
               "characterId",
-              "newRegionId"
+              "regionId"
             ],
             "additionalProperties": false
           },
@@ -128,34 +86,11 @@
               ],
               "additionalProperties": false
             }
-          },
-          "updateConnectedRegions": {
-            "type": "array",
-            "description": "List of updates for existing connected regions to include this new region in their connections.",
-            "items": {
-              "type": "object",
-              "properties": {
-                "regionId": {
-                  "type": "string"
-                },
-                "addConnectedRegionId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "regionId",
-                "addConnectedRegionId"
-              ],
-              "additionalProperties": false
-            }
           }
         },
         "required": [
-          "updateRegion",
           "logEvent",
-          "updateCharacter",
-          "createNpc",
-          "updateConnectedRegions"
+          "updateCharacter"
         ],
         "additionalProperties": false
       }
@@ -165,6 +100,5 @@
       "actions"
     ],
     "additionalProperties": false
-  },
-  "strict": true
+  }
 }
