@@ -61,7 +61,6 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue';
 import { marked } from 'marked';
-import type { Character } from '../module_bindings/client/character_type';
 import type { AddCharacterInput, Region } from '../module_bindings/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
@@ -93,8 +92,8 @@ if (props.character) {
 
 let threadId: string | null = localStorage.getItem('unwrittenRealmsThreadId') ?? null;
 
-async function sendMessage() {
-  const message = userInput.value.trim();
+async function sendMessage(overrideMesage?: string) {
+  const message = overrideMesage ?? userInput.value.trim();
   if (!message) return;
 
   if (nextUserInputResolver) {
@@ -111,26 +110,43 @@ async function sendMessage() {
   let action = '';
   if (message.toLowerCase() == ('awaken') && !hasActiveCharacter.value) {
     action = 'create-character';
-  } else {
+  } 
+  else if (message.toLocaleLowerCase().indexOf("travel") > -1) {
+    action = 'travel';
+  }
+  else {
     action = 'general-action';
   }
 
   const proxiedUrl = `/webhook/${action}`;
 
   try {
-    if (action === 'create-character') {
-      let currentMessage = message;
+    switch (action) {
+      case 'create-character':
+        {
+          let currentMessage = message;
 
-      while (!hasActiveCharacter.value) {
-        await handleRequest(proxiedUrl, currentMessage);
+          while (!hasActiveCharacter.value) {
+            await handleRequest(proxiedUrl, currentMessage);
 
-        if (!hasActiveCharacter.value) {
-          currentMessage = await getNextUserInput();
-          pushMessage(`🗨️ You: ${currentMessage}`);
+            if (!hasActiveCharacter.value) {
+              currentMessage = await getNextUserInput();
+              pushMessage(`🗨️ You: ${currentMessage}`);
+            }
+          }
         }
+        break;
+    case 'travel':
+        {
+          let currentMessage = message;
+          await handleRequest(proxiedUrl, currentMessage);  
+        }
+        break;
+    default:
+      {
+        await handleRequest(proxiedUrl, message);
       }
-    } else {
-      await handleRequest(proxiedUrl, message);
+      break;
     }
   } catch (error) {
     console.error('Fetch error:', error);
@@ -173,7 +189,7 @@ async function handleRequest(url: string, messageContent: string) {
     pushMessage(`🧙 ${jsonOutput.narrative}`);
 
     if (jsonOutput.actions) {
-     if (jsonOutput.actions && jsonOutput.actions.createCharacter) {
+     if (jsonOutput.actions.createCharacter) {
         const character: AddCharacterInput = jsonOutput.actions.createCharacter;
 
         const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined && value !== 0 && value !== "");
@@ -251,9 +267,9 @@ function toggleTravelPanel() {
 }
 
 async function handleTravel(targetRegion: Region, originRegion: Region) {
-  const msg = `Traveling from ${targetRegion.name} to ${originRegion.name}`;
+  const msg = `Traveling from ${originRegion.name} to ${targetRegion.name}`;
   
-  pushMessage(msg);
+  sendMessage(msg);
 
   // Example: Call reducer or n8n workflow here
   //await callTravelReducerOrWorkflow(targetRegionId);

@@ -33,7 +33,7 @@ import { useCharacters } from '../composable/useCharacters';
 import { useRegions } from '../composable/useRegions';
 import { getCurrentUser } from '@aws-amplify/auth';
 import GameInterface from '../components/GameInterface.vue';
-import type { AddCharacterInput, DbConnection, Region } from '../module_bindings/client';
+import type { AddCharacterInput, Character, DbConnection, Region } from '../module_bindings/client';
 
 const { connect, connected } = useSpacetime();
 const usersComposable = ref();
@@ -90,6 +90,7 @@ function addCharacterTest() {
   };
 
   charactersComposable.value.addCharacter(testCharacter);
+  character.value = testCharacter as Character;
 }
 
 async function connectSpacetime() {
