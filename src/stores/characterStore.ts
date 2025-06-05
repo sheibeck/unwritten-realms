@@ -3,8 +3,7 @@ import { ref, computed, shallowRef} from 'vue';
 import type {
   Character,
   AddCharacterInput,
-  UpdateCharacterInput,
-  Region,
+  UpdateCharacterInput
 } from '../module_bindings/client';
 import { useMainStore } from './mainStore';
 import { useRegionStore } from './regionStore';

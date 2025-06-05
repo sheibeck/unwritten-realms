@@ -22,7 +22,7 @@
               class="list-group-item bg-secondary d-flex justify-content-between align-items-center"
             >
               <div>
-                <strong>{{ region.name }}</strong> (Tier {{ region.tier }})<br />
+                <strong>{{ region.name }}</strong> (Tier {{ region.tier }}{{ region.isStarterRegion ? " &mdash; Starter Region" : "" }})<br />
                 Cost: ⚡ {{ region.travelEnergyCost }}
               </div>
               <button
@@ -33,7 +33,7 @@
                 Travel
               </button>
             </li>
-            <li class="list-group-item bg-secondary d-flex justify-content-between align-items-center">
+            <li v-if="!hasMaxLinks" class="list-group-item bg-secondary d-flex justify-content-between align-items-center">
               <div>
                 <strong>Explore a New Region</strong> (Tier Unknown)<br />
                 Cost: ⚡ 100
@@ -57,7 +57,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Region } from '../module_bindings/client';
+import { computed } from 'vue';
+import type { Region } from '@/module_bindings/client';
 
 const props = defineProps<{
   currentRegion: Region;
@@ -72,6 +73,8 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 console.log(`Emits initialized`, emit);
+
+const hasMaxLinks = computed(() => props.linkedRegions.length >= 5);
 </script>
 
 <style scoped>
