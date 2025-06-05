@@ -8,7 +8,7 @@ When a character moves into a region, follow these steps:
 Generate a narrative string describing the new region’s appearance, atmosphere, threats, notable features, history, culture, and significance within the game world.
 Include notable NPCs or creatures using the createNpc action from the schema.
 
-Determine LevelTier based on:
+Determine region Tier based on:
 
 If there are no connecting regions yet, set the tier to 1.
 
