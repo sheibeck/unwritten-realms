@@ -119,7 +119,7 @@ public static partial class Module
         if (maybeCharacter is not Module.Character character)
         {
             Log.Warn($"Update failed. Character not found: {input.CharacterId}");
-            throw new Exception("Character not found.");
+            throw new Exception($"Character not found: {input.CharacterId}");
         }
 
         if (character.UserId != ctx.Sender)

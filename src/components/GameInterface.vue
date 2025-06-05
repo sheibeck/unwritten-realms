@@ -19,7 +19,7 @@
         placeholder="Type your command..."
         :disabled="isLoading"
       />
-      <button class="btn btn-primary" @click="sendMessage()">Send</button>
+      <button class="btn btn-primary" :disabled="isLoading" @click="sendMessage()">Send</button>
     </div>
 
     <!-- Fixed Bottom Toolbar -->
@@ -61,12 +61,12 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue';
 import { marked } from 'marked';
-import type { AddCharacterInput, Region } from '../module_bindings/client';
+import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region } from '../module_bindings/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
 
 const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
-const emit = defineEmits(['characterCreated']);
+const emit = defineEmits(['characterCreated', 'createAndLinkRegion', 'updateCharacter']);
 
 const messages = ref<{ raw: string; html: string }[]>([]);
 const userInput = ref('');
@@ -169,7 +169,7 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
 async function handleRequest(url: string, payload: Record<string, any>) {
 
   if (threadId) {
-    payload.threadId = threadId;
+    //payload.threadId = threadId;
   }
 
   isLoading.value = true;
@@ -185,10 +185,10 @@ async function handleRequest(url: string, payload: Record<string, any>) {
   if (response.ok) {
     const result = await response.json();
     const assistantOutput = result[0].output || '';
-    threadId = result[0].threadId || threadId;
+    //threadId = result[0].threadId || threadId;
 
     if(threadId) {
-      localStorage.setItem('unwrittenRealmsThreadId', threadId);
+      //localStorage.setItem('unwrittenRealmsThreadId', threadId);
     }
 
     const jsonOutput = parseOutput(assistantOutput);
@@ -196,20 +196,29 @@ async function handleRequest(url: string, payload: Record<string, any>) {
     pushMessage(`🧙 ${jsonOutput.narrative}`);
 
     if (jsonOutput.actions) {
-     if (jsonOutput.actions.createCharacter) {
+      if (jsonOutput.actions.createCharacter) {
         const character: AddCharacterInput = jsonOutput.actions.createCharacter;
 
         const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined && value !== 0 && value !== "");
 
         if (allPropsHaveValues) {
-          AddCharacter(character);
+          addCharacter(character);
           hasActiveCharacter.value = true;
           newCharacter.value = true;
         }
       }
+      
+      if (jsonOutput.actions.createRegion) {
+        const region: CreateAndLinkNewRegion = jsonOutput.actions.createRegion;
+        region.fromRegionId = props.character.currentLocation;
+        createAndLinkRegion(region);
+      }
 
-      // You can handle other actions here too:
-      // if (jsonOutput.actions.logEvent) { ... }
+      if (jsonOutput.actions?.logEvent?.type.toLowerCase() === "arrival") {
+        //const character: UpdateCharacterInput = jsonOutput.actions.updateCharacter;
+        const character = { characterId: payload.characterId, currentLocation: payload.context.targetRegion.regionId };
+        updateCharacter(character as UpdateCharacterInput);
+      }
     }
   } else {
     pushMessage('❌ Failed to send message (server error).');
@@ -252,11 +261,23 @@ function scrollToBottom() {
   });
 }
 
-async function AddCharacter(characterData: AddCharacterInput) {
+async function addCharacter(characterData: AddCharacterInput) {
   console.log('🚀 Emitting characterCreated event:', characterData);
   emit('characterCreated', characterData);
 
   pushMessage(`🎉 Character ${characterData.name} has been created!`);
+}
+
+async function createAndLinkRegion(data: CreateAndLinkNewRegion) {
+  console.log('🚀 Emitting createAndLinkRegion event:', data);
+  emit('createAndLinkRegion', data);
+  pushMessage(`🎉 Region ${data.name} has been created!`);
+}
+
+async function updateCharacter(data: UpdateCharacterInput) {
+  console.log('🚀 Emitting updateCharacter event:', data);
+  emit('updateCharacter', data);
+  pushMessage(`🎉 Character has been updated!`);
 }
 
 //Character
@@ -288,6 +309,7 @@ async function handleExplore(originRegion: Region) {
 function buildPayload(messageContent: string, additionalData: Record<string, any> = {}): Record<string, any> {
   const payload: Record<string, any> = {
     message: messageContent,
+    characterId: props.character.characterId,
     context: additionalData,
   };
   return payload;

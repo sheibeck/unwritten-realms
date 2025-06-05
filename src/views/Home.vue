@@ -1,6 +1,6 @@
 <template>
   <div class="home d-flex flex-column flex-fill">
-    <p v-if="!user" class="ms-4 mt-4">
+    <p v-if="!mainStore.currentUser" class="ms-4 mt-4">
       🌫️ <strong>The mists of the Verdant Shard swirl and shudder.</strong><br />
       A voice echoes softly in your mind, neither welcoming nor hostile, but full of knowing:<br /><br />
       <em>“Ah… A soul stands at the threshold, yet the Veil does not know your name.
@@ -8,7 +8,7 @@
       Step back, traveler, and bind your essence — only then may you awaken in this realm.”</em><br /><br />
       ✨ Please log in to tether your spirit to the realm and begin your journey.
     </p>
-    <p v-else-if="!connected" class="ms-4 mt-4">
+    <p v-else-if="!mainStore.connected" class="ms-4 mt-4">
       🔌 Connecting to Realm...
     </p>
     <div v-else class="flex-fill d-flex flex-column">
@@ -16,10 +16,12 @@
       <GameInterface
         v-if="initialized"
         class="flex-fill d-flex flex-column"
-        :character="character"
-        :currentRegion="currentRegion"
-        :linkedRegions="linkedRegions"
+        :character="characterStore.currentCharacter"
+        :currentRegion="regionStore.currentRegion"
+        :linkedRegions="regionStore.linkedRegions"
         @characterCreated="onCharacterCreated"
+        @updateCharacter="onUpdateCharacter"
+        @createAndLinkRegion="onRegionCreatedAndLinked"
       />
     </div>
   </div>
@@ -27,45 +29,41 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { useSpacetime } from '../composable/useSpacetime';
-import { useUsers } from '../composable/useUsers';
-import { useCharacters } from '../composable/useCharacters';
-import { useRegions } from '../composable/useRegions';
-import { getCurrentUser } from '@aws-amplify/auth';
-import GameInterface from '../components/GameInterface.vue';
-import type { AddCharacterInput, Character, DbConnection, Region } from '../module_bindings/client';
+import type {
+  AddCharacterInput,
+  CreateAndLinkNewRegion,
+  DbConnection,
+  UpdateCharacterInput,
+} from '@/module_bindings/client';
+import { useRegionStore } from '@/stores/regionStore'; // ✅ Pinia store
+import GameInterface from '@/components/GameInterface.vue';
+import { useCharacterStore } from '@/stores/characterStore';
+import { useMainStore } from '@/stores/mainStore';
 
-const { connect, connected } = useSpacetime();
-const usersComposable = ref();
-const charactersComposable = ref();
-const regionsComposable = ref();
-
-const user = ref();
-const character = ref();
-const currentRegion = ref();
-const linkedRegions = ref<Region[]>([]);
+const mainStore = useMainStore();           // ✅ store
+const characterStore = useCharacterStore(); // ✅ store
+const regionStore = useRegionStore();       // ✅ store
 const initialized = ref(false);
 
-async function getUserAuth() {
-  try {
-    const { userId } = await getCurrentUser();
-    user.value = userId;
-  } catch {
-    console.warn('⚠️ No Cognito user found — player must log in.');
-    user.value = null;
-  }
-}
+
 
 function onCharacterCreated(charData: AddCharacterInput) {
   console.log('⚡ Character created event received:', charData);
-  console.log('🚀 Event-driven call:', JSON.stringify(charData, null, 2));
+  characterStore.addCharacter(charData);
+}
 
-  charactersComposable.value.addCharacter(charData);
+function onUpdateCharacter(charData: UpdateCharacterInput) {
+  console.log('⚡ Character updated event received:', charData);
+  characterStore.updateCharacter(charData);
+}
+
+function onRegionCreatedAndLinked(data: CreateAndLinkNewRegion) {
+  console.log('⚡ Region created event received:', data);
+  regionStore.createAndLinkNewRegion(data); // ✅ updated
 }
 
 function addCharacterTest() {
   const testCharacter: AddCharacterInput = {
-    // These will be set server-side:
     name: 'Jouctas',
     description: 'Pale, guant and humanoid, a Hollowborn dressed in a drab, gray cloak.',
     race: 'Hollowborn',
@@ -89,58 +87,57 @@ function addCharacterTest() {
     equippedWeapon: 'Arcane Quill',
   };
 
-  charactersComposable.value.addCharacter(testCharacter);
-  character.value = testCharacter as Character;
+  characterStore.addCharacter(testCharacter);
 }
 
 async function connectSpacetime() {
-  const connectedConn = await connect();
+  await mainStore.connectSpacetime();
 
-  if (!connectedConn) {
+  if (!mainStore.connection) {
     console.warn('Could not connect to SpaceTimeDB');
     return;
   }
 
-  usersComposable.value = useUsers(connectedConn);
-  charactersComposable.value = useCharacters(connectedConn);
-  regionsComposable.value = useRegions(connectedConn);
+  regionStore.initialize();    // ✅ initialize store
+  characterStore.initialize(); // ✅ initialize store
 
-  subscribeToUser(connectedConn);
-
-  connectedConn.reducers.onSetName((e) => {
-    console.log(e.event.status);
-  });
+  subscribeToSpaceTime(mainStore.connection);
 }
 
-function subscribeToUser(conn: DbConnection) {
+function getLinkedRegions(ctx: any) {
+  if (characterStore.currentCharacter) {
+    const currentRegion: any = Array.from(ctx.db.region.iter()).find(
+      (r: any) => characterStore.currentCharacter?.currentLocation === r.regionId
+    ) || null;
+    regionStore.setCurrentRegion(currentRegion);
+
+
+    const filteredRegions: any = Array.from(ctx.db.region.iter()).filter(
+      (r: any) => currentRegion.linkedRegionIds.includes(r.regionId)
+    );
+    regionStore.setLinkedRegion(filteredRegions);
+  } else {
+    regionStore.setCurrentRegion(null);
+    regionStore.setLinkedRegion([]);
+  }
+}
+
+function subscribeToSpaceTime(conn: DbConnection) {
   const subscriptions = conn.subscriptionBuilder()
     .onApplied((ctx) => {
       console.log('✅ Subscription initialized.');
 
-      user.value = Array.from(ctx.db.user.iter()).find(
+      const currentUser = Array.from(ctx.db.user.iter()).find(
         u => u.userId.toHexString() === conn.identity?.toHexString()
       ) || null;
+      mainStore.setCurrentUser(currentUser)
 
-      character.value = Array.from(ctx.db.character.iter()).find(
+      const currentCharacter = Array.from(ctx.db.character.iter()).find(
         c => c.userId.toHexString() === conn.identity?.toHexString()
       ) || null;
+      characterStore.setCurrentCharacter(currentCharacter);
 
-      if (character.value) {
-        currentRegion.value = Array.from(ctx.db.region.iter()).find(
-          r => character.value.currentLocation === r.regionId
-        ) || null;
-
-        const filteredRegions = Array.from(ctx.db.region.iter()).filter(
-          r => currentRegion.value?.linkedRegionIds.includes(r.regionId)
-        );
-
-        // ✅ Update array in place to preserve reactivity
-        linkedRegions.value.splice(0, linkedRegions.value.length, ...filteredRegions);
-      } else {
-        currentRegion.value = null;
-        linkedRegions.value.splice(0, linkedRegions.value.length); // clear array
-      }
-
+      getLinkedRegions(ctx);
       initialized.value = true;
     })
     .onError((e) => {
@@ -152,14 +149,21 @@ function subscribeToUser(conn: DbConnection) {
       `SELECT * FROM region`,
     ]);
 
+  conn.reducers.onCreateAndLinkNewRegion((e) => {
+    if (e.event.status.tag === 'Failed') {
+      console.error('CreateAndLinkNewRegion failed:', e.event.status.value);
+    } else {
+      console.log('CreateAndLinkNewRegion succeeded');
+    }
+  });
+
   console.log(`Subscriptions active`, subscriptions);
 }
 
-
 onMounted(async () => {
-  await getUserAuth();
+  await mainStore.authenticateUser();
 
-  if (user.value) {
+  if (mainStore.currentUserId) {
     await connectSpacetime();
   } else {
     console.warn('User is not logged in — skipping SpaceTimeDB connection.');

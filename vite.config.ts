@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import basicSsl from '@vitejs/plugin-basic-ssl'
+import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -14,5 +15,10 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/webhook/, '/webhook'),
       }
     }
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
   },
 })

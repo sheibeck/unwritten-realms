@@ -79,6 +79,8 @@ public static partial class Module
         int tier,
         int travelEnergyCost)
     {
+        Log.Info($"[DEBUG] Attempting to CreateAndLinkNewRegion");
+
         var fromRegionOpt = ctx.Db.region.RegionId.Find(fromRegionId);
         if (fromRegionOpt is not { } fromRegion)
             throw new Exception("From-region not found.");
@@ -86,9 +88,12 @@ public static partial class Module
         if (fromRegion.LinkedRegionIds.Count >= 5)
             throw new Exception($"{fromRegion.Name} cannot link to more than 5 regions.");
 
+        var regionId = Guid.NewGuid().ToString("N");
+        Log.Info($"[DEBUG] Attempting to insert Region with ID: {regionId}");
+
         var newRegion = ctx.Db.region.Insert(new Region
         {
-            RegionId = Guid.NewGuid().ToString("N"),
+            RegionId = regionId,
             Name = name,
             Description = description,
             Climate = climate,
