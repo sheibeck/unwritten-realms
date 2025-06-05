@@ -230,35 +230,35 @@ export class RemoteReducers {
     this.connection.offReducer("ClientDisconnected", callback);
   }
 
-  createAndLinkNewRegion(fromRegionId: string, name: string, description: string, climate: string, culture: string, tier: number, travelEnergyCost: number) {
-    const __args = { fromRegionId, name, description, climate, culture, tier, travelEnergyCost };
+  createAndLinkNewRegion(fromRegionId: string, name: string, description: string, climate: string, culture: string, tier: number, travelEnergyCost: number, resources: string[]) {
+    const __args = { fromRegionId, name, description, climate, culture, tier, travelEnergyCost, resources };
     let __writer = new BinaryWriter(1024);
     CreateAndLinkNewRegion.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("CreateAndLinkNewRegion", __argsBuffer, this.setCallReducerFlags.createAndLinkNewRegionFlags);
   }
 
-  onCreateAndLinkNewRegion(callback: (ctx: ReducerEventContext, fromRegionId: string, name: string, description: string, climate: string, culture: string, tier: number, travelEnergyCost: number) => void) {
+  onCreateAndLinkNewRegion(callback: (ctx: ReducerEventContext, fromRegionId: string, name: string, description: string, climate: string, culture: string, tier: number, travelEnergyCost: number, resources: string[]) => void) {
     this.connection.onReducer("CreateAndLinkNewRegion", callback);
   }
 
-  removeOnCreateAndLinkNewRegion(callback: (ctx: ReducerEventContext, fromRegionId: string, name: string, description: string, climate: string, culture: string, tier: number, travelEnergyCost: number) => void) {
+  removeOnCreateAndLinkNewRegion(callback: (ctx: ReducerEventContext, fromRegionId: string, name: string, description: string, climate: string, culture: string, tier: number, travelEnergyCost: number, resources: string[]) => void) {
     this.connection.offReducer("CreateAndLinkNewRegion", callback);
   }
 
-  createStarterRegion(name: string, description: string, climate: string, culture: string) {
-    const __args = { name, description, climate, culture };
+  createStarterRegion(name: string, description: string, climate: string, culture: string, resources: string[]) {
+    const __args = { name, description, climate, culture, resources };
     let __writer = new BinaryWriter(1024);
     CreateStarterRegion.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("CreateStarterRegion", __argsBuffer, this.setCallReducerFlags.createStarterRegionFlags);
   }
 
-  onCreateStarterRegion(callback: (ctx: ReducerEventContext, name: string, description: string, climate: string, culture: string) => void) {
+  onCreateStarterRegion(callback: (ctx: ReducerEventContext, name: string, description: string, climate: string, culture: string, resources: string[]) => void) {
     this.connection.onReducer("CreateStarterRegion", callback);
   }
 
-  removeOnCreateStarterRegion(callback: (ctx: ReducerEventContext, name: string, description: string, climate: string, culture: string) => void) {
+  removeOnCreateStarterRegion(callback: (ctx: ReducerEventContext, name: string, description: string, climate: string, culture: string, resources: string[]) => void) {
     this.connection.offReducer("CreateStarterRegion", callback);
   }
 

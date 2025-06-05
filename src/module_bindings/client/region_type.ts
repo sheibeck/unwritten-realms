@@ -40,6 +40,7 @@ export type Region = {
   tier: number,
   isStarterRegion: boolean,
   linkedRegionIds: string[],
+  resources: string[],
 };
 
 /**
@@ -61,6 +62,7 @@ export namespace Region {
       new ProductTypeElement("tier", AlgebraicType.createI32Type()),
       new ProductTypeElement("isStarterRegion", AlgebraicType.createBoolType()),
       new ProductTypeElement("linkedRegionIds", AlgebraicType.createArrayType(AlgebraicType.createStringType())),
+      new ProductTypeElement("resources", AlgebraicType.createArrayType(AlgebraicType.createStringType())),
     ]);
   }
 

@@ -15,10 +15,11 @@ public static partial class Module
         public int Tier;                       // 1-5
         public bool IsStarterRegion;           // entry zone or not
         public List<string> LinkedRegionIds;   // list of linked region IDs (max 5)
+        public List<string> Resources;
     }
 
     [Reducer]
-    public static void CreateStarterRegion(ReducerContext ctx, string name, string description, string climate, string culture)
+    public static void CreateStarterRegion(ReducerContext ctx, string name, string description, string climate, string culture, List<string> resources)
     {
         var region = ctx.Db.region.Insert(new Region
         {
@@ -30,6 +31,7 @@ public static partial class Module
             TravelEnergyCost = 0,
             Tier = 1,
             IsStarterRegion = true,
+            Resources = resources,
             LinkedRegionIds = new List<string>()
         });
 
@@ -77,7 +79,8 @@ public static partial class Module
         string climate,
         string culture,
         int tier,
-        int travelEnergyCost)
+        int travelEnergyCost,
+        List<string> resources)
     {
         Log.Info($"[DEBUG] Attempting to CreateAndLinkNewRegion");
 
@@ -101,6 +104,7 @@ public static partial class Module
             TravelEnergyCost = travelEnergyCost,
             Tier = tier,
             IsStarterRegion = false,
+            Resources = resources,
             LinkedRegionIds = new List<string> { fromRegion.RegionId }
         });
 

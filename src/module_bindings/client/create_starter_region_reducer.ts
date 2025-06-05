@@ -36,6 +36,7 @@ export type CreateStarterRegion = {
   description: string,
   climate: string,
   culture: string,
+  resources: string[],
 };
 
 /**
@@ -52,6 +53,7 @@ export namespace CreateStarterRegion {
       new ProductTypeElement("description", AlgebraicType.createStringType()),
       new ProductTypeElement("climate", AlgebraicType.createStringType()),
       new ProductTypeElement("culture", AlgebraicType.createStringType()),
+      new ProductTypeElement("resources", AlgebraicType.createArrayType(AlgebraicType.createStringType())),
     ]);
   }
 

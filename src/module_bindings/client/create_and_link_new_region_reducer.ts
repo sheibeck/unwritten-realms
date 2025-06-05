@@ -39,6 +39,7 @@ export type CreateAndLinkNewRegion = {
   culture: string,
   tier: number,
   travelEnergyCost: number,
+  resources: string[],
 };
 
 /**
@@ -58,6 +59,7 @@ export namespace CreateAndLinkNewRegion {
       new ProductTypeElement("culture", AlgebraicType.createStringType()),
       new ProductTypeElement("tier", AlgebraicType.createI32Type()),
       new ProductTypeElement("travelEnergyCost", AlgebraicType.createI32Type()),
+      new ProductTypeElement("resources", AlgebraicType.createArrayType(AlgebraicType.createStringType())),
     ]);
   }
 

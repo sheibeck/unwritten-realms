@@ -19,13 +19,13 @@
               "name": {
                 "type": "string"
               },
-              "id": {
-                "type": "string"
-              },
               "description": {
                 "type": "string"
               },
               "climate": {
+                "type": "string"
+              },
+              "culture": {
                 "type": "string"
               },
               "resources": {
@@ -34,24 +34,17 @@
                   "type": "string"
                 }
               },
-              "levelTier": {
+              "tier": {
                 "type": "integer"
-              },
-              "connectedRegions": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
               }
             },
             "required": [
               "name",
-              "id",
               "description",
               "climate",
+              "culture",
               "resources",
-              "levelTier",
-              "connectedRegions"
+              "tier"
             ],
             "additionalProperties": false
           },
@@ -78,23 +71,6 @@
             "required": [
               "type",
               "details"
-            ],
-            "additionalProperties": false
-          },
-          "updateCharacter": {
-            "type": "object",
-            "description": "Updating the character's new location after moving into the region.",
-            "properties": {
-              "characterId": {
-                "type": "string"
-              },
-              "regionId": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "characterId",
-              "regionId"
             ],
             "additionalProperties": false
           },
@@ -129,33 +105,11 @@
               ],
               "additionalProperties": false
             }
-          },
-          "updateConnectedRegions": {
-            "type": "array",
-            "description": "List of updates for existing connected regions to include this new region in their connections.",
-            "items": {
-              "type": "object",
-              "properties": {
-                "regionId": {
-                  "type": "string"
-                },
-                "addConnectedRegionId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "regionId",
-                "addConnectedRegionId"
-              ],
-              "additionalProperties": false
-            }
           }
         },
         "required": [
           "logEvent",
-          "createRegion",
-          "updateCharacter",
-          "updateConnectedRegions"
+          "createRegion"
         ],
         "additionalProperties": false
       }

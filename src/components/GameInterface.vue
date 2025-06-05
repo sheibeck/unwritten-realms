@@ -64,7 +64,9 @@ import { marked } from 'marked';
 import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region } from '../module_bindings/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
+import { useCharacterStore } from '@/stores/characterStore';
 
+const characterStore = useCharacterStore();
 const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
 const emit = defineEmits(['characterCreated', 'createAndLinkRegion', 'updateCharacter']);
 
@@ -109,7 +111,7 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
   userInput.value = '';
 
   let action = '';
-  if (message.toLowerCase() == ('awaken') && !hasActiveCharacter.value) {
+  if (message.toLowerCase() === ('awaken') && !hasActiveCharacter.value) {
     action = 'create-character';
   } 
   else if (message.toLocaleLowerCase().indexOf("traveling from") > -1) {
@@ -142,6 +144,11 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
         }
         break;
     case 'travel':
+        {
+          pushMessage(`🧙 ${additionalData.targetRegion.description}`);
+          characterStore.setCurrentCharacterLocation(additionalData.targetRegion.regionId);
+        }
+        break;
     case 'explore':
         {
           const payload = buildPayload(message, additionalData);
@@ -202,7 +209,7 @@ async function handleRequest(url: string, payload: Record<string, any>) {
         const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined && value !== 0 && value !== "");
 
         if (allPropsHaveValues) {
-          addCharacter(character);
+          await addCharacter(character);
           hasActiveCharacter.value = true;
           newCharacter.value = true;
         }
@@ -211,13 +218,14 @@ async function handleRequest(url: string, payload: Record<string, any>) {
       if (jsonOutput.actions.createRegion) {
         const region: CreateAndLinkNewRegion = jsonOutput.actions.createRegion;
         region.fromRegionId = props.character.currentLocation;
-        createAndLinkRegion(region);
+        region.travelEnergyCost = 100;
+        await createAndLinkRegion(region);
       }
 
       if (jsonOutput.actions?.logEvent?.type.toLowerCase() === "arrival") {
         //const character: UpdateCharacterInput = jsonOutput.actions.updateCharacter;
         const character = { characterId: payload.characterId, currentLocation: payload.context.targetRegion.regionId };
-        updateCharacter(character as UpdateCharacterInput);
+        await updateCharacter(character as UpdateCharacterInput);
       }
     }
   } else {

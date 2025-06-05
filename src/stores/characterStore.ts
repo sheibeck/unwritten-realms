@@ -29,7 +29,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       characters.value = updated;
       console.log('🧙‍♂️ New character inserted:', updated);
 
-      if (character.userId.toHexString() == mainStore.currentUser?.userId.toHexString()) {
+      if (character.userId.toHexString() === mainStore.currentUser?.userId.toHexString()) {
         currentCharacter.value = character;
       }
     });
@@ -41,25 +41,16 @@ export const useCharacterStore = defineStore('characterStore', () => {
       characters.value = updated;
       console.log('🧙‍♂️ Updated character:', updated);
 
-      if (newCharacter.userId.toHexString() == mainStore.currentUser?.userId.toHexString()) {
+      if (newCharacter.userId.toHexString() === mainStore.currentUser?.userId.toHexString()) {
         currentCharacter.value = newCharacter;
 
         if (oldCharacter.currentLocation !== newCharacter.currentLocation) {
-          const findRegionById = (id: string): Region | undefined => {
-            return regionStore.regions.get(id);
-          };
           
-          const newRegion = findRegionById(newCharacter.currentLocation);
+          const newRegion = regionStore.findRegionById(newCharacter.currentLocation);
           if (newRegion) {
             regionStore.setCurrentRegion(newRegion);
-            
-           
-            const filteredRegions = (targetRegionId: string): Region[] => {
-              return Array.from(regionStore.regions.values()).filter(region =>
-                region.linkedRegionIds.includes(targetRegionId)
-              );
-            };
-            regionStore.setLinkedRegion(filteredRegions(newRegion.regionId));
+            const connectedRegions = regionStore.findConnectedRegions(newRegion.regionId);         
+            regionStore.setLinkedRegion(connectedRegions);
           }
         }
       }
@@ -71,7 +62,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       characters.value = updated;
       console.log('🧙‍♂️ Deleted character:', updated);
 
-      if (character.userId.toHexString() == mainStore.currentUser?.userId.toHexString()) {
+      if (character.userId.toHexString() === mainStore.currentUser?.userId.toHexString()) {
         currentCharacter.value = null;
       }
     });
@@ -115,6 +106,16 @@ export const useCharacterStore = defineStore('characterStore', () => {
     currentCharacter.value = character;
   }
 
+  function setCurrentCharacterLocation(regionId: string) {
+    if (currentCharacter.value) {
+      const updatedCharacter = { "characterId": currentCharacter.value.characterId, "currentLocation": regionId };
+      updateCharacter(updatedCharacter as UpdateCharacterInput);
+    }
+    else {
+      console.error("No current character!");
+    }
+  }
+
   return {
     characters,
     initialize,
@@ -122,5 +123,6 @@ export const useCharacterStore = defineStore('characterStore', () => {
     updateCharacter,
     setCurrentCharacter,
     currentCharacter,
+    setCurrentCharacterLocation,
   };
 });

@@ -12,6 +12,7 @@
       🔌 Connecting to Realm...
     </p>
     <div v-else class="flex-fill d-flex flex-column">
+      <button class="" @click="addStarterRegion()">Add Starter Region</button>
       <button class="" @click="addCharacterTest()">Add Test Character</button>
       <GameInterface
         v-if="initialized"
@@ -32,6 +33,7 @@ import { onMounted, ref } from 'vue';
 import type {
   AddCharacterInput,
   CreateAndLinkNewRegion,
+  CreateStarterRegion,
   DbConnection,
   UpdateCharacterInput,
 } from '@/module_bindings/client';
@@ -44,8 +46,6 @@ const mainStore = useMainStore();           // ✅ store
 const characterStore = useCharacterStore(); // ✅ store
 const regionStore = useRegionStore();       // ✅ store
 const initialized = ref(false);
-
-
 
 function onCharacterCreated(charData: AddCharacterInput) {
   console.log('⚡ Character created event received:', charData);
@@ -62,32 +62,42 @@ function onRegionCreatedAndLinked(data: CreateAndLinkNewRegion) {
   regionStore.createAndLinkNewRegion(data); // ✅ updated
 }
 
-function addCharacterTest() {
-  const testCharacter: AddCharacterInput = {
-    name: 'Jouctas',
-    description: 'Pale, guant and humanoid, a Hollowborn dressed in a drab, gray cloak.',
-    race: 'Hollowborn',
-    archetype: 'Mystic',
-    profession: 'Runescribe',
-    startingRegion: 'cd7cd7b7686d4f77b5ea76901e866875',
-    strength: 6,
-    dexterity: 5,
-    intelligence: 10,
-    constitution: 4,
-    wisdom: 7,
-    charisma: 4,
-    maxHealth: 40,
-    currentHealth: 40,
-    maxMana: 40,
-    currentMana: 40,
-    raceAbilities: "Spectral Shift: Blend with shadows, becoming partially incorporeal. Memories of the Past: Recall hidden knowledge from your history.",
-    professionAbilities: "Runescript Engraving: Inscribe powerful runes that enhance spells.",
-    level: 1,
-    xp: 1,
-    equippedWeapon: 'Arcane Quill',
-  };
+async function addStarterRegion() {
+  const testStarterRegion: CreateStarterRegion = { "name": "Hollow Hill", "description": "A hilly outcropping that overlooks a desolate valley. A small town is here", "climate": "Rainy", "culture": "Scavengers", "resources": ['Rocks', 'Salt', 'Bone Fragments'] };
+  await regionStore.createStarterRegion(testStarterRegion);
+}
 
-  characterStore.addCharacter(testCharacter);
+async function addCharacterTest() {
+
+  const createdRegion = regionStore.findRegionByName("Hollow Hill");
+
+  if (createdRegion) {
+    const testCharacter: AddCharacterInput = {
+      name: 'Jouctas',
+      description: 'Pale, guant and humanoid, a Hollowborn dressed in a drab, gray cloak.',
+      race: 'Hollowborn',
+      archetype: 'Mystic',
+      profession: 'Runescribe',
+      startingRegion: createdRegion.regionId,
+      strength: 6,
+      dexterity: 5,
+      intelligence: 10,
+      constitution: 4,
+      wisdom: 7,
+      charisma: 4,
+      maxHealth: 40,
+      currentHealth: 40,
+      maxMana: 40,
+      currentMana: 40,
+      raceAbilities: "Spectral Shift: Blend with shadows, becoming partially incorporeal. Memories of the Past: Recall hidden knowledge from your history.",
+      professionAbilities: "Runescript Engraving: Inscribe powerful runes that enhance spells.",
+      level: 1,
+      xp: 1,
+      equippedWeapon: 'Arcane Quill',
+    };
+
+    await characterStore.addCharacter(testCharacter);
+  }
 }
 
 async function connectSpacetime() {
@@ -110,7 +120,6 @@ function getLinkedRegions(ctx: any) {
       (r: any) => characterStore.currentCharacter?.currentLocation === r.regionId
     ) || null;
     regionStore.setCurrentRegion(currentRegion);
-
 
     const filteredRegions: any = Array.from(ctx.db.region.iter()).filter(
       (r: any) => currentRegion.linkedRegionIds.includes(r.regionId)
