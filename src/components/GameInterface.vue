@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, onMounted } from 'vue';
 import { marked } from 'marked';
 import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region } from '../module_bindings/client';
 import TravelPanel from './TravelPanel.vue';
@@ -92,7 +92,7 @@ if (props.character) {
   pushMessage('Type `Awaken` to forge your destiny and begin your journey.');
 }
 
-let threadId: string | null = localStorage.getItem('unwrittenRealmsThreadId') ?? null;
+const activeGameThreadId = ref<string | null>(null);
 
 async function sendMessage(overrideMessage?: boolean = false, msg?: string = "", additionalData?: Record<string, any> = {}) {
   const message = overrideMessage ? msg : userInput.value.trim();
@@ -114,10 +114,10 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
   if (message.toLowerCase() === ('awaken') && !hasActiveCharacter.value) {
     action = 'create-character';
   } 
-  else if (message.toLocaleLowerCase().indexOf("traveling from") > -1) {
+  else if (message.toLocaleLowerCase().indexOf("traveling from") > -1 && overrideMessage) {
     action = 'travel';
   }
-  else if (message.toLocaleLowerCase().indexOf("exploring from") > -1) {
+  else if (message.toLocaleLowerCase().indexOf("exploring from") > -1 && overrideMessage) {
     action = 'explore';
   }
   else if (message.toLocaleLowerCase() === "look") {
@@ -127,48 +127,58 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
     action = 'general-action';
   }
 
-  const proxiedUrl = `/webhook/uwengine`;
-
   try {
     switch (action) {
-    case 'look':
-      {
-        pushMessage(`🧙 ${props.currentRegion.fullDescription}`);
-      }
-      break;
-    case 'travel':
+      case 'look':
         {
-          pushMessage(`🧙 ${additionalData.targetRegion.description}`);
-          characterStore.setCurrentCharacterLocation(additionalData.targetRegion);
+          pushMessage(`🧙 ${props.currentRegion.fullDescription}`);
         }
         break;
-    case 'explore':
+      case 'travel':
+          {
+            pushMessage(`🧙 ${additionalData.targetRegion.description}`);
+            characterStore.setCurrentCharacterLocation(additionalData.targetRegion);
+          }
+          break;
+      case 'explore':
+          {
+            const payload = buildPayload(action, message, additionalData);
+            await handleRequest(action, payload);  
+          }
+          break;
+      case 'create-character':
         {
-          const payload = buildPayload(action, message, additionalData);
-          await handleRequest(proxiedUrl, payload);  
-        }
-        break;
-    case 'create-character':
-      {
-        let currentMessage = message;
+          let currentMessage = message;
 
-        while (!hasActiveCharacter.value) {
-          const payload = buildPayload(action, currentMessage, additionalData);
-          await handleRequest(proxiedUrl, payload);
+          while (!hasActiveCharacter.value) {
+            const payload = buildPayload(action, currentMessage, additionalData);
 
-          if (!hasActiveCharacter.value) {
-            currentMessage = await getNextUserInput();
-            pushMessage(`🗨️ You: ${currentMessage}`);
+            if (activeGameThreadId.value) {
+              payload.threadId = activeGameThreadId.value;
+            }
+
+            await handleRequest(action, payload);
+
+            if (!hasActiveCharacter.value) {
+              currentMessage = await getNextUserInput();
+              pushMessage(`🗨️ You: ${currentMessage}`);
+            }
           }
         }
-      }
-      break;
-    default:
-      {
-        const payload = buildPayload(action, message, additionalData);
-        await handleRequest(proxiedUrl, payload);
-      }
-      break;
+        break;
+      default:
+        {
+          //WORLD ENGINE RESOLVER
+          const payload = buildPayload(action, message, {
+            ...buildContext()
+          });
+
+          if (activeGameThreadId.value) {
+            payload.threadId = activeGameThreadId.value;
+          }
+          await handleRequest(action, payload);
+        }
+        break;
     }
   } catch (error) {
     console.error('Fetch error:', error);
@@ -179,13 +189,20 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
   scrollToBottom();
 }
 
+function buildContext() {
+  const context = {
+    "character": props.character,
+    "region": props.currentRegion
+  }
+
+  delete context.character.userId;
+
+  return context;
+}
 
 // Helper to handle API requests
-async function handleRequest(url: string, payload: Record<string, any>) {
-
-  if (threadId) {
-    //payload.threadId = threadId;
-  }
+async function handleRequest(action: string, payload: Record<string, any>) {
+  const url = `/webhook/uwengine`;
 
   isLoading.value = true;
 
@@ -200,12 +217,6 @@ async function handleRequest(url: string, payload: Record<string, any>) {
   if (response.ok) {
     const result = await response.json();
     const assistantOutput = result[0].output || '';
-    //threadId = result[0].threadId || threadId;
-
-    if(threadId) {
-      //localStorage.setItem('unwrittenRealmsThreadId', threadId);
-    }
-
     const jsonOutput = parseOutput(assistantOutput);
 
     pushMessage(`🧙 ${jsonOutput.narrative}`);
@@ -235,6 +246,10 @@ async function handleRequest(url: string, payload: Record<string, any>) {
         const character = { characterId: payload.characterId, currentLocation: payload.context.targetRegion.regionId };
         await updateCharacter(character as UpdateCharacterInput);
       }
+
+      if (action === "general-action" || action === "create-character") {
+        updateMainThread(result[0].threadId || activeGameThreadId.value);
+      }
     }
   } else {
     pushMessage(getErrorMessage());
@@ -247,6 +262,13 @@ async function pushMessage(message: string) {
 
   await nextTick();
   scrollToBottom(); 
+}
+
+function updateMainThread(threadId: string) {
+  if(threadId) {
+    localStorage.setItem('unwrittenRealmsThreadId', threadId);
+  }
+  activeGameThreadId.value = threadId;
 }
 
 function parseOutput(output: string) {
@@ -350,6 +372,10 @@ function buildPayload(action: string, messageContent: string, additionalData: Re
   };
   return payload;
 }
+
+onMounted(() => {
+  activeGameThreadId.value = localStorage.getItem('unwrittenRealmsThreadId') ?? null;
+})
 </script>
 
 <style lang="scss" scoped>
