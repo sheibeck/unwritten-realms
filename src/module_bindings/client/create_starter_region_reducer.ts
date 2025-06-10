@@ -34,6 +34,7 @@ import {
 export type CreateStarterRegion = {
   name: string,
   description: string,
+  fullDescription: string,
   climate: string,
   culture: string,
   resources: string[],
@@ -51,6 +52,7 @@ export namespace CreateStarterRegion {
     return AlgebraicType.createProductType([
       new ProductTypeElement("name", AlgebraicType.createStringType()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
+      new ProductTypeElement("fullDescription", AlgebraicType.createStringType()),
       new ProductTypeElement("climate", AlgebraicType.createStringType()),
       new ProductTypeElement("culture", AlgebraicType.createStringType()),
       new ProductTypeElement("resources", AlgebraicType.createArrayType(AlgebraicType.createStringType())),

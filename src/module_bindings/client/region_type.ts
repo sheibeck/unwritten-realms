@@ -33,6 +33,7 @@ import {
 export type Region = {
   regionId: string,
   description: string,
+  fullDescription: string,
   name: string,
   climate: string,
   culture: string,
@@ -55,6 +56,7 @@ export namespace Region {
     return AlgebraicType.createProductType([
       new ProductTypeElement("regionId", AlgebraicType.createStringType()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
+      new ProductTypeElement("fullDescription", AlgebraicType.createStringType()),
       new ProductTypeElement("name", AlgebraicType.createStringType()),
       new ProductTypeElement("climate", AlgebraicType.createStringType()),
       new ProductTypeElement("culture", AlgebraicType.createStringType()),

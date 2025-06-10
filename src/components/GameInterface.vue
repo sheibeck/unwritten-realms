@@ -124,7 +124,7 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
     action = 'general-action';
   }
 
-  const proxiedUrl = `/webhook/${action}`;
+  const proxiedUrl = `/webhook/uwengine`;
 
   try {
     switch (action) {
@@ -133,7 +133,7 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
           let currentMessage = message;
 
           while (!hasActiveCharacter.value) {
-            const payload = buildPayload(currentMessage, additionalData);
+            const payload = buildPayload(action, currentMessage, additionalData);
             await handleRequest(proxiedUrl, payload);
 
             if (!hasActiveCharacter.value) {
@@ -151,13 +151,13 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
         break;
     case 'explore':
         {
-          const payload = buildPayload(message, additionalData);
+          const payload = buildPayload(action, message, additionalData);
           await handleRequest(proxiedUrl, payload);  
         }
         break;
     default:
       {
-        const payload = buildPayload(message, additionalData);
+        const payload = buildPayload(action, message, additionalData);
         await handleRequest(proxiedUrl, payload);
       }
       break;
@@ -217,13 +217,13 @@ async function handleRequest(url: string, payload: Record<string, any>) {
       
       if (jsonOutput.actions.createRegion) {
         const region: CreateAndLinkNewRegion = jsonOutput.actions.createRegion;
+        region.fullDescription = jsonOutput.narrative;
         region.fromRegionId = props.character.currentLocation;
         region.travelEnergyCost = 100;
         await createAndLinkRegion(region);
       }
 
       if (jsonOutput.actions?.logEvent?.type.toLowerCase() === "arrival") {
-        //const character: UpdateCharacterInput = jsonOutput.actions.updateCharacter;
         const character = { characterId: payload.characterId, currentLocation: payload.context.targetRegion.regionId };
         await updateCharacter(character as UpdateCharacterInput);
       }
@@ -314,8 +314,9 @@ async function handleExplore(originRegion: Region) {
   showTravel.value = false;
 }
 
-function buildPayload(messageContent: string, additionalData: Record<string, any> = {}): Record<string, any> {
+function buildPayload(action: string, messageContent: string, additionalData: Record<string, any> = {}): Record<string, any> {
   const payload: Record<string, any> = {
+    action: action,
     message: messageContent,
     characterId: props.character.characterId,
     context: additionalData,

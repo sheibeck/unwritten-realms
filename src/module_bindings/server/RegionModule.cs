@@ -8,6 +8,7 @@ public static partial class Module
         [Unique, PrimaryKey]
         public string RegionId;                 // e.g., "crimson-wastes"
         public string Description;
+        public string FullDescription;
         public string Name;                     // e.g., "Crimson Wastes"
         public string Climate;                 // e.g., "Arid, red sands"
         public string Culture;                 // e.g., "Nomadic raiders"
@@ -19,13 +20,14 @@ public static partial class Module
     }
 
     [Reducer]
-    public static void CreateStarterRegion(ReducerContext ctx, string name, string description, string climate, string culture, List<string> resources)
+    public static void CreateStarterRegion(ReducerContext ctx, string name, string description, string fullDescription, string climate, string culture, List<string> resources)
     {
         var region = ctx.Db.region.Insert(new Region
         {
             RegionId = Guid.NewGuid().ToString("N"),
             Name = name,
             Description = description,
+            FullDescription = fullDescription,
             Climate = climate,
             Culture = culture,
             TravelEnergyCost = 0,
@@ -76,6 +78,7 @@ public static partial class Module
         string fromRegionId,
         string name,
         string description,
+        string fullDescription,
         string climate,
         string culture,
         int tier,
@@ -99,6 +102,7 @@ public static partial class Module
             RegionId = regionId,
             Name = name,
             Description = description,
+            FullDescription = fullDescription,
             Climate = climate,
             Culture = culture,
             TravelEnergyCost = travelEnergyCost,
