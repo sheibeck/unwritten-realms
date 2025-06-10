@@ -172,7 +172,7 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
     }
   } catch (error) {
     console.error('Fetch error:', error);
-    pushMessage('❌ Failed to send message (network error).');
+    pushMessage(getErrorMessage());
   }
 
   await nextTick();
@@ -237,7 +237,7 @@ async function handleRequest(url: string, payload: Record<string, any>) {
       }
     }
   } else {
-    pushMessage('❌ Failed to send message (server error).');
+    pushMessage(getErrorMessage());
   }
 }
 
@@ -304,6 +304,15 @@ function getLoadingMessage(): string {
     "The realm holds its breath for your command"
   ];
   return `⏳ ${messages[Math.floor(Math.random() * messages.length)]}...`;
+}
+
+function getErrorMessage(): string {
+  const messages: string[] = [
+    "The Ripple falters. Your words were lost to the shadow. Cast them once more into the stream",
+    "A rift in the weave sundered your message. Resend it to breach the veil",
+    "The lattice glitched—your message vanished into the void. Try again, wanderer"
+  ];
+  return `❌ ${messages[Math.floor(Math.random() * messages.length)]}`;
 }
 
 //Character
