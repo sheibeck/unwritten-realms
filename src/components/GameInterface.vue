@@ -4,7 +4,7 @@
     <div class="chat-window" ref="chatContainer">
      <div v-for="(msg, index) in messages" :key="index" class="message" v-html="msg.html"></div>
       <div v-if="isLoading" class="loading-spinner">
-        ⏳ Waiting for response...
+        {{ getLoadingMessage() }}
       </div>
     </div>
 
@@ -120,6 +120,9 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
   else if (message.toLocaleLowerCase().indexOf("exploring from") > -1) {
     action = 'explore';
   }
+  else if (message.toLocaleLowerCase() === "look") {
+    action = 'look';
+  }
   else {
     action = 'general-action';
   }
@@ -128,25 +131,15 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
 
   try {
     switch (action) {
-      case 'create-character':
-        {
-          let currentMessage = message;
-
-          while (!hasActiveCharacter.value) {
-            const payload = buildPayload(action, currentMessage, additionalData);
-            await handleRequest(proxiedUrl, payload);
-
-            if (!hasActiveCharacter.value) {
-              currentMessage = await getNextUserInput();
-              pushMessage(`🗨️ You: ${currentMessage}`);
-            }
-          }
-        }
-        break;
+    case 'look':
+      {
+        pushMessage(`🧙 ${props.currentRegion.fullDescription}`);
+      }
+      break;
     case 'travel':
         {
           pushMessage(`🧙 ${additionalData.targetRegion.description}`);
-          characterStore.setCurrentCharacterLocation(additionalData.targetRegion.regionId);
+          characterStore.setCurrentCharacterLocation(additionalData.targetRegion);
         }
         break;
     case 'explore':
@@ -155,6 +148,21 @@ async function sendMessage(overrideMessage?: boolean = false, msg?: string = "",
           await handleRequest(proxiedUrl, payload);  
         }
         break;
+    case 'create-character':
+      {
+        let currentMessage = message;
+
+        while (!hasActiveCharacter.value) {
+          const payload = buildPayload(action, currentMessage, additionalData);
+          await handleRequest(proxiedUrl, payload);
+
+          if (!hasActiveCharacter.value) {
+            currentMessage = await getNextUserInput();
+            pushMessage(`🗨️ You: ${currentMessage}`);
+          }
+        }
+      }
+      break;
     default:
       {
         const payload = buildPayload(action, message, additionalData);
@@ -286,6 +294,16 @@ async function updateCharacter(data: UpdateCharacterInput) {
   console.log('🚀 Emitting updateCharacter event:', data);
   emit('updateCharacter', data);
   pushMessage(`🎉 Character has been updated!`);
+}
+
+function getLoadingMessage(): string {
+  const messages: string[] = [
+    "Arcane currents shift as your will takes form",
+    "The aether hums as your intent ripples through the weave",
+    "The winds of fate pause, awaiting your decree",
+    "The realm holds its breath for your command"
+  ];
+  return `⏳ ${messages[Math.floor(Math.random() * messages.length)]}...`;
 }
 
 //Character

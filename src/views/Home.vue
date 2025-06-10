@@ -57,13 +57,23 @@ function onUpdateCharacter(charData: UpdateCharacterInput) {
   characterStore.updateCharacter(charData);
 }
 
-function onRegionCreatedAndLinked(data: CreateAndLinkNewRegion) {
+async function onRegionCreatedAndLinked(data: CreateAndLinkNewRegion) {
   console.log('⚡ Region created event received:', data);
-  regionStore.createAndLinkNewRegion(data); // ✅ updated
+  const newRegion = await regionStore.createAndLinkNewRegion(data); // ✅ updated
+
+  //move character to new region
+  characterStore.setCurrentCharacterLocation(newRegion);
 }
 
 async function addStarterRegion() {
-  const testStarterRegion: CreateStarterRegion = { "name": "Hollow Hill", "description": "A hilly outcropping that overlooks a desolate valley. A small town is here", "climate": "Rainy", "culture": "Scavengers", "resources": ['Rocks', 'Salt', 'Bone Fragments'] };
+  const testStarterRegion: CreateStarterRegion = { 
+    "name": "Hollow Hill", 
+    "description": "A hilly outcropping that overlooks a desolate valley. A small town is here", 
+    "fullDescription": "A really lengthy description of this region from initial crdation",
+    "climate": "Rainy", 
+    "culture": "Scavengers", 
+    "resources": ['Rocks', 'Salt', 'Bone Fragments'] 
+  };
   await regionStore.createStarterRegion(testStarterRegion);
 }
 

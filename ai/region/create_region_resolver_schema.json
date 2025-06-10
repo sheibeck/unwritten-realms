@@ -80,9 +80,6 @@
             "items": {
               "type": "object",
               "properties": {
-                "npcId": {
-                  "type": "string"
-                },
                 "name": {
                   "type": "string"
                 },
@@ -97,7 +94,6 @@
                 }
               },
               "required": [
-                "npcId",
                 "name",
                 "role",
                 "description",
@@ -109,7 +105,8 @@
         },
         "required": [
           "logEvent",
-          "createRegion"
+          "createRegion",
+          "createNpc"
         ],
         "additionalProperties": false
       }

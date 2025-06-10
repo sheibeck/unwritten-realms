@@ -23,8 +23,6 @@ export const useRegionStore = defineStore('regionStore', () => {
       updated.set(region.regionId, region);
       regions.value = updated;
       console.log('🌍 New region inserted:', region);
-
-      characterStore.setCurrentCharacterLocation(region.regionId);
     });
 
     connection.value.db.region.onUpdate((_ctx, oldRegion, newRegion) => {
@@ -43,22 +41,37 @@ export const useRegionStore = defineStore('regionStore', () => {
     });
   }
 
-  function createAndLinkNewRegion(data: CreateAndLinkNewRegion) {
-    if (!connection.value) {
-      console.warn('No active SpaceTimeDB connection');
-      return;
-    }
+  function createAndLinkNewRegion(data: CreateAndLinkNewRegion): Promise<Region> {
+    return new Promise((resolve, reject) => { 
+      if (!connection.value) {
+        console.warn('No active SpaceTimeDB connection');
+        return;
+      }
 
-    connection.value.reducers.createAndLinkNewRegion(
-      data.fromRegionId,
-      data.name,
-      data.description,
-      data.climate,
-      data.culture,
-      data.tier,
-      data.travelEnergyCost,
-      data.resources
-    );
+      const builder = connection.value.subscriptionBuilder();
+      const qid = builder.subscribe([`SELECT * FROM region WHERE name = '${data.name}'`]);
+
+      connection.value.db.region.onInsert((_ctx, region) => {
+        if (region.name === data.name && region.linkedRegionIds.includes(data.fromRegionId)) {
+          resolve(region);
+          qid.unsubscribe();
+        }
+      });
+
+      connection.value.reducers.createAndLinkNewRegion(
+        data.fromRegionId,
+        data.name,
+        data.description,
+        data.fullDescription,
+        data.climate,
+        data.culture,
+        data.tier,
+        data.travelEnergyCost,
+        data.resources
+      );
+
+      setTimeout(() => reject('Timed out waiting for region creation'), 15000);
+    });
   }
 
   function createStarterRegion(data: CreateStarterRegion) {
@@ -70,6 +83,7 @@ export const useRegionStore = defineStore('regionStore', () => {
     connection.value.reducers.createStarterRegion(
       data.name,
       data.description,
+      data.fullDescription,
       data.climate,
       data.culture,
       data.resources,

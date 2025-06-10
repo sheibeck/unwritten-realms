@@ -43,7 +43,7 @@
                 :disabled="playerEnergy < 100"
                 @click="$emit('explore', currentRegion)"
               >
-                Travel
+                Explore
               </button>
             </li>
           </ul>

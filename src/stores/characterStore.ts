@@ -3,7 +3,8 @@ import { ref, computed, shallowRef} from 'vue';
 import type {
   Character,
   AddCharacterInput,
-  UpdateCharacterInput
+  UpdateCharacterInput,
+  Region
 } from '../module_bindings/client';
 import { useMainStore } from './mainStore';
 import { useRegionStore } from './regionStore';
@@ -39,20 +40,6 @@ export const useCharacterStore = defineStore('characterStore', () => {
       updated.set(newCharacter.characterId, newCharacter);
       characters.value = updated;
       console.log('🧙‍♂️ Updated character:', updated);
-
-      if (newCharacter.userId.toHexString() === mainStore.currentUser?.userId.toHexString()) {
-        currentCharacter.value = newCharacter;
-
-        if (oldCharacter.currentLocation !== newCharacter.currentLocation) {
-          
-          const newRegion = regionStore.findRegionById(newCharacter.currentLocation);
-          if (newRegion) {
-            regionStore.setCurrentRegion(newRegion);
-            const connectedRegions = regionStore.findConnectedRegions(newRegion.regionId);         
-            regionStore.setLinkedRegion(connectedRegions);
-          }
-        }
-      }
     });
 
     connection.value.db.character.onDelete((_ctx, character) => {
@@ -105,10 +92,15 @@ export const useCharacterStore = defineStore('characterStore', () => {
     currentCharacter.value = character;
   }
 
-  function setCurrentCharacterLocation(regionId: string) {
+  function setCurrentCharacterLocation(region: Region) {
     if (currentCharacter.value) {
-      const updatedCharacter = { "characterId": currentCharacter.value.characterId, "currentLocation": regionId };
+      const updatedCharacter = { characterId: currentCharacter.value.characterId, currentLocation: region.regionId };
       updateCharacter(updatedCharacter as UpdateCharacterInput);
+
+      //update current region
+      regionStore.setCurrentRegion(region);
+      const connectedRegions = regionStore.findConnectedRegions(region.regionId);         
+      regionStore.setLinkedRegion(connectedRegions);
     }
     else {
       console.error("No current character!");
