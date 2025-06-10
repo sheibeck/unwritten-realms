@@ -46,7 +46,7 @@ export class SpacetimeService {
       }
 
       const tryConnect = () => {
-        console.log(`Attempting connection to SpaceTimeDB (try ${attempts + 1}/${maxRetries})`);
+        console.debug(`Attempting connection to SpaceTimeDB (try ${attempts + 1}/${maxRetries})`);
 
         this.connection = DbConnection.builder()
           .withUri(this.uri)
@@ -55,18 +55,18 @@ export class SpacetimeService {
           .onConnect((conn, identity) => {
             this.identity = identity;
             this.connected = true;
-            console.log('Connected to SpaceTimeDB with identity:', identity.toHexString());
+            console.debug('Connected to SpaceTimeDB with identity:', identity.toHexString());
 
             conn.subscriptionBuilder()
               .onApplied(() => {
-                console.log('SDK client cache initialized.');
+                console.debug('SDK client cache initialized.');
               })
               .subscribe(['SELECT * FROM character', 'SELECT * FROM user']);
 
             resolve(this.connection);
           })
           .onDisconnect(() => {
-            console.log('Disconnected from SpaceTimeDB');
+            console.debug('Disconnected from SpaceTimeDB');
             this.connected = false;
             this.identity = null;
           })
@@ -90,7 +90,7 @@ export class SpacetimeService {
   async disconnect(): Promise<void> {
     if (this.connection) {
       try {
-        console.log('🔌 Disconnecting from SpaceTimeDB...');
+        console.debug('🔌 Disconnecting from SpaceTimeDB...');
         await this.connection.disconnect();  // <-- check if this exists in SDK
       } catch (err) {
         console.warn('⚠️ Error while disconnecting:', err);
@@ -100,7 +100,7 @@ export class SpacetimeService {
         this.connected = false;
       }
     } else {
-      console.log('⚠️ No active SpaceTimeDB connection to disconnect.');
+      console.debug('⚠️ No active SpaceTimeDB connection to disconnect.');
     }
   }
 }

@@ -20,7 +20,7 @@ export const useRegionStore = defineStore('regionStore', () => {
       const updated = new Map(regions.value);
       updated.set(region.regionId, region);
       regions.value = updated;
-      console.log('🌍 New region inserted:', region);
+      console.debug('🌍 New region inserted:', region);
     });
 
     connection.value.db.region.onUpdate((_ctx, oldRegion, newRegion) => {
@@ -28,14 +28,14 @@ export const useRegionStore = defineStore('regionStore', () => {
       updated.delete(oldRegion.regionId);
       updated.set(newRegion.regionId, newRegion);
       regions.value = updated;
-      console.log('🌍 Region updated:', newRegion);
+      console.debug('🌍 Region updated:', newRegion);
     });
 
     connection.value.db.region.onDelete((_ctx, region) => {
       const updated = new Map(regions.value);
       updated.delete(region.regionId);
       regions.value = updated;
-      console.log('🌍 Region deleted:', region);
+      console.debug('🌍 Region deleted:', region);
     });
   }
 

@@ -12,48 +12,6 @@
         "type": "object",
         "description": "Actions to update the game state based on the player's input and the narrative outcome.",
         "properties": {
-          "createRegion": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "id": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "climate": {
-                "type": "string"
-              },
-              "resources": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "tier": {
-                "type": "integer"
-              },
-              "connectedRegions": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "name",
-              "id",
-              "description",
-              "climate",
-              "resources",
-              "tier",
-              "connectedRegions"
-            ],
-            "additionalProperties": false
-          },
           "awardXp": {
             "type": "object",
             "properties": {
@@ -175,27 +133,72 @@
               "additionalProperties": false
             }
           },
-          "advanceQuest": {
+          "createQuest": {
             "type": "object",
             "properties": {
-              "characterId": {
-                "type": "string"
+              "npcId": {
+                "type": "string",
+                "description": "id of the entity that that started the quest"
               },
               "name": {
-                "type": "string"
-              },
-              "step": {
-                "type": "integer"
+                "type": "string",
+                "descriptionn": "The name of the quest"
               },
               "description": {
-                "type": "string"
+                "type": "string",
+                "description": "Description of the quest"
+              },
+              "steps": {
+                "type": "integer",
+                "description": "Total number of steps to complete this quest"
+              },
+              "reward": {
+                "type": "string",
+                "description": "Reward for successful completion. Can be money, xp, items, faction increase, etc."
+              },
+              "penalty": {
+                "type": "string",
+                "description": "(Optional) Penalty for failing quest. Can include loss of money, items, faction reputation, etc."
               }
             },
             "required": [
-              "characterId",
+              "npcId",
               "name",
-              "step",
-              "description"
+              "description",
+              "steps",
+              "reward"
+            ],
+            "additionalProperties": false
+          },
+          "advanceQuest": {
+            "type": "object",
+            "description": "When is quest is accepted, completed, failed, updates to the next step, or changes in some significant way",
+            "properties": {
+              "questId": {
+                "type": "string",
+                "description": "The id of the quest"
+              },
+              "characterId": {
+                "type": "string",
+                "description": "The id of the character who is on this quest"
+              },
+              "step": {
+                "type": "integer",
+                "description": "The updated quest step"
+              },
+              "description": {
+                "type": "string",
+                "description": "Updated quest description"
+              },
+              "status": {
+                "type": "string",
+                "description": "Updated quest status"
+              }
+            },
+            "required": [
+              "questId",
+              "characterId",
+              "status"
             ],
             "additionalProperties": false
           },
@@ -397,8 +400,26 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer",
+                      "type": "string",
                       "description": "Active, completed, failed"
+                    }
+                  }
+                }
+              },
+              "faction": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "Increase or decrease faction reputation",
+                  "properties": {
+                    "factionId": {
+                      "type": "integer"
+                    },
+                    "reputation": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
                     }
                   }
                 }

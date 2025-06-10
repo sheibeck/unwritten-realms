@@ -27,7 +27,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       const updated = new Map(characters.value);
       updated.set(character.characterId, character);
       characters.value = updated;
-      console.log('🧙‍♂️ New character inserted:', updated);
+      console.debug('🧙‍♂️ New character inserted:', updated);
 
       if (character.userId.toHexString() === mainStore.currentUser?.userId.toHexString()) {
         currentCharacter.value = character;
@@ -39,14 +39,14 @@ export const useCharacterStore = defineStore('characterStore', () => {
       updated.delete(oldCharacter.characterId);
       updated.set(newCharacter.characterId, newCharacter);
       characters.value = updated;
-      console.log('🧙‍♂️ Updated character:', updated);
+      console.debug('🧙‍♂️ Updated character:', updated);
     });
 
     connection.value.db.character.onDelete((_ctx, character) => {
       const updated = new Map(characters.value);
       updated.delete(character.characterId);
       characters.value = updated;
-      console.log('🧙‍♂️ Deleted character:', updated);
+      console.debug('🧙‍♂️ Deleted character:', updated);
 
       if (character.userId.toHexString() === mainStore.currentUser?.userId.toHexString()) {
         currentCharacter.value = null;
@@ -57,7 +57,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       if (e.event.status.tag === 'Failed') {
         console.error('AddCharacter failed:', e.event.status.value);
       } else {
-        console.log('AddCharacter succeeded');
+        console.debug('AddCharacter succeeded');
       }
     });
 

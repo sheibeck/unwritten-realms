@@ -65,14 +65,14 @@ const props = defineProps<{
   linkedRegions: Region[];
   playerEnergy: number;
 }>();
-console.log(`Props initialized`, props);
+console.debug(`Props initialized`, props);
 
 const emit = defineEmits<{
   (e: 'travel', toRegion: Region, fromRegion: Region): void;
   (e: 'explore', fromRegion: Region): void;
   (e: 'close'): void;
 }>();
-console.log(`Emits initialized`, emit);
+console.debug(`Emits initialized`, emit);
 
 const hasMaxLinks = computed(() => props.linkedRegions.length >= 5);
 </script>

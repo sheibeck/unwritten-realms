@@ -108,12 +108,12 @@ const props = defineProps<{
   character: Character;
 }>();
 
-console.log(`Props initialized`, props);
+console.debug(`Props initialized`, props);
 
 const emit = defineEmits<{
   (e: 'close'): void;
 }>();
-console.log(`Emits initialized`, emit);
+console.debug(`Emits initialized`, emit);
 </script>
 
 <style scoped>

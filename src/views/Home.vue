@@ -48,17 +48,17 @@ const regionStore = useRegionStore();       // ✅ store
 const initialized = ref(false);
 
 function onCharacterCreated(charData: AddCharacterInput) {
-  console.log('⚡ Character created event received:', charData);
+  console.debug('⚡ Character created event received:', charData);
   characterStore.addCharacter(charData);
 }
 
 function onUpdateCharacter(charData: UpdateCharacterInput) {
-  console.log('⚡ Character updated event received:', charData);
+  console.debug('⚡ Character updated event received:', charData);
   characterStore.updateCharacter(charData);
 }
 
 async function onRegionCreatedAndLinked(data: CreateAndLinkNewRegion) {
-  console.log('⚡ Region created event received:', data);
+  console.debug('⚡ Region created event received:', data);
   const newRegion = await regionStore.createAndLinkNewRegion(data); // ✅ updated
 
   //move character to new region
@@ -144,7 +144,7 @@ function getLinkedRegions(ctx: any) {
 function subscribeToSpaceTime(conn: DbConnection) {
   const subscriptions = conn.subscriptionBuilder()
     .onApplied((ctx) => {
-      console.log('✅ Subscription initialized.');
+      console.debug('✅ Subscription initialized.');
 
       const currentUser = Array.from(ctx.db.user.iter()).find(
         u => u.userId.toHexString() === conn.identity?.toHexString()
@@ -172,11 +172,11 @@ function subscribeToSpaceTime(conn: DbConnection) {
     if (e.event.status.tag === 'Failed') {
       console.error('CreateAndLinkNewRegion failed:', e.event.status.value);
     } else {
-      console.log('CreateAndLinkNewRegion succeeded');
+      console.debug('CreateAndLinkNewRegion succeeded');
     }
   });
 
-  console.log(`Subscriptions active`, subscriptions);
+  console.debug(`Subscriptions active`, subscriptions);
 }
 
 onMounted(async () => {

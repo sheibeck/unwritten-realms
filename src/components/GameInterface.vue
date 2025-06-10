@@ -222,7 +222,12 @@ async function handleRequest(action: string, payload: Record<string, any>) {
     pushMessage(`🧙 ${jsonOutput.narrative}`);
 
     if (jsonOutput.actions) {
-      console.log(`AI Actions: ${Object.keys(jsonOutput.actions).join(", ")}`);
+
+      //output ai responses for debug
+      for (const [key, value] of Object.entries(jsonOutput.actions)) {
+        console.log(`AI Action: ${key}`);
+        console.log("Value:", JSON.stringify(value, null, 2));
+      }
 
       if (jsonOutput.actions.createCharacter) {
         const character: AddCharacterInput = jsonOutput.actions.createCharacter;
@@ -302,20 +307,20 @@ function scrollToBottom() {
 }
 
 async function addCharacter(characterData: AddCharacterInput) {
-  console.log('🚀 Emitting characterCreated event:', characterData);
+  console.debug('🚀 Emitting characterCreated event:', characterData);
   emit('characterCreated', characterData);
 
   pushMessage(`🎉 Character ${characterData.name} has been created!`);
 }
 
 async function createAndLinkRegion(data: CreateAndLinkNewRegion) {
-  console.log('🚀 Emitting createAndLinkRegion event:', data);
+  console.debug('🚀 Emitting createAndLinkRegion event:', data);
   emit('createAndLinkRegion', data);
   pushMessage(`🎉 Region ${data.name} has been created!`);
 }
 
 async function updateCharacter(data: UpdateCharacterInput) {
-  console.log('🚀 Emitting updateCharacter event:', data);
+  console.debug('🚀 Emitting updateCharacter event:', data);
   emit('updateCharacter', data);
   pushMessage(`🎉 Character has been updated!`);
 }
