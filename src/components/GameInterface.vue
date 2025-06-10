@@ -222,6 +222,8 @@ async function handleRequest(action: string, payload: Record<string, any>) {
     pushMessage(`🧙 ${jsonOutput.narrative}`);
 
     if (jsonOutput.actions) {
+      console.log(`AI Actions: ${Object.keys(jsonOutput.actions).join(", ")}`);
+
       if (jsonOutput.actions.createCharacter) {
         const character: AddCharacterInput = jsonOutput.actions.createCharacter;
 

@@ -33,7 +33,7 @@
                   "type": "string"
                 }
               },
-              "levelTier": {
+              "tier": {
                 "type": "integer"
               },
               "connectedRegions": {
@@ -49,35 +49,8 @@
               "description",
               "climate",
               "resources",
-              "levelTier",
+              "tier",
               "connectedRegions"
-            ],
-            "additionalProperties": false
-          },
-          "updateCharacter": {
-            "type": "object",
-            "properties": {
-              "characterId": {
-                "type": "string"
-              },
-              "newRegionId": {
-                "type": "string"
-              },
-              "health": {
-                "type": "integer"
-              },
-              "mana": {
-                "type": "integer"
-              },
-              "statusEffects": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            },
-            "required": [
-              "characterId"
             ],
             "additionalProperties": false
           },
@@ -102,42 +75,116 @@
             "items": {
               "type": "object",
               "properties": {
-                "npcId": {
-                  "type": "string"
-                },
                 "name": {
-                  "type": "string"
-                },
-                "role": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The chosen name for the character."
                 },
                 "description": {
+                  "type": "string",
+                  "description": "A physical description of the character."
+                },
+                "race": {
+                  "type": "string",
+                  "description": "Identifier for chosen race for the character."
+                },
+                "archetype": {
+                  "type": "string",
+                  "description": "Identifier for chosen archetype for the character."
+                },
+                "profession": {
+                  "type": "string",
+                  "description": "Identifier for chosen profession for the character."
+                },
+                "startingRegion": {
+                  "type": "string",
+                  "description": "lowercase region name with non-alphanumeric characters and spaces replaced with _"
+                },
+                "strength": {
+                  "type": "integer"
+                },
+                "dexterity": {
+                  "type": "integer"
+                },
+                "intelligence": {
+                  "type": "integer"
+                },
+                "constitution": {
+                  "type": "integer"
+                },
+                "wisdom": {
+                  "type": "integer"
+                },
+                "charisma": {
+                  "type": "integer"
+                },
+                "maxHealth": {
+                  "type": "integer"
+                },
+                "currentHealth": {
+                  "type": "integer"
+                },
+                "maxMana": {
+                  "type": "integer"
+                },
+                "currentMana": {
+                  "type": "integer"
+                },
+                "raceAbilities": {
                   "type": "string"
                 },
-                "regionId": {
+                "professionAbilities": {
+                  "type": "string"
+                },
+                "armorType": {
+                  "type": "string"
+                },
+                "level": {
+                  "type": "integer"
+                },
+                "xp": {
+                  "type": "integer"
+                },
+                "equippedWeapon": {
                   "type": "string"
                 }
               },
               "required": [
-                "npcId",
                 "name",
-                "role",
                 "description",
-                "regionId"
+                "race",
+                "archetype",
+                "profession",
+                "startingRegion",
+                "strength",
+                "dexterity",
+                "intelligence",
+                "constitution",
+                "wisdom",
+                "charisma",
+                "maxHealth",
+                "currentHealth",
+                "maxMana",
+                "currentMana",
+                "raceAbilities",
+                "professionAbilities",
+                "armorType",
+                "level",
+                "xp",
+                "equippedWeapon"
               ],
               "additionalProperties": false
             }
           },
-          "updateQuestStep": {
+          "advanceQuest": {
             "type": "object",
             "properties": {
               "characterId": {
                 "type": "string"
               },
-              "questId": {
+              "name": {
                 "type": "string"
               },
-              "newStep": {
+              "step": {
                 "type": "integer"
               },
               "description": {
@@ -146,8 +193,8 @@
             },
             "required": [
               "characterId",
-              "questId",
-              "newStep",
+              "name",
+              "step",
               "description"
             ],
             "additionalProperties": false
@@ -157,20 +204,49 @@
             "items": {
               "type": "object",
               "properties": {
-                "itemId": {
-                  "type": "string"
-                },
                 "name": {
                   "type": "string"
                 },
-                "quantity": {
-                  "type": "integer"
+                "grade": {
+                  "type": "string",
+                  "description": "Grade is related to level requirement and can be E,D,C,B,A,S"
+                },
+                "level": {
+                  "type": "integer",
+                  "description": "item level determines overall power and upgradability"
+                },
+                "slot": {
+                  "type": "string"
+                },
+                "armorType": {
+                  "type": "string",
+                  "description": "If item is armor it can be cloth, leather, chain, or plate"
+                },
+                "quality": {
+                  "type": "string",
+                  "description": "common, uncommon, rare, epic, legendary"
+                },
+                "primaryAbilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "secondaryAbilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               },
               "required": [
-                "itemId",
                 "name",
-                "quantity"
+                "grade",
+                "level",
+                "slot",
+                "quality",
+                "primaryAbilities",
+                "secondaryAbilities"
               ],
               "additionalProperties": false
             }
@@ -186,12 +262,22 @@
               },
               "description": {
                 "type": "string"
+              },
+              "characterId": {
+                "type": "string",
+                "description": "Id of the character that triggered the event"
+              },
+              "characterName": {
+                "type": "string",
+                "description": "Name of the character that triggered the event"
               }
             },
             "required": [
               "eventId",
               "name",
-              "description"
+              "description",
+              "characterId",
+              "characterName"
             ],
             "additionalProperties": false
           },
@@ -211,6 +297,25 @@
                 },
                 "description": {
                   "type": "string"
+                },
+                "maxHealth": {
+                  "type": "integer"
+                },
+                "currentHealth": {
+                  "type": "integer"
+                },
+                "maxMana": {
+                  "type": "integer"
+                },
+                "currentMana": {
+                  "type": "integer"
+                },
+                "abilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "known abilities and special attacks"
+                  }
                 }
               },
               "required": [
@@ -222,61 +327,85 @@
               "additionalProperties": false
             }
           },
-          "levelUp": {
+          "factionChange": {
             "type": "object",
             "properties": {
               "characterId": {
                 "type": "string"
               },
-              "newLevel": {
-                "type": "integer"
+              "name": {
+                "type": "string",
+                "description": "Name of the faction"
               },
-              "gainedAbilities": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
+              "change": {
+                "type": "integer",
+                "description": "Change in faction standing"
+              },
+              "effect": {
+                "type": "string",
+                "description": "Effects, abilities, or penalties from the faction"
               }
             },
             "required": [
               "characterId",
-              "newLevel",
-              "gainedAbilities"
+              "name",
+              "change"
             ],
             "additionalProperties": false
           },
-          "updateConnectedRegions": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "regionId": {
-                  "type": "string"
-                },
-                "addConnectedRegionId": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "regionId",
-                "addConnectedRegionId"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "travel": {
+          "updateCharacter": {
             "type": "object",
+            "description": "Update character information",
             "properties": {
               "characterId": {
                 "type": "string"
               },
-              "regionId": {
-                "type": "integer"
+              "professionAbilities": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Gain or lose profession or archetype-based abilities"
+                }
+              },
+              "raceAbilities": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Gain or lose race-based abilities"
+                }
+              },
+              "inventoryItems": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Gain or lose inventory items"
+                }
+              },
+              "quests": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "Gain, advance, complete or fail a quest",
+                  "properties": {
+                    "questId": {
+                      "type": "integer"
+                    },
+                    "step": {
+                      "type": "integer"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "description": "Active, completed, failed"
+                    }
+                  }
+                }
               }
             },
             "required": [
-              "characterId",
-              "regionId"
+              "characterId"
             ],
             "additionalProperties": false
           }

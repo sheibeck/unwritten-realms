@@ -2,14 +2,12 @@ import { defineStore } from 'pinia';
 import { ref, computed, shallowRef } from 'vue';
 import type { CreateAndLinkNewRegion, CreateStarterRegion, Region } from '@/module_bindings/client';
 import { useMainStore } from './mainStore';
-import { useCharacterStore } from './characterStore';
 
 export const useRegionStore = defineStore('regionStore', () => {
   const regions = ref<Map<string, Region>>(new Map());
   const currentRegion = shallowRef<Region | null>();
   const linkedRegions = shallowRef<Array<Region>>([]);
   const mainStore = useMainStore();
-  const characterStore = useCharacterStore();
   const connection = computed(() => mainStore.connection);
 
   function initialize() {

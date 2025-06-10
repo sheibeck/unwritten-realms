@@ -1,231 +1,345 @@
 {
-  "name": "character_creation",
-  "strict": true,
+  "name": "gameplay_loop",
+  "strict": false,
   "schema": {
     "type": "object",
     "properties": {
       "narrative": {
         "type": "string",
-        "description": "The AI generated narrative of the character creation or related output."
+        "description": "The AI-generated narrative response describing the player's action outcome, the world reaction, or new developments."
       },
       "actions": {
         "type": "object",
-        "description": "Actions associated with the character creation.",
+        "description": "Actions to update the game state based on the player's input and the narrative outcome.",
         "properties": {
-          "createCharacter": {
+          "createRegion": {
             "type": "object",
-            "description": "Details for creating a character.",
             "properties": {
               "name": {
-                "type": "string",
-                "description": "The chosen name for the character."
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
               },
               "description": {
-                "type": "string",
-                "description": "A physical description of the character."
+                "type": "string"
               },
-              "race": {
-                "type": "string",
-                "description": "Identifier for chosen race for the character."
+              "climate": {
+                "type": "string"
               },
-              "archetype": {
-                "type": "string",
-                "description": "Identifier for chosen archetype for the character."
+              "resources": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               },
-              "profession": {
-                "type": "string",
-                "description": "Identifier for chosen profession for the character."
+              "tier": {
+                "type": "integer"
               },
-              "startingRegion": {
-                "type": "string",
-                "description": "lowercase region name with non-alphanumeric characters and spaces replaced with _"
-              },
-              "strength": {
-                "type": "integer",
-                "description": "Strength attribute of the character."
-              },
-              "dexterity": {
-                "type": "integer",
-                "description": "Dexterity attribute of the character."
-              },
-              "intelligence": {
-                "type": "integer",
-                "description": "Intelligence attribute of the character."
-              },
-              "constitution": {
-                "type": "integer",
-                "description": "Constitution attribute of the character."
-              },
-              "wisdom": {
-                "type": "integer",
-                "description": "Wisdom attribute of the character."
-              },
-              "charisma": {
-                "type": "integer",
-                "description": "Charisma attribute of the character."
-              },
-              "maxHealth": {
-                "type": "integer",
-                "description": "Maximum health of the character."
-              },
-              "currentHealth": {
-                "type": "integer",
-                "description": "Current health of the character."
-              },
-              "maxMana": {
-                "type": "integer",
-                "description": "Maximum mana of the character."
-              },
-              "currentMana": {
-                "type": "integer",
-                "description": "Current mana of the character."
-              },
-              "raceAbilities": {
-                "type": "string",
-                "description": "Abilities associated with the character's race."
-              },
-              "professionAbilities": {
-                "type": "string",
-                "description": "Abilities associated with the character's profession."
-              },
-              "armorType": {
-                "type": "string",
-                "description": "Armor type associated with the character's profession."
-              },
-              "level": {
-                "type": "integer",
-                "description": "Level of the character."
-              },
-              "xp": {
-                "type": "integer",
-                "description": "Experience points of the character."
-              },
-              "equippedWeapon": {
-                "type": "string",
-                "description": "Equipped weapon used by the character"
+              "connectedRegions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
               "name",
+              "id",
               "description",
-              "race",
-              "archetype",
-              "profession",
-              "startingRegion",
-              "strength",
-              "dexterity",
-              "intelligence",
-              "constitution",
-              "wisdom",
-              "charisma",
-              "maxHealth",
-              "currentHealth",
-              "maxMana",
-              "currentMana",
-              "raceAbilities",
-              "professionAbilities",
-              "armorType",
-              "level",
-              "xp",
-              "equippedWeapon"
+              "climate",
+              "resources",
+              "levelTier",
+              "connectedRegions"
             ],
             "additionalProperties": false
           },
-          "createRace": {
+          "awardXp": {
             "type": "object",
-            "description": "Details for creating a race.",
             "properties": {
-              "id": {
-                "type": "string",
-                "description": "race name with non-alphanumeric characters and spaces replaced with _"
+              "characterId": {
+                "type": "string"
               },
-              "name": {
-                "type": "string",
-                "description": "The name of the race."
-              },
-              "abilities": {
-                "type": "string",
-                "description": "Starting abilities of the race."
+              "amount": {
+                "type": "integer"
               }
             },
             "required": [
-              "id",
-              "name",
-              "abilities"
+              "characterId",
+              "amount"
             ],
             "additionalProperties": false
           },
-          "createProfession": {
+          "createNpc": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The chosen name for the character."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "A physical description of the character."
+                },
+                "race": {
+                  "type": "string",
+                  "description": "Identifier for chosen race for the character."
+                },
+                "archetype": {
+                  "type": "string",
+                  "description": "Identifier for chosen archetype for the character."
+                },
+                "profession": {
+                  "type": "string",
+                  "description": "Identifier for chosen profession for the character."
+                },
+                "startingRegion": {
+                  "type": "string",
+                  "description": "lowercase region name with non-alphanumeric characters and spaces replaced with _"
+                },
+                "strength": {
+                  "type": "integer",
+                  "description": "Strength attribute of the character."
+                },
+                "dexterity": {
+                  "type": "integer",
+                  "description": "Dexterity attribute of the character."
+                },
+                "intelligence": {
+                  "type": "integer",
+                  "description": "Intelligence attribute of the character."
+                },
+                "constitution": {
+                  "type": "integer",
+                  "description": "Constitution attribute of the character."
+                },
+                "wisdom": {
+                  "type": "integer",
+                  "description": "Wisdom attribute of the character."
+                },
+                "charisma": {
+                  "type": "integer",
+                  "description": "Charisma attribute of the character."
+                },
+                "maxHealth": {
+                  "type": "integer",
+                  "description": "Maximum health of the character."
+                },
+                "currentHealth": {
+                  "type": "integer",
+                  "description": "Current health of the character."
+                },
+                "maxMana": {
+                  "type": "integer",
+                  "description": "Maximum mana of the character."
+                },
+                "currentMana": {
+                  "type": "integer",
+                  "description": "Current mana of the character."
+                },
+                "raceAbilities": {
+                  "type": "string",
+                  "description": "Abilities associated with the character's race."
+                },
+                "professionAbilities": {
+                  "type": "string",
+                  "description": "Abilities associated with the character's profession."
+                },
+                "armorType": {
+                  "type": "string",
+                  "description": "Armor type associated with the character's profession."
+                },
+                "level": {
+                  "type": "integer",
+                  "description": "Level of the character."
+                },
+                "xp": {
+                  "type": "integer",
+                  "description": "Experience points of the character."
+                },
+                "equippedWeapon": {
+                  "type": "string",
+                  "description": "Equipped weapon used by the character"
+                }
+              },
+              "required": [
+                "name",
+                "description",
+                "race",
+                "archetype",
+                "profession",
+                "startingRegion",
+                "strength",
+                "dexterity",
+                "intelligence",
+                "constitution",
+                "wisdom",
+                "charisma",
+                "maxHealth",
+                "currentHealth",
+                "maxMana",
+                "currentMana",
+                "raceAbilities",
+                "professionAbilities",
+                "armorType",
+                "level",
+                "xp",
+                "equippedWeapon"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "advanceQuest": {
             "type": "object",
-            "description": "Details for creating a profession.",
             "properties": {
-              "id": {
-                "type": "string",
-                "description": "lowercase profession name with non-alphanumeric characters and spaces replaced with _"
+              "characterId": {
+                "type": "string"
               },
               "name": {
-                "type": "string",
-                "description": "The name of the profession."
+                "type": "string"
               },
-              "abilities": {
-                "type": "string",
-                "description": "Starting abilities of the profession."
+              "step": {
+                "type": "integer"
+              },
+              "description": {
+                "type": "string"
               }
             },
             "required": [
-              "id",
+              "characterId",
               "name",
-              "abilities"
+              "step",
+              "description"
             ],
             "additionalProperties": false
           },
-          "logEvent": {
-            "type": "object",
-            "description": "Logging the event details after character creation.",
-            "properties": {
-              "type": {
-                "type": "string",
-                "description": "Type of the log event."
-              },
-              "details": {
-                "type": "object",
-                "description": "Details of the log event.",
-                "properties": {
-                  "character": {
-                    "type": "string",
-                    "description": "Name of created character"
-                  },
-                  "startingRegion": {
-                    "type": "string",
-                    "description": "Identifier for the starting region."
+          "lootDrop": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "grade": {
+                  "type": "string"
+                },
+                "level": {
+                  "type": "integer"
+                },
+                "slot": {
+                  "type": "string"
+                },
+                "armorType": {
+                  "type": "string",
+                  "description": "If item is armor it can be cloth, leather, chain, or plate"
+                },
+                "quality": {
+                  "type": "string"
+                },
+                "primaryAbilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
                   }
                 },
-                "required": [
-                  "character",
-                  "startingRegion"
-                ],
-                "additionalProperties": false
+                "secondaryAbilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "grade",
+                "level",
+                "slot",
+                "quality",
+                "primaryAbilities",
+                "secondaryAbilities"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "worldEventTrigger": {
+            "type": "object",
+            "properties": {
+              "eventId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
               }
             },
             "required": [
-              "type",
-              "details"
+              "eventId",
+              "name",
+              "description"
+            ],
+            "additionalProperties": false
+          },
+          "spawnEnemy": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "enemyId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "level": {
+                  "type": "integer"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "enemyId",
+                "name",
+                "level",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "levelUp": {
+            "type": "object",
+            "properties": {
+              "characterId": {
+                "type": "string"
+              },
+              "newLevel": {
+                "type": "integer"
+              },
+              "gainedAbilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "characterId",
+              "newLevel",
+              "gainedAbilities"
             ],
             "additionalProperties": false
           }
         },
-        "required": [
-          "createCharacter",
-          "createRace",
-          "createProfession",
-          "logEvent"
-        ],
         "additionalProperties": false
       }
     },
     "required": [
-      "narrative",
-      "actions"
+      "narrative"
     ],
     "additionalProperties": false
   }
