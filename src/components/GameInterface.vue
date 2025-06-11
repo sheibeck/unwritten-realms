@@ -61,13 +61,17 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from 'vue';
 import { marked } from 'marked';
-import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region, type Quest, CharacterQuest, CreateNpcInput } from '../module_bindings/client';
+import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region, type Quest, CreateNpcInput, Npc } from '../module_bindings/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
+import { useRegionStore } from '@/stores/regionStore';
 import { useCharacterStore } from '@/stores/characterStore';
 import { useQuestStore } from '@/stores/questStore';
 import { useNpcStore } from '@/stores/npcStore';
+import { useInteractionEngine } from '@/composables/useInteractionEngine';
 
+const interactionEngine = useInteractionEngine();
+const regionStore = useRegionStore();
 const characterStore = useCharacterStore();
 const questStore = useQuestStore();
 const npcStore = useNpcStore();
@@ -98,221 +102,111 @@ if (props.character) {
 
 const activeGameThreadId = ref<string | null>(null);
 
-async function sendMessage(overrideMessage?: boolean = false, msg?: string = "", additionalData?: Record<string, any> = {}) {
+// Streamlined sendMessage function with local, interaction, and AI delegation
+async function sendMessage(overrideMessage = false, msg = '', additionalData: Record<string, any> = {}) {
   const message = overrideMessage ? msg : userInput.value.trim();
-  
   if (!message) return;
 
-  if (nextUserInputResolver) {
-    // We are waiting in character creation loop → pass back user input
-    nextUserInputResolver(message);
-    nextUserInputResolver = null;
+  // Step 1: Handle interaction response if mid-conversation
+  if (interactionEngine.isAwaiting('awaitingQuestResponse')) {
+    const accepted = await interactionEngine.handleQuestResponse(message);
+    if (accepted) {
+      pushMessage(`📜 Quest accepted.`);
+    } else {
+      pushMessage(`🌀 Quest declined.`);
+    }
     userInput.value = '';
     return;
   }
 
+  // Step 2: Display user message
   pushMessage(`🗨️ You: ${message}`);
   userInput.value = '';
 
-  let action = '';
-  if (message.toLowerCase() === ('awaken') && !hasActiveCharacter.value) {
-    action = 'create-character';
-  } 
-  else if (message.toLocaleLowerCase().indexOf("traveling from") > -1 && overrideMessage) {
-    action = 'travel';
-  }
-  else if (message.toLocaleLowerCase().indexOf("exploring from") > -1 && overrideMessage) {
-    action = 'explore';
-  }
-  else if (message.toLocaleLowerCase() === "look") {
-    action = 'look';
-  }
-  else {
-    action = 'general-action';
+  // Step 3: Route local commands
+  const action = resolveLocalAction(message, overrideMessage);
+
+  if (action === 'look') {
+    pushMessage(`🧙 ${props.currentRegion.fullDescription}`);
+    return;
   }
 
-  try {
-    switch (action) {
-      case 'look':
-        {
-          pushMessage(`🧙 ${props.currentRegion.fullDescription}`);
-        }
-        break;
-      case 'travel':
-          {
-            pushMessage(`🧙 ${additionalData.targetRegion.description}`);
-            characterStore.setCurrentCharacterLocation(additionalData.targetRegion);
-          }
-          break;
-      case 'explore':
-          {
-            const payload = buildPayload(action, message, additionalData);
-            await handleRequest(action, payload);  
-          }
-          break;
-      case 'create-character':
-        {
-          let currentMessage = message;
+  if (action === 'travel') {
+    pushMessage(`🧙 ${additionalData.targetRegion.description}`);
+    characterStore.setCurrentCharacterLocation(additionalData.targetRegion);
+    return;
+  }
 
-          while (!hasActiveCharacter.value) {
-            const payload = buildPayload(action, currentMessage, additionalData);
+  // Step 4: Handle AI-integrated commands
+  if (action === 'create-character') {
+    await handleCharacterCreationLoop(
+      message,
+      buildPayload,
+      async (payload: Function) => fetch('/webhook/uwengine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
+        body: JSON.stringify(payload),
+      }),
+      getNextUserInput,
+      updateMainThread
+    );
+    return;
+  }
 
-            if (activeGameThreadId.value) {
-              payload.threadId = activeGameThreadId.value;
-            }
-
-            await handleRequest(action, payload);
-
-            if (!hasActiveCharacter.value) {
-              currentMessage = await getNextUserInput();
-              pushMessage(`🗨️ You: ${currentMessage}`);
-            }
-          }
-        }
-        break;
-      default:
-        {
-          //WORLD ENGINE RESOLVER
-          const payload = buildPayload(action, message, {
-            ...buildContext()
-          });
-
-          if (activeGameThreadId.value) {
-            payload.threadId = activeGameThreadId.value;
-          }
-          await handleRequest(action, payload);
-        }
-        break;
+  // Default AI interaction
+  if (['explore', 'general-action'].includes(action)) {
+    const payload = buildPayload(action, message, {
+      ...buildContext(),
+      ...additionalData,
+    });
+    if (activeGameThreadId.value) {
+      payload.threadId = activeGameThreadId.value;
     }
-  } catch (error) {
-    console.error('Fetch error:', error);
-    pushMessage(getErrorMessage());
-  }
 
-  await nextTick();
-  scrollToBottom();
+    try {
+      isLoading.value = true;
+      const response = await fetch('/webhook/uwengine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
+        body: JSON.stringify(payload),
+      });
+      isLoading.value = false;
+
+      if (response.ok) {
+        const result = await response.json();
+        await handleAiResponse(result, action);
+      } else {
+        pushMessage(getErrorMessage());
+      }
+    } catch (error) {
+      isLoading.value = false;
+      console.error('Fetch error:', error);
+      pushMessage(getErrorMessage());
+    }
+
+    await nextTick();
+    scrollToBottom();
+  }
 }
 
-function buildContext() {
-  const context = {
-    "character": props.character,
-    "region": props.currentRegion
-  }
-
-  delete context.character.userId;
-
-  return context;
+// Resolves local commands like 'look', 'travel', 'explore', or fallback to 'general-action'
+function resolveLocalAction(message: string, isOverride = false): string {
+  const lower = message.toLowerCase();
+  if (lower === 'look') return 'look';
+  if (isOverride && lower.includes('traveling from')) return 'travel';
+  if (isOverride && lower.includes('exploring from')) return 'explore';
+  if (lower === 'awaken' && !characterStore.currentCharacter) return 'create-character';
+  return 'general-action';
 }
 
-// Helper to handle API requests
-async function handleRequest(action: string, payload: Record<string, any>) {
-  const url = `/webhook/uwengine`;
-
-  isLoading.value = true;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
-    body: JSON.stringify(payload),
-  });
-
-  isLoading.value = false;
-
-  if (response.ok) {
-    const result = await response.json();
-    const assistantOutput = result[0].output || '';
-    const jsonOutput = parseOutput(assistantOutput);
-
-    pushMessage(`🧙 ${jsonOutput.narrative}`);
-
-    if (jsonOutput.actions) {
-
-      //output ai responses for debug
-      for (const [key, value] of Object.entries(jsonOutput.actions)) {
-        console.log(`AI Action: ${key}`);
-        console.log("Value:", JSON.stringify(value, null, 2));
-      }
-
-      if (jsonOutput.actions.createCharacter) {
-        const character: AddCharacterInput = jsonOutput.actions.createCharacter;
-
-        const allPropsHaveValues = Object.values(character).every(value => value !== null && value !== undefined && value !== 0 && value !== "");
-
-        if (allPropsHaveValues) {
-          await addCharacter(character);
-          hasActiveCharacter.value = true;
-          newCharacter.value = true;
-        }
-      }
-      
-      if (jsonOutput.actions.createRegion) {
-        const region: CreateAndLinkNewRegion = jsonOutput.actions.createRegion;
-        region.fullDescription = jsonOutput.narrative;
-        region.fromRegionId = props.character.currentLocation;
-        region.travelEnergyCost = 100;
-        await createAndLinkRegion(region);
-      }
-
-      if (jsonOutput.actions?.logEvent?.type.toLowerCase() === "arrival") {
-        const character = { characterId: payload.characterId, currentLocation: payload.context.targetRegion.regionId };
-        await updateCharacter(character as UpdateCharacterInput);
-      }
-
-      if (jsonOutput.actions.createQuest) {
-        const quest: Quest = jsonOutput.actions.createQuest;
-        quest.npcId = "";
-
-        // 1. Create NPC if missing
-        if (!quest.npcId) {
-          const npcData = {
-            name: `Mysterious Stranger`, // Or from context
-            description: `A shadowed figure cloaked in riddles.`,
-            //faction: `Wanderers`,
-            race: "Elf",
-            profession: "Unknown",
-            maxHealth: 100,
-            currentHealth: 100,
-            maxMana: 150,
-            currentMana: 150,
-            abilities: "Spellcasting",
-          };
-
-          const createdNpc = await npcStore.createNpc(npcData as CreateNpcInput);
-          quest.npcId = createdNpc.npcId;
-          pushMessage(`🧙 NPC **${createdNpc.name}** has stepped forward to offer a quest.`);
-        }
-
-        // 2. Create the quest
-        const finalQuest = await questStore.createQuest(quest);
-
-        // 3. Confirm with player
-        pushMessage(`🧙 Do you accept the quest: **${finalQuest.name}**? Type 'accept' to continue.`);
-
-        const response = await getNextUserInput();
-
-        if (response.toLowerCase().includes('accept')) {          
-          const update = {
-            characterId: props.character.characterId,
-            quests: [{
-              questId: finalQuest.questId,
-              step: 0,
-              status: 'active',
-            } as CharacterQuest]
-          };
-          await updateCharacter(update as UpdateCharacterInput);
-          pushMessage(`📜 Quest **${finalQuest.name}** has been added to your journal.`);
-        } else {
-          pushMessage(`🌀 The quest remains unclaimed.`);
-        }
-      }
-
-      if (action === "general-action" || action === "create-character") {
-        updateMainThread(result[0].threadId || activeGameThreadId.value);
-      }
-    }
-  } else {
-    pushMessage(getErrorMessage());
-  }
+// Builds a sanitized context object to pass to the AI payload
+function buildContext(): Record<string, any> {
+  const ctx = {
+    character: { ...props.character },
+    region: props.currentRegion,
+  };
+  delete ctx.character.userId;
+  return ctx;
 }
 
 async function pushMessage(message: string) {
@@ -358,11 +252,44 @@ function scrollToBottom() {
   });
 }
 
-async function addCharacter(characterData: AddCharacterInput) {
-  console.debug('🚀 Emitting characterCreated event:', characterData);
-  emit('characterCreated', characterData);
+async function handleCharacterCreationLoop(initialMessage: string, buildPayload: Function, sendPayload: Function, getNextUserInput: () => Promise<string>, updateMainThread: Function) {
+  let currentMessage = initialMessage;
 
-  pushMessage(`🎉 Character ${characterData.name} has been created!`);
+  while (!characterStore.currentCharacter?.characterId) {
+    const payload = buildPayload('create-character', currentMessage);
+    const response = await sendPayload(payload);
+
+    if (response.ok) {
+      const result = await response.json();
+      const assistantOutput = result[0].output || '';
+      const jsonOutput = JSON.parse(assistantOutput);
+
+      if (jsonOutput.narrative) {
+        await pushMessage(`🧙 ${jsonOutput.narrative}`);
+      }
+
+      if (jsonOutput.actions?.createCharacter) {
+        const character = jsonOutput.actions.createCharacter;
+        const complete = Object.values(character).every(v => v !== null && v !== undefined && v !== 0 && v !== '');
+        if (complete) {
+          await addCharacter(character);
+          updateMainThread(result[0].threadId);
+          break;
+        }
+      }
+    } else {
+      pushMessage(getErrorMessage());
+      break;
+    }
+
+    currentMessage = await getNextUserInput();
+    await pushMessage(`🗨️ You: ${currentMessage}`);
+  }
+}
+
+async function addCharacter(characterData: AddCharacterInput) {
+  emit('characterCreated', characterData);
+  await pushMessage(`🎉 Character ${characterData.name} has been created!`);
 }
 
 async function createAndLinkRegion(data: CreateAndLinkNewRegion) {
@@ -437,6 +364,70 @@ function buildPayload(action: string, messageContent: string, additionalData: Re
   };
   return payload;
 }
+
+async function handleAiResponse(response: any, originalAction: string) {
+  const assistantOutput = response[0].output || '';
+  const jsonOutput = parseOutput(assistantOutput);
+
+  pushMessage(`🧙 ${jsonOutput.narrative}`);
+
+  if (!jsonOutput.actions) return;
+
+  //Log AI generatd actions
+  for (const [key, value] of Object.entries(jsonOutput.actions)) {
+    console.log(`AI Action: ${key}`);
+    console.log("Value:", JSON.stringify(value, null, 2));
+  }
+
+  // Handle character creation
+  if (jsonOutput.actions.createCharacter) {
+    const character: AddCharacterInput = jsonOutput.actions.createCharacter;
+    const allPropsHaveValues = Object.values(character).every(v => v !== null && v !== undefined && v !== 0 && v !== "");
+    if (allPropsHaveValues) {
+      await addCharacter(character);
+      hasActiveCharacter.value = true;
+      newCharacter.value = true;
+    }
+  }
+
+  // Handle region creation
+  if (jsonOutput.actions.createRegion) {
+    const region: CreateAndLinkNewRegion = jsonOutput.actions.createRegion;
+    region.fullDescription = jsonOutput.narrative;
+    region.fromRegionId = props.character.currentLocation;
+    region.travelEnergyCost = 100;
+    await createAndLinkRegion(region);
+  }
+
+  if (jsonOutput.actions.createNpc) {
+    const npc: CreateNpcInput = jsonOutput.actions.createNpc;
+    const createdNpc: Npc = await npcStore.createNpc(npc);
+    createdNpc.regionId = regionStore.currentRegion?.regionId ?? "";
+    pushMessage(`🧙 A new NPC has emerged: **${createdNpc.name}**.`);
+  }
+
+  // Handle arrival logging
+  if (jsonOutput.actions?.logEvent?.type?.toLowerCase() === "arrival") {
+    const update = { characterId: props.character.characterId, currentLocation: jsonOutput.actions.logEvent.locationId };
+    await updateCharacter(update as UpdateCharacterInput);
+  }
+
+  // Handle quest creation with interaction engine
+  if (jsonOutput.actions.createQuest) {
+    const quest: Quest = jsonOutput.actions.createQuest;
+    let npc = await npcStore.findNpcById?.(quest.npcId);
+    const finalQuest = await questStore.createQuest(quest);
+
+    interactionEngine.startQuestInteraction(finalQuest, npc, response[0].threadId);
+    pushMessage(`🧙 ${npc?.name} offers you a quest: \"${quest.name}\". Do you accept?`);
+  }
+
+  // Thread tracking
+  if (originalAction === "general-action" || originalAction === "create-character") {
+    updateMainThread(response[0].threadId || activeGameThreadId.value);
+  }
+}
+
 
 onMounted(() => {
   activeGameThreadId.value = localStorage.getItem('unwrittenRealmsThreadId') ?? null;

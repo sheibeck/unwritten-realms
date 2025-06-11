@@ -50,16 +50,20 @@ export const useQuestStore = defineStore('questStore', () => {
       const builder = connection.value.subscriptionBuilder();
       const qid = builder.subscribe([`SELECT * FROM quest WHERE questId = '${data.questId}'`]);
 
+      const timeout = setTimeout(() => {
+        qid.unsubscribe();
+        reject('Timeout creating Quest');
+      }, 10000);
+
       connection.value.db.quest.onInsert((_ctx, quest) => {
         if (quest.questId === data.questId) {
-          resolve(quest);
+          clearTimeout(timeout); // ✅ Cancel timeout
           qid.unsubscribe();
+          resolve(quest);
         }
       });
 
       connection.value.reducers.addQuest(data);
-
-      setTimeout(() => reject('Timeout creating Quest'), 10000);
     });
   }
 

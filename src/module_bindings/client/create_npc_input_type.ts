@@ -40,6 +40,7 @@ export type CreateNpcInput = {
   maxMana: number,
   currentMana: number,
   abilities: string,
+  regionId: string,
 };
 
 /**
@@ -61,6 +62,7 @@ export namespace CreateNpcInput {
       new ProductTypeElement("maxMana", AlgebraicType.createI32Type()),
       new ProductTypeElement("currentMana", AlgebraicType.createI32Type()),
       new ProductTypeElement("abilities", AlgebraicType.createStringType()),
+      new ProductTypeElement("regionId", AlgebraicType.createStringType()),
     ]);
   }
 

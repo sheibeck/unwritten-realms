@@ -46,7 +46,7 @@ export function useInteractionEngine() {
     const accepted = /yes|accept/i.test(userInput);
 
     await characterStore.logQuest({
-      characterId: characterStore.character?.characterId,
+      characterId: characterStore.currentCharacter?.characterId,
       quests: [{
         questId: current.quest.questId,
         step: 0,

@@ -124,6 +124,8 @@ async function addCharacterTest() {
 }
 
 async function addNpc() {
+  const createdRegion = regionStore.findRegionByName("Hollow Hill");
+
   const npcData = {
     name: `Mysterious Stranger`, // Or from context
     description: `A shadowed figure cloaked in riddles.`,
@@ -135,6 +137,7 @@ async function addNpc() {
     maxMana: 150,
     currentMana: 150,
     abilities: "Spellcasting",
+    regionId: createdRegion?.regionId
   };
 
   const createdNpc = await npcStore.createNpc(npcData as CreateNpcInput);
@@ -199,6 +202,7 @@ function subscribeToSpaceTime(conn: DbConnection) {
       `SELECT * FROM user WHERE UserId = '${conn.identity?.toHexString()}'`,
       `SELECT * FROM character WHERE UserId = '${conn.identity?.toHexString()}'`,
       `SELECT * FROM region`,
+      `SELECT * FROM npc`,
     ]);
 
   conn.reducers.onCreateAndLinkNewRegion((e) => {

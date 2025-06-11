@@ -49,10 +49,16 @@ export const useRegionStore = defineStore('regionStore', () => {
       const builder = connection.value.subscriptionBuilder();
       const qid = builder.subscribe([`SELECT * FROM region WHERE name = '${data.name}'`]);
 
+      const timeout = setTimeout(() => {
+        qid.unsubscribe();
+        reject('Timed out waiting for region creation');
+      }, 15000);
+
       connection.value.db.region.onInsert((_ctx, region) => {
         if (region.name === data.name && region.linkedRegionIds.includes(data.fromRegionId)) {
-          resolve(region);
+          clearTimeout(timeout); // ✅ cancel the timeout
           qid.unsubscribe();
+          resolve(region);
         }
       });
 
@@ -67,8 +73,6 @@ export const useRegionStore = defineStore('regionStore', () => {
         data.travelEnergyCost,
         data.resources
       );
-
-      setTimeout(() => reject('Timed out waiting for region creation'), 15000);
     });
   }
 

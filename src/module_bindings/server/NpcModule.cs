@@ -7,18 +7,16 @@ public static partial class Module
     {
         [Unique, PrimaryKey]
         public string NpcId;
-
         public string Name;
         public string Description;
         public string Race;
         public string Profession;
-
         public int MaxHealth;
         public int CurrentHealth;
         public int MaxMana;
         public int CurrentMana;
-
-        public string Abilities; // Stored as a JSON string or comma-separated string
+        public string Abilities;
+        public string RegionId;
     }
 
     [Type]
@@ -28,13 +26,12 @@ public static partial class Module
         public string Description;
         public string Race;
         public string Profession;
-
         public int MaxHealth;
         public int CurrentHealth;
         public int MaxMana;
         public int CurrentMana;
-
         public string Abilities;
+        public string RegionId;
     }
 
     [Reducer]
@@ -51,7 +48,8 @@ public static partial class Module
             CurrentHealth = input.CurrentHealth,
             MaxMana = input.MaxMana,
             CurrentMana = input.CurrentMana,
-            Abilities = input.Abilities
+            Abilities = input.Abilities,
+            RegionId = input.RegionId
         });
 
         Log.Info($"[CreateNpc] Created NPC: {npc.Name} ({npc.NpcId})");
