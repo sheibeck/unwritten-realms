@@ -46,6 +46,8 @@ import { ClientDisconnected } from "./client_disconnected_reducer.ts";
 export { ClientDisconnected };
 import { CreateAndLinkNewRegion } from "./create_and_link_new_region_reducer.ts";
 export { CreateAndLinkNewRegion };
+import { CreateNpc } from "./create_npc_reducer.ts";
+export { CreateNpc };
 import { CreateStarterRegion } from "./create_starter_region_reducer.ts";
 export { CreateStarterRegion };
 import { LinkRegions } from "./link_regions_reducer.ts";
@@ -58,6 +60,8 @@ export { UpdateCharacter };
 // Import and reexport all table handle types
 import { CharacterTableHandle } from "./character_table.ts";
 export { CharacterTableHandle };
+import { NpcTableHandle } from "./npc_table.ts";
+export { NpcTableHandle };
 import { QuestTableHandle } from "./quest_table.ts";
 export { QuestTableHandle };
 import { RegionTableHandle } from "./region_table.ts";
@@ -74,6 +78,10 @@ import { Character } from "./character_type.ts";
 export { Character };
 import { CharacterQuest } from "./character_quest_type.ts";
 export { CharacterQuest };
+import { CreateNpcInput } from "./create_npc_input_type.ts";
+export { CreateNpcInput };
+import { Npc } from "./npc_type.ts";
+export { Npc };
 import { Quest } from "./quest_type.ts";
 export { Quest };
 import { Region } from "./region_type.ts";
@@ -89,6 +97,11 @@ const REMOTE_MODULE = {
       tableName: "character",
       rowType: Character.getTypeScriptAlgebraicType(),
       primaryKey: "characterId",
+    },
+    npc: {
+      tableName: "npc",
+      rowType: Npc.getTypeScriptAlgebraicType(),
+      primaryKey: "npcId",
     },
     quest: {
       tableName: "quest",
@@ -134,6 +147,10 @@ const REMOTE_MODULE = {
     CreateAndLinkNewRegion: {
       reducerName: "CreateAndLinkNewRegion",
       argsType: CreateAndLinkNewRegion.getTypeScriptAlgebraicType(),
+    },
+    CreateNpc: {
+      reducerName: "CreateNpc",
+      argsType: CreateNpc.getTypeScriptAlgebraicType(),
     },
     CreateStarterRegion: {
       reducerName: "CreateStarterRegion",
@@ -185,6 +202,7 @@ export type Reducer = never
 | { name: "ClientConnected", args: ClientConnected }
 | { name: "ClientDisconnected", args: ClientDisconnected }
 | { name: "CreateAndLinkNewRegion", args: CreateAndLinkNewRegion }
+| { name: "CreateNpc", args: CreateNpc }
 | { name: "CreateStarterRegion", args: CreateStarterRegion }
 | { name: "LinkRegions", args: LinkRegions }
 | { name: "SetName", args: SetName }
@@ -282,6 +300,22 @@ export class RemoteReducers {
     this.connection.offReducer("CreateAndLinkNewRegion", callback);
   }
 
+  createNpc(input: CreateNpcInput) {
+    const __args = { input };
+    let __writer = new BinaryWriter(1024);
+    CreateNpc.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("CreateNpc", __argsBuffer, this.setCallReducerFlags.createNpcFlags);
+  }
+
+  onCreateNpc(callback: (ctx: ReducerEventContext, input: CreateNpcInput) => void) {
+    this.connection.onReducer("CreateNpc", callback);
+  }
+
+  removeOnCreateNpc(callback: (ctx: ReducerEventContext, input: CreateNpcInput) => void) {
+    this.connection.offReducer("CreateNpc", callback);
+  }
+
   createStarterRegion(name: string, description: string, fullDescription: string, climate: string, culture: string, resources: string[]) {
     const __args = { name, description, fullDescription, climate, culture, resources };
     let __writer = new BinaryWriter(1024);
@@ -374,6 +408,11 @@ export class SetReducerFlags {
     this.createAndLinkNewRegionFlags = flags;
   }
 
+  createNpcFlags: CallReducerFlags = 'FullUpdate';
+  createNpc(flags: CallReducerFlags) {
+    this.createNpcFlags = flags;
+  }
+
   createStarterRegionFlags: CallReducerFlags = 'FullUpdate';
   createStarterRegion(flags: CallReducerFlags) {
     this.createStarterRegionFlags = flags;
@@ -401,6 +440,10 @@ export class RemoteTables {
 
   get character(): CharacterTableHandle {
     return new CharacterTableHandle(this.connection.clientCache.getOrCreateTable<Character>(REMOTE_MODULE.tables.character));
+  }
+
+  get npc(): NpcTableHandle {
+    return new NpcTableHandle(this.connection.clientCache.getOrCreateTable<Npc>(REMOTE_MODULE.tables.npc));
   }
 
   get quest(): QuestTableHandle {

@@ -1,6 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { useMainStore } from "./mainStore";
+import type { Npc } from "@/module_bindings/client/npc_type";
+import type { CreateNpcInput } from "@/module_bindings/client";
 
 export const useNpcStore = defineStore('npcStore', () => {
   const npcs = ref<Map<string, Npc>>(new Map());
@@ -17,7 +19,7 @@ export const useNpcStore = defineStore('npcStore', () => {
     });
   }
 
-  function createNpc(data: CreateNpc): Promise<Npc> {
+  function createNpc(data: CreateNpcInput): Promise<Npc> {
     return new Promise((resolve, reject) => {
       if (!connection.value) return;
 
@@ -31,7 +33,7 @@ export const useNpcStore = defineStore('npcStore', () => {
         }
       });
 
-      connection.value.reducers.createNpc(data.name, data.description, data.faction);
+      connection.value.reducers.createNpc(data);
 
       setTimeout(() => reject('Timeout creating NPC'), 10000);
     });

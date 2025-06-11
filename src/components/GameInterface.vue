@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from 'vue';
 import { marked } from 'marked';
-import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region, type Quest, CharacterQuest } from '../module_bindings/client';
+import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region, type Quest, CharacterQuest, CreateNpcInput } from '../module_bindings/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
 import { useCharacterStore } from '@/stores/characterStore';
@@ -259,17 +259,25 @@ async function handleRequest(action: string, payload: Record<string, any>) {
       }
 
       if (jsonOutput.actions.createQuest) {
-        let quest: Quest = jsonOutput.actions.createQuest;
+        const quest: Quest = jsonOutput.actions.createQuest;
+        quest.npcId = "";
 
         // 1. Create NPC if missing
         if (!quest.npcId) {
           const npcData = {
             name: `Mysterious Stranger`, // Or from context
             description: `A shadowed figure cloaked in riddles.`,
-            faction: 'Wanderers',
+            //faction: `Wanderers`,
+            race: "Elf",
+            profession: "Unknown",
+            maxHealth: 100,
+            currentHealth: 100,
+            maxMana: 150,
+            currentMana: 150,
+            abilities: "Spellcasting",
           };
 
-          const createdNpc = await npcStore.createNpc(npcData);
+          const createdNpc = await npcStore.createNpc(npcData as CreateNpcInput);
           quest.npcId = createdNpc.npcId;
           pushMessage(`🧙 NPC **${createdNpc.name}** has stepped forward to offer a quest.`);
         }

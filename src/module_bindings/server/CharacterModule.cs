@@ -182,7 +182,7 @@ public static partial class Module
             foreach (var quest in input.Quests)
             {
                 bool alreadyExists = character.Quests.Any(q => q.QuestId == quest.QuestId);
-                 if (!alreadyExists)
+                if (!alreadyExists) {
                     character.Quests.Add(quest);
                 }
             }

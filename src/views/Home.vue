@@ -14,6 +14,7 @@
     <div v-else class="flex-fill d-flex flex-column">
       <button class="" @click="addStarterRegion()">Add Starter Region</button>
       <button class="" @click="addCharacterTest()">Add Test Character</button>
+      <button class="" @click="addNpc()">Add Npc</button>
       <GameInterface
         v-if="initialized"
         class="flex-fill d-flex flex-column"
@@ -34,6 +35,7 @@ import { onMounted, ref } from 'vue';
 import type {
   AddCharacterInput,
   CreateAndLinkNewRegion,
+  CreateNpcInput,
   CreateStarterRegion,
   DbConnection,
   Quest,
@@ -44,11 +46,13 @@ import GameInterface from '@/components/GameInterface.vue';
 import { useCharacterStore } from '@/stores/characterStore';
 import { useMainStore } from '@/stores/mainStore';
 import { useQuestStore } from '@/stores/questStore';
+import { useNpcStore } from '@/stores/npcStore';
 
 const mainStore = useMainStore();           // ✅ store
 const characterStore = useCharacterStore(); // ✅ store
 const regionStore = useRegionStore();       // ✅ store
 const questStore = useQuestStore();
+const npcStore = useNpcStore();
 const initialized = ref(false);
 
 function onCharacterCreated(charData: AddCharacterInput) {
@@ -119,6 +123,24 @@ async function addCharacterTest() {
   }
 }
 
+async function addNpc() {
+  const npcData = {
+    name: `Mysterious Stranger`, // Or from context
+    description: `A shadowed figure cloaked in riddles.`,
+    //faction: `Wanderers`,
+    race: "Elf",
+    profession: "Unknown",
+    maxHealth: 100,
+    currentHealth: 100,
+    maxMana: 150,
+    currentMana: 150,
+    abilities: "Spellcasting",
+  };
+
+  const createdNpc = await npcStore.createNpc(npcData as CreateNpcInput);
+  console.log(createdNpc);
+}
+
 async function connectSpacetime() {
   await mainStore.connectSpacetime();
 
@@ -129,6 +151,8 @@ async function connectSpacetime() {
 
   regionStore.initialize();    // ✅ initialize store
   characterStore.initialize(); // ✅ initialize store
+  questStore.initialize(); // ✅ initialize store
+  npcStore.initialize();
 
   subscribeToSpaceTime(mainStore.connection);
 }
