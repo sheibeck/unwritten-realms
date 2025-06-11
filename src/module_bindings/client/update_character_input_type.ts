@@ -30,6 +30,8 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
+import { CharacterQuest as __CharacterQuest } from "./character_quest_type";
+
 export type UpdateCharacterInput = {
   characterId: string,
   name: string | undefined,
@@ -64,6 +66,7 @@ export type UpdateCharacterInput = {
   earrings: string | undefined,
   relic: string | undefined,
   equippedWeapon: string | undefined,
+  quests: __CharacterQuest[] | undefined,
 };
 
 /**
@@ -109,6 +112,7 @@ export namespace UpdateCharacterInput {
       new ProductTypeElement("earrings", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
       new ProductTypeElement("relic", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
       new ProductTypeElement("equippedWeapon", AlgebraicType.createOptionType(AlgebraicType.createStringType())),
+      new ProductTypeElement("quests", AlgebraicType.createOptionType(AlgebraicType.createArrayType(__CharacterQuest.getTypeScriptAlgebraicType()))),
     ]);
   }
 

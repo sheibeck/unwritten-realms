@@ -159,6 +159,14 @@
               "penalty": {
                 "type": "string",
                 "description": "(Optional) Penalty for failing quest. Can include loss of money, items, faction reputation, etc."
+              },
+              "type": {
+                "type": "string",
+                "description": "Public,Unique,Hidden"
+              },
+              "repeatable": {
+                "type": "boolean",
+                "description": "Is this quest repeatable"
               }
             },
             "required": [

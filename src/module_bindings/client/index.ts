@@ -34,6 +34,8 @@ import {
 // Import and reexport all reducer arg types
 import { AddCharacter } from "./add_character_reducer.ts";
 export { AddCharacter };
+import { AddQuest } from "./add_quest_reducer.ts";
+export { AddQuest };
 import { ClearCharacters } from "./clear_characters_reducer.ts";
 export { ClearCharacters };
 import { ClearUsers } from "./clear_users_reducer.ts";
@@ -56,6 +58,8 @@ export { UpdateCharacter };
 // Import and reexport all table handle types
 import { CharacterTableHandle } from "./character_table.ts";
 export { CharacterTableHandle };
+import { QuestTableHandle } from "./quest_table.ts";
+export { QuestTableHandle };
 import { RegionTableHandle } from "./region_table.ts";
 export { RegionTableHandle };
 import { UserTableHandle } from "./user_table.ts";
@@ -64,8 +68,14 @@ export { UserTableHandle };
 // Import and reexport all types
 import { AddCharacterInput } from "./add_character_input_type.ts";
 export { AddCharacterInput };
+import { AddQuestInput } from "./add_quest_input_type.ts";
+export { AddQuestInput };
 import { Character } from "./character_type.ts";
 export { Character };
+import { CharacterQuest } from "./character_quest_type.ts";
+export { CharacterQuest };
+import { Quest } from "./quest_type.ts";
+export { Quest };
 import { Region } from "./region_type.ts";
 export { Region };
 import { UpdateCharacterInput } from "./update_character_input_type.ts";
@@ -79,6 +89,11 @@ const REMOTE_MODULE = {
       tableName: "character",
       rowType: Character.getTypeScriptAlgebraicType(),
       primaryKey: "characterId",
+    },
+    quest: {
+      tableName: "quest",
+      rowType: Quest.getTypeScriptAlgebraicType(),
+      primaryKey: "questId",
     },
     region: {
       tableName: "region",
@@ -95,6 +110,10 @@ const REMOTE_MODULE = {
     AddCharacter: {
       reducerName: "AddCharacter",
       argsType: AddCharacter.getTypeScriptAlgebraicType(),
+    },
+    AddQuest: {
+      reducerName: "AddQuest",
+      argsType: AddQuest.getTypeScriptAlgebraicType(),
     },
     ClearCharacters: {
       reducerName: "ClearCharacters",
@@ -160,6 +179,7 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "AddCharacter", args: AddCharacter }
+| { name: "AddQuest", args: AddQuest }
 | { name: "ClearCharacters", args: ClearCharacters }
 | { name: "ClearUsers", args: ClearUsers }
 | { name: "ClientConnected", args: ClientConnected }
@@ -188,6 +208,22 @@ export class RemoteReducers {
 
   removeOnAddCharacter(callback: (ctx: ReducerEventContext, inputCharacter: AddCharacterInput) => void) {
     this.connection.offReducer("AddCharacter", callback);
+  }
+
+  addQuest(inputQuest: AddQuestInput) {
+    const __args = { inputQuest };
+    let __writer = new BinaryWriter(1024);
+    AddQuest.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("AddQuest", __argsBuffer, this.setCallReducerFlags.addQuestFlags);
+  }
+
+  onAddQuest(callback: (ctx: ReducerEventContext, inputQuest: AddQuestInput) => void) {
+    this.connection.onReducer("AddQuest", callback);
+  }
+
+  removeOnAddQuest(callback: (ctx: ReducerEventContext, inputQuest: AddQuestInput) => void) {
+    this.connection.offReducer("AddQuest", callback);
   }
 
   clearCharacters() {
@@ -318,6 +354,11 @@ export class SetReducerFlags {
     this.addCharacterFlags = flags;
   }
 
+  addQuestFlags: CallReducerFlags = 'FullUpdate';
+  addQuest(flags: CallReducerFlags) {
+    this.addQuestFlags = flags;
+  }
+
   clearCharactersFlags: CallReducerFlags = 'FullUpdate';
   clearCharacters(flags: CallReducerFlags) {
     this.clearCharactersFlags = flags;
@@ -360,6 +401,10 @@ export class RemoteTables {
 
   get character(): CharacterTableHandle {
     return new CharacterTableHandle(this.connection.clientCache.getOrCreateTable<Character>(REMOTE_MODULE.tables.character));
+  }
+
+  get quest(): QuestTableHandle {
+    return new QuestTableHandle(this.connection.clientCache.getOrCreateTable<Quest>(REMOTE_MODULE.tables.quest));
   }
 
   get region(): RegionTableHandle {

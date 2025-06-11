@@ -31,6 +31,8 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 import { Character } from "./character_type";
+import { CharacterQuest as __CharacterQuest } from "./character_quest_type";
+
 import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables } from ".";
 
 /**

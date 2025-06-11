@@ -63,6 +63,8 @@ public static partial class Module
         public string? Earrings;
         public string? Relic;
         public string? EquippedWeapon;
+
+        public List<CharacterQuest>? Quests;
     }
 
     [Type]
@@ -109,6 +111,8 @@ public static partial class Module
         public string? Earrings;
         public string? Relic;
         public string? EquippedWeapon;
+
+        public List<CharacterQuest>? Quests;
     }
 
     [Reducer]
@@ -169,10 +173,26 @@ public static partial class Module
         if (input.Relic != null) character.Relic = input.Relic;
         if (input.EquippedWeapon != null) character.EquippedWeapon = input.EquippedWeapon;
 
+        if (input.Quests != null)
+        {
+            if(character.Quests == null) {
+                character.Quests = new List<CharacterQuest>();
+            }
+
+            foreach (var quest in input.Quests)
+            {
+                character.Quests.Add(new CharacterQuest
+                {
+                    QuestId = quest.QuestId,
+                    Step = quest.Step,
+                    Status = quest.Status
+                });
+            }
+        }
+
         ctx.Db.character.CharacterId.Update(character);
         Log.Info($"Updated character {character.CharacterId} by user {ctx.Sender}");
     }
-
 
     [Type]
     public partial struct AddCharacterInput
@@ -259,8 +279,18 @@ public static partial class Module
 
             Level = 1,
             XP = 0,
+
+            Quests = new List<CharacterQuest>(),
         });
 
         Log.Info($"Inserted {character.Name} for userId {ctx.Sender}");
+    }
+
+    [Type]
+    public partial struct CharacterQuest 
+    {
+        public string QuestId;
+        public int Step;
+        public string Status;
     }
 }
