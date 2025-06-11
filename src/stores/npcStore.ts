@@ -62,9 +62,17 @@ export const useNpcStore = defineStore('npcStore', () => {
     return npcs.value.get(id);
   };
 
+  const findNpcByName = (name: string): Npc | undefined => {
+    return Array.from(npcs.value.values()).find((npc: Npc) => {
+      return npc.name === name;
+    });
+  };
+
   return {
     initialize,
     createNpc,
-    findNpcById
+    findNpcById,
+    findNpcByName,
+    npcs
   };
 });

@@ -15,6 +15,7 @@
       <button class="" @click="addStarterRegion()">Add Starter Region</button>
       <button class="" @click="addCharacterTest()">Add Test Character</button>
       <button class="" @click="addNpc()">Add Npc</button>
+      <button class="" @click="addQuest()">Add Quest</button>
       <GameInterface
         v-if="initialized"
         class="flex-fill d-flex flex-column"
@@ -31,9 +32,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import type {
   AddCharacterInput,
+  AddQuestInput,
   CreateAndLinkNewRegion,
   CreateNpcInput,
   CreateStarterRegion,
@@ -140,8 +142,24 @@ async function addNpc() {
     regionId: createdRegion?.regionId
   };
 
-  const createdNpc = await npcStore.createNpc(npcData as CreateNpcInput);
-  console.log(createdNpc);
+  await npcStore.createNpc(npcData as CreateNpcInput);
+}
+
+async function addQuest() {
+  const createdNpc = npcStore.findNpcByName("Mysterious Stranger");
+
+  const data: AddQuestInput = {
+    name: `Mysterious Stranger's Quest`,
+    description: `A really cool quest you know you want to do`,
+    npcId: createdNpc?.npcId ?? "",
+    steps: 1,
+    reward: "Gain XP",
+    penalty: "None",
+    type: "Public",
+    repeatable: false
+  };
+
+  await questStore.createQuest(data as AddQuestInput);
 }
 
 async function connectSpacetime() {
@@ -176,16 +194,18 @@ function getLinkedRegions(ctx: any) {
     regionStore.setLinkedRegion([]);
   }
 }
+const activeRegionUnsub = ref<(() => void) | null>(null);
+const initialCharacterUnsub = ref<(() => void) | null>(null);
 
 function subscribeToSpaceTime(conn: DbConnection) {
-  const subscriptions = conn.subscriptionBuilder()
+  const builder = conn.subscriptionBuilder()
     .onApplied((ctx) => {
       console.debug('✅ Subscription initialized.');
 
       const currentUser = Array.from(ctx.db.user.iter()).find(
         u => u.userId.toHexString() === conn.identity?.toHexString()
       ) || null;
-      mainStore.setCurrentUser(currentUser)
+      mainStore.setCurrentUser(currentUser);
 
       const currentCharacter = Array.from(ctx.db.character.iter()).find(
         c => c.userId.toHexString() === conn.identity?.toHexString()
@@ -197,13 +217,54 @@ function subscribeToSpaceTime(conn: DbConnection) {
     })
     .onError((e) => {
       console.error('Subscription error:', e);
-    })
-    .subscribe([
-      `SELECT * FROM user WHERE UserId = '${conn.identity?.toHexString()}'`,
-      `SELECT * FROM character WHERE UserId = '${conn.identity?.toHexString()}'`,
-      `SELECT * FROM region`,
-      `SELECT * FROM npc`,
-    ]);
+    });
+
+  const sub = builder.subscribe([
+    `SELECT * FROM user WHERE UserId = '${conn.identity?.toHexString()}'`,
+    `SELECT * FROM character WHERE UserId = '${conn.identity?.toHexString()}'`,
+    `SELECT * FROM region`
+  ]);
+
+  initialCharacterUnsub.value = () => sub.unsubscribe();
+
+  // Watch for both character and region being available before unsubscribing
+  watch(
+    [() => characterStore.currentCharacter, () => regionStore.currentRegion],
+    ([char, region]) => {
+      if (char && region && initialCharacterUnsub.value) {
+        console.debug('🧹 Unsubscribing from initial character/user/region subscription');
+        initialCharacterUnsub.value();
+        initialCharacterUnsub.value = null;
+      }
+    },
+    { immediate: true }
+  );
+
+  // Subscribe to region and NPCs for the current region
+  watch(() => regionStore.currentRegion, (region) => {
+    if (!region || !conn) return;
+
+    if (activeRegionUnsub.value) {
+      activeRegionUnsub.value();
+      activeRegionUnsub.value = null;
+    }
+
+    const regionSubscriptions = conn.subscriptionBuilder()
+      .onApplied(() => {
+        console.debug(`🔄 Subscribed to region ${region.name} and its NPCs.`);
+      })
+      .onError((e) => {
+        console.error('Region subscription error:', e);
+      })
+      .subscribe([
+        `SELECT * FROM region WHERE RegionId = '${region.regionId}'`,
+        `SELECT * FROM npc WHERE RegionId = '${region.regionId}'`,
+        `SELECT q.* FROM quest q JOIN npc n WHERE q.NpcId = n.NpcId AND n.RegionId = '${region.regionId}'`
+      ]);
+
+    activeRegionUnsub.value = () => regionSubscriptions.unsubscribe();
+    console.debug(`Region subscriptions active`, regionSubscriptions);
+  }, { immediate: true });
 
   conn.reducers.onCreateAndLinkNewRegion((e) => {
     if (e.event.status.tag === 'Failed') {
@@ -213,7 +274,7 @@ function subscribeToSpaceTime(conn: DbConnection) {
     }
   });
 
-  console.debug(`Subscriptions active`, subscriptions);
+  console.debug(`Initial subscriptions active`, sub);
 }
 
 onMounted(async () => {

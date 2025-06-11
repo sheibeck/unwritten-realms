@@ -35,8 +35,8 @@ export type AddQuestInput = {
   name: string,
   description: string,
   steps: number,
-  reward: number,
-  penalty: number,
+  reward: string,
+  penalty: string,
   type: string,
   repeatable: boolean,
 };
@@ -55,8 +55,8 @@ export namespace AddQuestInput {
       new ProductTypeElement("name", AlgebraicType.createStringType()),
       new ProductTypeElement("description", AlgebraicType.createStringType()),
       new ProductTypeElement("steps", AlgebraicType.createI32Type()),
-      new ProductTypeElement("reward", AlgebraicType.createI32Type()),
-      new ProductTypeElement("penalty", AlgebraicType.createI32Type()),
+      new ProductTypeElement("reward", AlgebraicType.createStringType()),
+      new ProductTypeElement("penalty", AlgebraicType.createStringType()),
       new ProductTypeElement("type", AlgebraicType.createStringType()),
       new ProductTypeElement("repeatable", AlgebraicType.createBoolType()),
     ]);

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type {
+  AddQuestInput,
   Quest,
 } from '../module_bindings/client';
 import { useMainStore } from './mainStore';
@@ -40,7 +41,7 @@ export const useQuestStore = defineStore('questStore', () => {
     });
   }
 
-  function createQuest(data: Quest): Promise<Quest> {
+  function createQuest(data: AddQuestInput): Promise<AddQuestInput> {
     return new Promise((resolve, reject) => {
       if (!connection.value) {
         console.warn('No active SpaceTimeDB connection');
@@ -48,7 +49,7 @@ export const useQuestStore = defineStore('questStore', () => {
       }
 
       const builder = connection.value.subscriptionBuilder();
-      const qid = builder.subscribe([`SELECT * FROM quest WHERE questId = '${data.questId}'`]);
+      const qid = builder.subscribe([`SELECT * FROM quest WHERE name = '${data.name}'`]);
 
       const timeout = setTimeout(() => {
         qid.unsubscribe();
@@ -56,7 +57,7 @@ export const useQuestStore = defineStore('questStore', () => {
       }, 10000);
 
       connection.value.db.quest.onInsert((_ctx, quest) => {
-        if (quest.questId === data.questId) {
+        if (quest.name === data.name) {
           clearTimeout(timeout); // ✅ Cancel timeout
           qid.unsubscribe();
           resolve(quest);

@@ -11,8 +11,8 @@ public static partial class Module
         public string Name;
         public string Description;
         public int Steps;
-        public int Reward;
-        public int Penalty;
+        public string Reward;
+        public string Penalty;
         public string Type;
         public bool Repeatable;
     }
@@ -24,8 +24,8 @@ public static partial class Module
         public string Name;
         public string Description;
         public int Steps;
-        public int Reward;
-        public int Penalty;
+        public string Reward;
+        public string Penalty;
         public string Type;
         public bool Repeatable;
     }
