@@ -61,14 +61,18 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from 'vue';
 import { marked } from 'marked';
-import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region } from '../module_bindings/client';
+import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region, type Quest, CharacterQuest } from '../module_bindings/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
 import { useCharacterStore } from '@/stores/characterStore';
+import { useQuestStore } from '@/stores/questStore';
+import { useNpcStore } from '@/stores/npcStore';
 
 const characterStore = useCharacterStore();
+const questStore = useQuestStore();
+const npcStore = useNpcStore();
 const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
-const emit = defineEmits(['characterCreated', 'createAndLinkRegion', 'updateCharacter']);
+const emit = defineEmits(['characterCreated', 'createAndLinkRegion', 'updateCharacter', 'createQuest']);
 
 const messages = ref<{ raw: string; html: string }[]>([]);
 const userInput = ref('');
@@ -254,6 +258,46 @@ async function handleRequest(action: string, payload: Record<string, any>) {
         await updateCharacter(character as UpdateCharacterInput);
       }
 
+      if (jsonOutput.actions.createQuest) {
+        let quest: Quest = jsonOutput.actions.createQuest;
+
+        // 1. Create NPC if missing
+        if (!quest.npcId) {
+          const npcData = {
+            name: `Mysterious Stranger`, // Or from context
+            description: `A shadowed figure cloaked in riddles.`,
+            faction: 'Wanderers',
+          };
+
+          const createdNpc = await npcStore.createNpc(npcData);
+          quest.npcId = createdNpc.npcId;
+          pushMessage(`🧙 NPC **${createdNpc.name}** has stepped forward to offer a quest.`);
+        }
+
+        // 2. Create the quest
+        const finalQuest = await questStore.createQuest(quest);
+
+        // 3. Confirm with player
+        pushMessage(`🧙 Do you accept the quest: **${finalQuest.name}**? Type 'accept' to continue.`);
+
+        const response = await getNextUserInput();
+
+        if (response.toLowerCase().includes('accept')) {          
+          const update = {
+            characterId: props.character.characterId,
+            quests: [{
+              questId: finalQuest.questId,
+              step: 0,
+              status: 'active',
+            } as CharacterQuest]
+          };
+          await updateCharacter(update as UpdateCharacterInput);
+          pushMessage(`📜 Quest **${finalQuest.name}** has been added to your journal.`);
+        } else {
+          pushMessage(`🌀 The quest remains unclaimed.`);
+        }
+      }
+
       if (action === "general-action" || action === "create-character") {
         updateMainThread(result[0].threadId || activeGameThreadId.value);
       }
@@ -323,6 +367,12 @@ async function updateCharacter(data: UpdateCharacterInput) {
   console.debug('🚀 Emitting updateCharacter event:', data);
   emit('updateCharacter', data);
   pushMessage(`🎉 Character has been updated!`);
+}
+
+async function createQuest(data: Quest) {
+  console.debug('🚀 Emitting updateQuest event:', data);
+  emit('createQuest', data);
+  pushMessage(`🎉 Quest has been created!`);
 }
 
 function getLoadingMessage(): string {

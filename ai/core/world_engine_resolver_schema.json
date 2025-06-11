@@ -174,7 +174,9 @@
               "name",
               "description",
               "steps",
-              "reward"
+              "reward",
+              "type",
+              "repeatable"
             ],
             "additionalProperties": false
           },
