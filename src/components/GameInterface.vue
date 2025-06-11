@@ -76,15 +76,13 @@ const characterStore = useCharacterStore();
 const questStore = useQuestStore();
 const npcStore = useNpcStore();
 const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
-const emit = defineEmits(['characterCreated', 'createAndLinkRegion', 'updateCharacter', 'createQuest']);
-
 const messages = ref<{ raw: string; html: string }[]>([]);
 const userInput = ref('');
 const isLoading = ref(false);
 
 // Resolver ref (set when waiting for next input)
-let nextUserInputResolver: ((msg: string) => void) | null = null;
 const chatContainer = ref<HTMLDivElement | null>(null);
+let nextUserInputResolver: ((msg: string) => void) | null = null;
 
 const hasActiveCharacter = ref(false);
 const newCharacter = ref(true);
@@ -204,7 +202,11 @@ function buildContext(): Record<string, any> {
   const ctx = {
     character: { ...props.character },
     region: props.currentRegion,
+    npcs: Array.from(npcStore.npcs.values()),     // ✅ array of Npc
+    quests: Array.from(questStore.quests.values()) // ✅ array of Quest
   };
+
+  //remove sensitive/unused information
   delete ctx.character.userId;
   return ctx;
 }
@@ -288,26 +290,24 @@ async function handleCharacterCreationLoop(initialMessage: string, buildPayload:
 }
 
 async function addCharacter(characterData: AddCharacterInput) {
-  emit('characterCreated', characterData);
+  await characterStore.addCharacter(characterData);
   await pushMessage(`🎉 Character ${characterData.name} has been created!`);
 }
 
 async function createAndLinkRegion(data: CreateAndLinkNewRegion) {
-  console.debug('🚀 Emitting createAndLinkRegion event:', data);
-  emit('createAndLinkRegion', data);
+  console.debug('⚡ Region created event received:', data);
+  const newRegion = await regionStore.createAndLinkNewRegion(data); // ✅ updated
+
+  //move character to new region
+  await characterStore.setCurrentCharacterLocation(newRegion);
+
   pushMessage(`🎉 Region ${data.name} has been created!`);
 }
 
 async function updateCharacter(data: UpdateCharacterInput) {
-  console.debug('🚀 Emitting updateCharacter event:', data);
-  emit('updateCharacter', data);
+  console.debug('⚡ Character updated event received:', data);
+  await characterStore.updateCharacter(data);
   pushMessage(`🎉 Character has been updated!`);
-}
-
-async function createQuest(data: Quest) {
-  console.debug('🚀 Emitting updateQuest event:', data);
-  emit('createQuest', data);
-  pushMessage(`🎉 Quest has been created!`);
 }
 
 function getLoadingMessage(): string {
@@ -400,9 +400,9 @@ async function handleAiResponse(response: any, originalAction: string) {
   }
 
   if (jsonOutput.actions.createNpc) {
-    const npc: CreateNpcInput = jsonOutput.actions.createNpc;
-    const createdNpc: Npc = await npcStore.createNpc(npc);
-    createdNpc.regionId = regionStore.currentRegion?.regionId ?? "";
+    const newNpc: CreateNpcInput = jsonOutput.actions.createNpc;
+    newNpc.regionId = regionStore.currentRegion?.regionId ?? "";
+    const createdNpc: Npc = await npcStore.createNpc(newNpc);
     pushMessage(`🧙 A new NPC has emerged: **${createdNpc.name}**.`);
   }
 
@@ -420,6 +420,11 @@ async function handleAiResponse(response: any, originalAction: string) {
 
     interactionEngine.startQuestInteraction(finalQuest, npc, response[0].threadId);
     pushMessage(`🧙 ${npc?.name} offers you a quest: \"${quest.name}\". Do you accept?`);
+  }
+
+  if (jsonOutput.actions.updateCharacter) {
+    const update = jsonOutput.actions.updateCharacter;
+    await updateCharacter(update as UpdateCharacterInput);
   }
 
   // Thread tracking

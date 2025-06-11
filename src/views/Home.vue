@@ -22,10 +22,6 @@
         :character="characterStore.currentCharacter"
         :currentRegion="regionStore.currentRegion"
         :linkedRegions="regionStore.linkedRegions"
-        @characterCreated="onCharacterCreated"
-        @updateCharacter="onUpdateCharacter"
-        @createAndLinkRegion="onRegionCreatedAndLinked"
-        @createQuest="onCreateQuest"
       />
     </div>
   </div>
@@ -36,12 +32,9 @@ import { onMounted, ref, watch } from 'vue';
 import type {
   AddCharacterInput,
   AddQuestInput,
-  CreateAndLinkNewRegion,
   CreateNpcInput,
   CreateStarterRegion,
   DbConnection,
-  Quest,
-  UpdateCharacterInput,
 } from '@/module_bindings/client';
 import { useRegionStore } from '@/stores/regionStore'; // ✅ Pinia store
 import GameInterface from '@/components/GameInterface.vue';
@@ -56,29 +49,6 @@ const regionStore = useRegionStore();       // ✅ store
 const questStore = useQuestStore();
 const npcStore = useNpcStore();
 const initialized = ref(false);
-
-function onCharacterCreated(charData: AddCharacterInput) {
-  console.debug('⚡ Character created event received:', charData);
-  characterStore.addCharacter(charData);
-}
-
-function onUpdateCharacter(charData: UpdateCharacterInput) {
-  console.debug('⚡ Character updated event received:', charData);
-  characterStore.updateCharacter(charData);
-}
-
-async function onRegionCreatedAndLinked(data: CreateAndLinkNewRegion) {
-  console.debug('⚡ Region created event received:', data);
-  const newRegion = await regionStore.createAndLinkNewRegion(data); // ✅ updated
-
-  //move character to new region
-  characterStore.setCurrentCharacterLocation(newRegion);
-}
-
-function onCreateQuest(data: Quest) {
-  console.debug('⚡ Quest created event received:', data);
-  questStore.createQuest(data);
-}
 
 async function addStarterRegion() {
   const testStarterRegion: CreateStarterRegion = { 

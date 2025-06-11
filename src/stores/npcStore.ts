@@ -34,7 +34,7 @@ export const useNpcStore = defineStore('npcStore', () => {
     });
   }
 
-  function createNpc(data: CreateNpcInput): Promise<Npc> {
+  async function createNpc(data: CreateNpcInput): Promise<Npc> {
     return new Promise((resolve, reject) => {
       if (!connection.value) return;
 

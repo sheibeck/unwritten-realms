@@ -57,8 +57,11 @@ export const useQuestStore = defineStore('questStore', () => {
       }, 10000);
 
       connection.value.db.quest.onInsert((_ctx, quest) => {
+        console.debug('🪄 Quest insert event received:', quest);
+
         if (quest.name === data.name) {
-          clearTimeout(timeout); // ✅ Cancel timeout
+          console.debug('✅ Matching quest found, resolving promise');
+          clearTimeout(timeout);
           qid.unsubscribe();
           resolve(quest);
         }
@@ -70,6 +73,7 @@ export const useQuestStore = defineStore('questStore', () => {
 
   return {
     initialize,
-    createQuest
+    createQuest,
+    quests
   };
 });
