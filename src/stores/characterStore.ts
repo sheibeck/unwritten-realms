@@ -14,11 +14,11 @@ export const useCharacterStore = defineStore('characterStore', () => {
   const currentCharacter = shallowRef<Character | null>();
   const mainStore = useMainStore();
   const regionStore = useRegionStore();
-  const connection = computed(() => mainStore.connection);
+  const connection = computed(() => mainStore.connection.value);
 
   function initialize() {
     if (!connection.value) {
-      console.warn('No connection provided to charcterStore');
+      console.warn('No connection provided to characterStore');
       return;
     }
 
