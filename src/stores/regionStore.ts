@@ -8,7 +8,7 @@ export const useRegionStore = defineStore('regionStore', () => {
   const currentRegion = shallowRef<Region | null>();
   const linkedRegions = shallowRef<Array<Region>>([]);
   const mainStore = useMainStore();
-  const connection = computed(() => mainStore.connection);
+  const connection = computed(() => mainStore.connection.value);
 
   function initialize() {
     if (!connection.value) {
