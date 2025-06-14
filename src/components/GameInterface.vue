@@ -355,11 +355,15 @@ async function handleExplore(originRegion: Region) {
   showTravel.value = false;
 }
 
-function buildPayload(action: string, messageContent: string, additionalData: Record<string, any> = {}): Record<string, any> {
+function buildPayload(
+  action: string,
+  messageContent: string,
+  additionalData: Record<string, any> = {}
+): Record<string, any> {
   const payload: Record<string, any> = {
-    action: action,
+    action,
     message: messageContent,
-    characterId: props.character.characterId,
+    characterId: props.character?.characterId ?? null,
     context: additionalData,
   };
   return payload;

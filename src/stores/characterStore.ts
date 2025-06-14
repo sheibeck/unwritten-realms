@@ -14,11 +14,11 @@ export const useCharacterStore = defineStore('characterStore', () => {
   const currentCharacter = shallowRef<Character | null>();
   const mainStore = useMainStore();
   const regionStore = useRegionStore();
-  const connection = computed(() => mainStore.connection);
+  const connection = computed(() => mainStore.connection.value);
 
   function initialize() {
     if (!connection.value) {
-      console.warn('No connection provided to charcterStore');
+      console.warn('No connection provided to characterStore');
       return;
     }
 
@@ -83,8 +83,24 @@ export const useCharacterStore = defineStore('characterStore', () => {
       console.warn('No active SpaceTimeDB connection');
       return;
     }
-    
-    connection.value.reducers.updateCharacter(character);
+
+    const payload: UpdateCharacterInput = { ...character };
+
+    if (payload.quests && currentCharacter.value?.quests) {
+      const existingIds = new Set(
+        currentCharacter.value.quests.map((q) => q.questId)
+      );
+      const filtered = payload.quests.filter((q) => !existingIds.has(q.questId));
+
+      if (filtered.length > 0) {
+        payload.quests = filtered;
+      } else {
+        // prevent sending empty quest array
+        delete (payload as any).quests;
+      }
+    }
+
+    connection.value.reducers.updateCharacter(payload);
   }
 
   function setCurrentCharacter(character: Character | null) 
