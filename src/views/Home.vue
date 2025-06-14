@@ -229,7 +229,7 @@ function subscribeToSpaceTime(conn: DbConnection) {
         console.error('Region subscription error:', e);
       })
       .subscribe([
-        `SELECT * FROM region WHERE RegionId = '${region.regionId}'`,
+        `SELECT * FROM region WHERE RegionId = '${characterStore.currentCharacter?.currentLocation}'`,
         `SELECT * FROM npc WHERE RegionId = '${region.regionId}'`,
         `SELECT q.* FROM quest q JOIN npc n WHERE q.NpcId = n.NpcId AND n.RegionId = '${region.regionId}'`
       ]);
