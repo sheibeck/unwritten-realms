@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import { resolveAssistant, classifyAction, normalizeAction, isSpecialized } from './assistantMap.js';
 import type { AssistantDescriptor, EngineAction } from './assistantMap.js';
 

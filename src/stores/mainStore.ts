@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { shallowRef, ref } from 'vue';
-import type { DbConnection, User } from '@/module_bindings/client';
+import type { DbConnection, User } from '../spacetimedb';
 import { useSpacetime } from '@/composables/useSpacetime';
 import { getCurrentUser } from '@aws-amplify/auth';
 

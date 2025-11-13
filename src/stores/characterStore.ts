@@ -34,7 +34,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       characters.value = updated;
       console.debug('🧙‍♂️ New character inserted:', updated);
 
-      if (character.userId.toHexString() === mainStore.currentUser?.userId.toHexString()) {
+      if (character.userId.toHexString() === mainStore.currentUser?.identity.toHexString()) {
         currentCharacter.value = character;
       }
     });
@@ -53,7 +53,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       characters.value = updated;
       console.debug('🧙‍♂️ Deleted character:', updated);
 
-      if (character.userId.toHexString() === mainStore.currentUser?.userId.toHexString()) {
+      if (character.userId.toHexString() === mainStore.currentUser?.identity.toHexString()) {
         currentCharacter.value = null;
       }
     });

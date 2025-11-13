@@ -18,14 +18,14 @@ export const useQuestStore = defineStore('questStore', () => {
     }
 
     // Setup event listeners
-    connection.value.db.quest.onInsert((_ctx, quest) => {
+  connection.value.db.quest.onInsert((_ctx: any, quest: Quest) => {
       const updated = new Map(quests.value);
       updated.set(quest.questId, quest);
       quests.value = updated;
       console.debug('🌍 New quest inserted:', quest);
     });
 
-    connection.value.db.quest.onUpdate((_ctx, oldQuest, newQuest) => {
+  connection.value.db.quest.onUpdate((_ctx: any, oldQuest: Quest, newQuest: Quest) => {
       const updated = new Map(quests.value);
       updated.delete(oldQuest.questId);
       updated.set(newQuest.questId, newQuest);
@@ -33,7 +33,7 @@ export const useQuestStore = defineStore('questStore', () => {
       console.debug('🌍 Quest updated:', newQuest);
     });
 
-    connection.value.db.quest.onDelete((_ctx, quest) => {
+  connection.value.db.quest.onDelete((_ctx: any, quest: Quest) => {
       const updated = new Map(quests.value);
       updated.delete(quest.questId);
       quests.value = updated;
@@ -68,7 +68,16 @@ export const useQuestStore = defineStore('questStore', () => {
         }
       });
 
-      connection.value.reducers.addQuest(data);
+      connection.value.reducers.addQuest(
+        data.npcId,
+        data.name,
+        data.description,
+        data.steps,
+        data.reward,
+        data.penalty,
+        data.type,
+        data.repeatable
+      );
     });
   }
 

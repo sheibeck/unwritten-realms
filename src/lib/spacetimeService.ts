@@ -53,7 +53,7 @@ export class SpacetimeService {
           .withModuleName(this.moduleName)
           .withToken(idToken)  // ✅ pass the **signed JWT**
           .onConnect((conn, identity) => {
-            this.identity = identity;
+            this.identity = new Identity(identity.__identity__);
             this.connected = true;
             console.debug('Connected to SpaceTimeDB with identity:', identity.toHexString());
 
