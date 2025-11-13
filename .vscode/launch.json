@@ -1,0 +1,46 @@
+{
+    // VS Code launch configurations for Unwritten Realms
+    // Provides ability to start SpaceTimeDB module (C#) and Vite dev server.
+    // Assumptions:
+    // 1. SpaceTimeDB CLI or executable is available on PATH as `spacetimedb` (adjust if different)
+    // 2. C# modules built via `dotnet build` inside `src/module_bindings/server` or solution root before run if needed
+    // 3. Vite dev server started with `npm run dev`
+    // If SpaceTimeDB requires a working directory, update `cwd` accordingly.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Frontend: Vite Dev Server",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "args": [
+                "run",
+                "dev"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "env": {
+                "VITE_SPACETIMEDB_URI": "ws://localhost:3000"
+            }
+        },
+        {
+            "name": "Frontend: Chrome",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/src"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Run Frontend (Vite + Browser)",
+            "configurations": [
+                "Frontend: Vite Dev Server",
+                "Frontend: Chrome"
+            ]
+        }
+    ]
+}
