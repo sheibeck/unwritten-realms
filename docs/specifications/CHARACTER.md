@@ -116,3 +116,15 @@ Usage Constraint:
 - Generated suggestions are advisory; final persisted stats must pass reducer validation to maintain deterministic state.
 
 Status: Draft v0.1 + AI prompt integration note
+
+## 15. Onboarding Lifecycle Reference
+Character creation is part of a broader onboarding state machine defined in `ONBOARDING.md`.
+
+Phases (summary): Auth → Character Check → Initiation → Concept Generation / Refinement (AI loop) → Confirmation → Persistence → Spawn (starter region & zone) → World Loop.
+
+Key Guarantees:
+- AI output is advisory until reducer validation passes.
+- Completeness check ensures no null critical fields before persistence.
+- Starter region auto-creation occurs if none exist, ensuring a valid `currentLocation`.
+
+See `ONBOARDING.md` for: data contracts, state machine diagram, edge cases, and backlog.

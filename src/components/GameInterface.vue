@@ -69,12 +69,15 @@ import { useCharacterStore } from '@/stores/characterStore';
 import { useQuestStore } from '@/stores/questStore';
 import { useNpcStore } from '@/stores/npcStore';
 import { useInteractionEngine } from '@/composables/useInteractionEngine';
+import { emitPhase } from '@/engine/onboardingEvents';
+import { useMainStore } from '@/stores/mainStore';
 
 const interactionEngine = useInteractionEngine();
 const regionStore = useRegionStore();
 const characterStore = useCharacterStore();
 const questStore = useQuestStore();
 const npcStore = useNpcStore();
+const mainStore = useMainStore();
 const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
 const messages = ref<{ raw: string; html: string }[]>([]);
 const userInput = ref('');
@@ -96,6 +99,7 @@ if (props.character) {
   pushMessage('✨ Welcome, brave soul, to Unwritten Worlds!');
   pushMessage('Your story has yet to be inked across the stars.');
   pushMessage('Type `Awaken` to forge your destiny and begin your journey.');
+  emitPhase('INITIATION', mainStore.currentUserId || null);
 }
 
 const activeGameThreadId = ref<string | null>(null);
@@ -264,8 +268,10 @@ function scrollToBottom() {
 
 async function handleCharacterCreationLoop(initialMessage: string, buildPayload: Function, sendPayload: Function, getNextUserInput: () => Promise<string>, updateMainThread: Function) {
   let currentMessage = initialMessage;
+  let iteration = 0;
 
   while (!characterStore.currentCharacter?.characterId) {
+  emitPhase(iteration === 0 ? 'CONCEPT' : 'REFINEMENT', mainStore.currentUserId || null, { iteration });
     const payload = buildPayload('create-character', currentMessage);
     const response = await sendPayload(payload);
 
@@ -282,18 +288,22 @@ async function handleCharacterCreationLoop(initialMessage: string, buildPayload:
         const character = jsonOutput.actions.createCharacter;
         const complete = Object.values(character).every(v => v !== null && v !== undefined && v !== 0 && v !== '');
         if (complete) {
+          emitPhase('CONFIRMATION', mainStore.currentUserId || null);
           await addCharacter(character);
+          emitPhase('PERSISTENCE', mainStore.currentUserId || null, { characterId: character.characterId });
           updateMainThread(result[0].threadId);
           break;
         }
       }
     } else {
       pushMessage(getErrorMessage());
+  emitPhase('ERROR', mainStore.currentUserId || null, { reason: 'character_creation_fetch_failed' });
       break;
     }
 
     currentMessage = await getNextUserInput();
     await pushMessage(`🗨️ You: ${currentMessage}`);
+    iteration++;
   }
 }
 
@@ -422,6 +432,7 @@ async function handleAiResponse(response: any, originalAction: string) {
   if (jsonOutput.actions?.logEvent?.type?.toLowerCase() === "arrival") {
     const update = { characterId: props.character.characterId, currentLocation: jsonOutput.actions.logEvent.locationId };
     await updateCharacter(update as UpdateCharacterInput);
+  emitPhase('ARRIVAL_DESCRIBE', mainStore.currentUserId || null, { locationId: jsonOutput.actions.logEvent.locationId });
   }
 
   // Handle quest creation with interaction engine
@@ -448,6 +459,8 @@ async function handleAiResponse(response: any, originalAction: string) {
 
 onMounted(() => {
   activeGameThreadId.value = localStorage.getItem('unwrittenRealmsThreadId') ?? null;
+  emitPhase('AUTH', mainStore.currentUserId || null);
+  emitPhase('CHECK_CHARACTER', mainStore.currentUserId || null, { hasCharacter: !!props.character });
 })
 </script>
 

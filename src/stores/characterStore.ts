@@ -8,6 +8,7 @@ import type {
 } from '../module_bindings/client';
 import { useMainStore } from './mainStore';
 import { useRegionStore } from './regionStore';
+import { emitPhase } from '@/engine/onboardingEvents';
 import type { DbConnection } from '../module_bindings/client';
 
 export const useCharacterStore = defineStore('characterStore', () => {
@@ -121,6 +122,9 @@ export const useCharacterStore = defineStore('characterStore', () => {
       regionStore.setCurrentRegion(region);
       const connectedRegions = regionStore.findConnectedRegions(region.regionId);         
       regionStore.setLinkedRegion(connectedRegions);
+  emitPhase('SPAWN_REGION', mainStore.currentUserId || null, { regionId: region.regionId });
+  // Placeholder zone emission until zones implemented
+  emitPhase('SPAWN_ZONE', mainStore.currentUserId || null, { regionId: region.regionId, zoneId: 'entry' });
     }
     else {
       console.error("No current character!");
