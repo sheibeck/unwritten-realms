@@ -7,8 +7,10 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "mcp:openai": "tsx scripts/openai-mcp-server.ts"
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "mcp:openai": "tsx scripts/openai-mcp-server.ts",
+    "engine": "tsx scripts/engine-server.ts"
   },
   "dependencies": {
     "@aws-amplify/ui-vue": "^4.3.3",
@@ -20,7 +22,8 @@
     "openai": "^4.70.0",
     "sass": "^1.89.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "express": "^4.21.1"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.16.1",
@@ -37,6 +40,7 @@
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^1.5.0",
-    "vue-tsc": "^2.2.8"
+    "vue-tsc": "^2.2.8",
+    "@types/express": "^4.17.21"
   }
 }

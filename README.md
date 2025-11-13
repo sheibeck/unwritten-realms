@@ -79,6 +79,65 @@ npm run test
 ```
 Vitest covers store logic and utilities (expand tests based on spec edge cases).
 
+## AI Game Engine (Assistant Routing)
+The previous external n8n workflow has been migrated into the repository as a lightweight HTTP engine that selects an OpenAI Assistant based on an action.
+
+### Prerequisites
+1. Set `OPENAI_API_KEY` in your environment (e.g., PowerShell `$Env:OPENAI_API_KEY="sk-..."`).
+2. Ensure assistants are exported locally (`npm run mcp:openai` then run export script if needed).
+
+### Start Engine Server
+```powershell
+npm run engine
+```
+Runs `scripts/engine-server.ts` (Express) on port `8787` (override with `ENGINE_PORT`).
+
+### Health Check
+```powershell
+Invoke-RestMethod -Uri http://localhost:8787/health
+```
+
+### POST /uwengine Endpoint
+Request body shape:
+```json
+{
+	"action": "travel",        // create-character | explore | travel | general-action | level-up | unknown
+	"message": "Travel from A to B via northern pass",
+	"threadId": "optional-existing-thread",
+	"context": { "currentRegion": "A", "targetRegion": "B" }
+}
+```
+
+Sample invocation (PowerShell):
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:8787/uwengine -Body (@{ action='travel'; message='Travel from A to B'; context=@{ currentRegion='A'; targetRegion='B' }} | ConvertTo-Json) -ContentType 'application/json'
+```
+
+### Response Shape
+```json
+{
+	"assistant": "Region Travel Resolver",
+	"assistant_id": "asst_...",
+	"threadId": "thread_x",
+	"runId": "run_y",
+	"output": ["Narrative line 1", "Narrative line 2"],
+	"elapsedMs": 1240
+}
+```
+
+### Internal Flow
+1. Map `action` to assistant via `src/engine/assistantMap.ts`.
+2. Create or reuse thread.
+3. Compose message with action + context JSON.
+4. Poll run until `completed`.
+5. Aggregate assistant message chunks into `output`.
+
+### Extending
+- Add new assistant: update `assistantMap.ts` with ID & purpose.
+- Add classification layer: if `action` missing, implement a small heuristic or LLM classifier before routing.
+- Streaming: replace polling loop in `gameEngine.process()` with event or incremental fetch for lower latency.
+- Audit: record prompt checksum with generated artifact (future enhancement).
+
 ## Project Structure (High-Level)
 ```
 src/
@@ -126,6 +185,8 @@ amplify/             # Amplify backend resources
 - Implement quest status lifecycle & completion
 - Introduce energy cost to travel (stats addition)
 - Expand test coverage with contract tests vs SpaceTimeDB modules
+- Integrate streaming run updates for AI Game Engine
+- Persist prompt checksum with generated entities
 
 ## License
 TBD – Add appropriate license before public distribution.

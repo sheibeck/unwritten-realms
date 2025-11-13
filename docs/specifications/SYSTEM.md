@@ -31,6 +31,7 @@ An OpenAI MCP (Model Context Protocol) server (`scripts/openai-mcp-server.ts`) p
 - Exporting assistant prompt bodies with YAML front-matter + checksum into `ai/<folder>/<slug>_prompt.txt`.
 - Validating local prompt integrity (`validate-openai-prompts.ts`).
 - Renaming assistants (`update-openai-assistant.ts`) with subsequent re-export for local consistency.
+- Runtime Game Loop Engine (`scripts/engine-server.ts`) replaces prior external n8n workflow. Provides a POST `/uwengine` endpoint accepting `{ action, message, threadId?, context? }` and internally routes to the appropriate assistant using `src/engine/assistantMap.ts` and `GameEngine.process()`.
 
 Resolver Prompt Role:
 - Prompts guide generative logic (e.g., region creation, character creation & leveling, world events) external to deterministic reducers.
@@ -84,6 +85,8 @@ See `NFR.md`.
 - Travel costs & constraints (energy, items?)
 - Access control for admin/world-editing features
 - Prompt versioning impact on reproducibility (store prompt checksum with generated artifacts?)
+- Thread lifecycle policy (when to recycle vs create new for long-running player sessions?)
+- Engine streaming support vs polling for lower latency.
 
 ## 10. Specification Conventions
 Each feature spec will include sections:

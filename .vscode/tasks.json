@@ -61,5 +61,22 @@
 			"isBackground": false,
 			"group": "build"
 		}
+		,
+		{
+			"label": "engine-start",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoLogo",
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"npm run engine"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"detail": "Starts AI Game Engine Express server on configured port (default 8787)."
+		}
 	]
 }
