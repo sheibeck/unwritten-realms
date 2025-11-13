@@ -1,9 +1,0 @@
-Arrive at 
- regionId:"cd7cd7b7686d4f77b5ea76901e866875"
- name:"Dreadful and craggy"
- description:"Dread Crags"
- climate:"Temperate"
- culture:"Tribal"
- tier: 1
- IsStartingRegion: true
- linkedRegions: ["0c469743fdc14578b70463cadcddf88b"]

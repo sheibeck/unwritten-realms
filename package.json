@@ -7,13 +7,17 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "mcp:openai": "tsx scripts/openai-mcp-server.ts"
   },
   "dependencies": {
     "@aws-amplify/ui-vue": "^4.3.3",
     "@clockworklabs/spacetimedb-sdk": "^1.1.0",
+    "@modelcontextprotocol/sdk": "^1.21.1",
     "aws-amplify": "^6.14.4",
+    "dotenv": "^16.6.1",
     "marked": "^15.0.12",
+    "openai": "^4.70.0",
     "sass": "^1.89.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.1"
@@ -32,7 +36,7 @@
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vue-tsc": "^2.2.8",
-    "vitest": "^1.5.0"
+    "vitest": "^1.5.0",
+    "vue-tsc": "^2.2.8"
   }
 }

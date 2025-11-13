@@ -26,6 +26,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# environment files
+.env
+.env.*
 
 # amplify
 node_modules
