@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Character } from '../spacetimedb';
+import type { Character } from '@/spacetimedb/client';
 
 const props = defineProps<{
   character: Character;

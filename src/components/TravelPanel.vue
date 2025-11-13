@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Region } from '../spacetimedb';
+import type { Region } from '@/spacetimedb/client';
 
 const props = defineProps<{
   currentRegion: Region;

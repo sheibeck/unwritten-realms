@@ -5,11 +5,11 @@ import type {
   AddCharacter,
   UpdateCharacter,
   Region
-} from '../spacetimedb';
+} from '@/spacetimedb/client';
 import { useMainStore } from './mainStore';
 import { useRegionStore } from './regionStore';
 import { emitPhase } from '@/engine/onboardingEvents';
-import type { DbConnection } from '../spacetimedb';
+import type { DbConnection } from '@/spacetimedb/client';
 
 export const useCharacterStore = defineStore('characterStore', () => {
   const characters = ref<Map<string, Character>>(new Map());

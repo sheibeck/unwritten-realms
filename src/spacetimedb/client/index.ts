@@ -222,12 +222,7 @@ export type Reducer = never
 ;
 
 export class RemoteReducers {
-  connection: __DbConnectionImpl;
-  setCallReducerFlags: SetReducerFlags;
-  constructor(connection: __DbConnectionImpl, setCallReducerFlags: SetReducerFlags) {
-    this.connection = connection;
-    this.setCallReducerFlags = setCallReducerFlags;
-  }
+  constructor(private connection: __DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
   setName(name: string) {
     const __args = { name };
@@ -453,10 +448,7 @@ export class SetReducerFlags {
 }
 
 export class RemoteTables {
-  connection: __DbConnectionImpl;
-  constructor(connection: __DbConnectionImpl) {
-    this.connection = connection;
-  }
+  constructor(private connection: __DbConnectionImpl) {}
 
   get character(): CharacterTableHandle<'character'> {
     // clientCache is a private property

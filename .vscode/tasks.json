@@ -17,19 +17,20 @@
 			"group": "build"
 		},
 		{
-			"label": "spacetime-publish",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoLogo",
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-Command",
-				"cd .\\src; spacetime publish --server local --project-path spacetimedb unwrittenrealms"
-			],
-			"isBackground": false,
-			"group": "build"
+			"type": "npm",
+			"script": "spacetime:generate",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "spacetime: generate",
+			"detail": "Generate spacetime client code."
+		},
+		{
+			"type": "npm",
+			"script": "spacetime:publish",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "spacetime: publish",
+			"detail": "Publish spacetime schema."
 		},
 		{
 			"type": "npm",

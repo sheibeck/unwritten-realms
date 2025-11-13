@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from 'vue';
 import { marked } from 'marked';
-import { CreateAndLinkNewRegion, UpdateCharacter, type AddCharacter, type Region, type Quest, CreateNpc, Npc } from '../spacetimedb';
+import { CreateAndLinkNewRegion, UpdateCharacter, type AddCharacter, type Region, type Quest, CreateNpc, Npc } from '@/spacetimedb/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
 import { useRegionStore } from '@/stores/regionStore';

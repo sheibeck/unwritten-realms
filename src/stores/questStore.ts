@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import type {
   AddQuest,
   Quest,
-} from '../spacetimedb';
+} from '@/spacetimedb/client';
 import { useMainStore } from './mainStore';
 
 export const useQuestStore = defineStore('questStore', () => {

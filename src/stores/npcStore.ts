@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { useMainStore } from "./mainStore";
-import type { Npc, CreateNpc } from '../spacetimedb';
+import type { Npc, CreateNpc } from '@/spacetimedb/client';
 
 export const useNpcStore = defineStore('npcStore', () => {
   const npcs = ref<Map<string, Npc>>(new Map());

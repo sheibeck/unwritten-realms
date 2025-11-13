@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef } from 'vue';
-import type { CreateAndLinkNewRegion, CreateStarterRegion, Region } from '../spacetimedb';
+import type { CreateAndLinkNewRegion, CreateStarterRegion, Region } from '@/spacetimedb/client';
 import { useMainStore } from './mainStore';
-import type { DbConnection } from '../spacetimedb';
+import type { DbConnection } from '@/spacetimedb/client';
 
 export const useRegionStore = defineStore('regionStore', () => {
   const regions = ref<Map<string, Region>>(new Map());

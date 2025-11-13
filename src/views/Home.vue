@@ -35,7 +35,7 @@ import type {
   CreateNpc,
   CreateStarterRegion,
   DbConnection,
-} from '../spacetimedb';
+} from '@/spacetimedb/client';
 import { useRegionStore } from '@/stores/regionStore'; // ✅ Pinia store
 import GameInterface from '@/components/GameInterface.vue';
 import { useCharacterStore } from '@/stores/characterStore';
