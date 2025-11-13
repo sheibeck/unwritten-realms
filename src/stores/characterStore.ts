@@ -21,7 +21,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
   const connection = mainStore.connection as unknown as ConnectionRef;
 
   function initialize() {
-  const conn = connection.value;
+    const conn = connection.value;
     if (!conn) {
       console.warn('No connection provided to characterStore');
       return;
@@ -108,8 +108,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
     connection.value.reducers.updateCharacter(payload);
   }
 
-  function setCurrentCharacter(character: Character | null) 
-  {
+  function setCurrentCharacter(character: Character | null) {
     currentCharacter.value = character;
   }
 
@@ -120,13 +119,14 @@ export const useCharacterStore = defineStore('characterStore', () => {
 
       //update current region
       regionStore.setCurrentRegion(region);
-      const connectedRegions = regionStore.findConnectedRegions(region.regionId);         
+      const connectedRegions = regionStore.findConnectedRegions(region.regionId);
       regionStore.setLinkedRegion(connectedRegions);
-  emitPhase('SPAWN_REGION', mainStore.currentUserId || null, { regionId: region.regionId });
-  // Placeholder zone emission until zones implemented
-  emitPhase('SPAWN_ZONE', mainStore.currentUserId || null, { regionId: region.regionId, zoneId: 'entry' });
-    }
-    else {
+      emitPhase('SPAWN_REGION', mainStore.currentUserId || null, { regionId: region.regionId });
+      // Placeholder zone emission until zones implemented
+      emitPhase('SPAWN_ZONE', mainStore.currentUserId || null, { regionId: region.regionId, zoneId: 'entry' });
+      // Emit ARRIVAL_DESCRIBE phase for narrative handoff
+      emitPhase('ARRIVAL_DESCRIBE', mainStore.currentUserId || null, { regionId: region.regionId, zoneId: 'entry' });
+    } else {
       console.error("No current character!");
     }
   }
