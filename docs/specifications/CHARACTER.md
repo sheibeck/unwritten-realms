@@ -100,4 +100,19 @@ Components:
 - Character deletion & archival
 - Multi-character switching UI
 
-Status: Draft v0.1
+## 14. AI Resolver Prompts
+Two OpenAI Assistant prompts support character lifecycle generation:
+- `character_creation_resolver_prompt.txt` – Guides initial character concept generation.
+- `character_level_resolver_prompt.txt` – Assists in level progression suggestions.
+
+Location & Naming:
+- Stored under `ai/character/` with YAML front-matter (assistant id, name, model, timestamps, checksum).
+- Folder derives from first token of assistant name; filenames use lowercased name with underscores + `_prompt.txt` suffix.
+
+Integrity:
+- Edits require checksum regeneration via export script; validation uses `validate-openai-prompts.ts`.
+
+Usage Constraint:
+- Generated suggestions are advisory; final persisted stats must pass reducer validation to maintain deterministic state.
+
+Status: Draft v0.1 + AI prompt integration note

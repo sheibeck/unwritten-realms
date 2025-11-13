@@ -25,6 +25,21 @@ Data Flow:
 4. Subscriptions push updates to stores; components reactively render
 5. Travel & world events resolved through world engine resolvers (future extension)
 
+### AI Assistant Integration
+An OpenAI MCP (Model Context Protocol) server (`scripts/openai-mcp-server.ts`) provides tooling for:
+- Listing, creating, updating, deleting assistants scoped with metadata `project: Unwritten-Realms`.
+- Exporting assistant prompt bodies with YAML front-matter + checksum into `ai/<folder>/<slug>_prompt.txt`.
+- Validating local prompt integrity (`validate-openai-prompts.ts`).
+- Renaming assistants (`update-openai-assistant.ts`) with subsequent re-export for local consistency.
+
+Resolver Prompt Role:
+- Prompts guide generative logic (e.g., region creation, character creation & leveling, world events) external to deterministic reducers.
+- They do not mutate state directly; generated output is mediated by validated reducers.
+
+Determinism Strategy:
+- Generative outputs from assistants are post-processed/validated before reducer invocation to maintain domain constraints.
+- Checksum tagging ensures traceability of which prompt version influenced a generation cycle.
+
 ## 5. Domain Model Overview
 Core Entities:
 - User: identity, linkage to characters
@@ -68,6 +83,7 @@ See `NFR.md`.
 - World time granularity & tick rate
 - Travel costs & constraints (energy, items?)
 - Access control for admin/world-editing features
+- Prompt versioning impact on reproducibility (store prompt checksum with generated artifacts?)
 
 ## 10. Specification Conventions
 Each feature spec will include sections:

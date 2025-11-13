@@ -109,4 +109,19 @@ Future: procedural generation modules may auto-link new regions (WORLD_ENGINE sp
 - Dynamic events altering resources
 - Region ownership / faction control
 
-Status: Draft v0.1
+## 15. AI Resolver Prompts
+Region-related generation utilizes OpenAI Assistant prompts:
+- `region_creation_resolver_prompt.txt` – Suggests lore & attributes for new regions.
+- `region_travel_resolver_prompt.txt` – Provides narrative context and potential travel event hooks.
+
+Location & Structure:
+- Stored under `ai/region/` with YAML front-matter (assistant metadata + checksum).
+- Folder naming follows first token rule; filenames lowercase with underscores + `_prompt.txt` suffix.
+
+Deterministic Guardrails:
+- Generated descriptive/lore output is sanitized; structural fields (links, tier, costs) validated by reducers.
+
+Version Traceability:
+- Optional future enhancement: record prompt checksum alongside created region for historical attribution.
+
+Status: Draft v0.1 + AI prompt integration note

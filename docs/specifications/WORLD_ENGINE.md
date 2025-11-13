@@ -36,6 +36,13 @@ Open Questions:
 3. Quest Expiration (auto-fail after deadline)
 4. NPC Behavior (movement or script triggers) [later]
 
+### AI Prompt Support
+Generative context for world evolution is sourced from assistant prompts stored under `ai/world/`:
+- `world_engine_resolver_prompt.txt` – High-level world cycle / systemic event guidance.
+- `world_event_resolver_prompt.txt` – Event narrative and parameter suggestion.
+
+These prompts produce candidate descriptions or event seeds which are validated before reducer application to maintain determinism. Prompt files include YAML front-matter (assistant id, model, timestamps, checksum) for traceability.
+
 ## 7. Flow Example: Tick Cycle
 1. Scheduler triggers tick increment
 2. Fetch pending resolver queue
@@ -74,4 +81,4 @@ Open Questions:
 - Predictive pre-computation of events
 - Event subscription filters per client
 
-Status: Draft v0.1
+Status: Draft v0.1 + AI prompt integration note
