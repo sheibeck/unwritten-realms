@@ -2,7 +2,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "spacetimedb-start",
+			"label": "spacetime-start",
 			"type": "shell",
 			"command": "powershell",
 			"args": [
@@ -11,13 +11,13 @@
 				"-ExecutionPolicy",
 				"Bypass",
 				"-Command",
-				"cd .\\src\\module_bindings\\server; spacetimedb-cli start"
+				"cd .\\src; spacetime start"
 			],
 			"isBackground": true,
 			"group": "build"
 		},
 		{
-			"label": "spacetimedb-generate",
+			"label": "spacetime-publish",
 			"type": "shell",
 			"command": "powershell",
 			"args": [
@@ -26,37 +26,7 @@
 				"-ExecutionPolicy",
 				"Bypass",
 				"-Command",
-				"cd .\\src\\module_bindings\\server; spacetimedb-cli generate -l typescript -o ../client"
-			],
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "spacetimedb-deploy",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoLogo",
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-Command",
-				"cd .\\src\\module_bindings\\server; spacetimedb-cli deploy unwrittenrealms"
-			],
-			"isBackground": false,
-			"group": "build"
-		},
-		{
-			"label": "spacetimedb-publish",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoLogo",
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-Command",
-				"cd .\\src\\module_bindings\\server; spacetimedb-cli publish unwrittenrealms"
+				"cd .\\src; spacetime publish --server local --project-path spacetimedb unwrittenrealms"
 			],
 			"isBackground": false,
 			"group": "build"

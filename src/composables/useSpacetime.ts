@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { SpacetimeService } from '../lib/spacetimeService';
 import { Identity } from '@clockworklabs/spacetimedb-sdk';
-import type { DbConnection } from '../module_bindings/client';
+import type { DbConnection } from '../spacetimedb';
 
 const connected = ref(false);
 const identity = ref<Identity | null>(null);

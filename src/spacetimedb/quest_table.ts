@@ -3,35 +3,33 @@
 
 /* eslint-disable */
 /* tslint:disable */
-// @ts-nocheck
 import {
-  AlgebraicType,
-  AlgebraicValue,
-  BinaryReader,
-  BinaryWriter,
-  type CallReducerFlags,
-  ConnectionId,
-  DbConnectionBuilder,
-  DbConnectionImpl,
-  type DbContext,
-  type ErrorContextInterface,
-  type Event,
-  type EventContextInterface,
-  Identity,
-  ProductType,
-  ProductTypeElement,
-  type ReducerEventContextInterface,
-  SubscriptionBuilderImpl,
-  type SubscriptionEventContextInterface,
-  SumType,
-  SumTypeVariant,
-  TableCache,
-  TimeDuration,
-  Timestamp,
-  deepEqual,
-} from "@clockworklabs/spacetimedb-sdk";
+  AlgebraicType as __AlgebraicTypeValue,
+  BinaryReader as __BinaryReader,
+  BinaryWriter as __BinaryWriter,
+  ClientCache as __ClientCache,
+  ConnectionId as __ConnectionId,
+  DbConnectionBuilder as __DbConnectionBuilder,
+  DbConnectionImpl as __DbConnectionImpl,
+  Identity as __Identity,
+  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
+  TableCache as __TableCache,
+  TimeDuration as __TimeDuration,
+  Timestamp as __Timestamp,
+  deepEqual as __deepEqual,
+  type AlgebraicType as __AlgebraicTypeType,
+  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
+  type CallReducerFlags as __CallReducerFlags,
+  type ErrorContextInterface as __ErrorContextInterface,
+  type Event as __Event,
+  type EventContextInterface as __EventContextInterface,
+  type ReducerEventContextInterface as __ReducerEventContextInterface,
+  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
+  type TableHandle as __TableHandle,
+} from "spacetimedb";
 import { Quest } from "./quest_type";
-import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables } from ".";
+import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
+declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
 
 /**
  * Table handle for the table `quest`.
@@ -43,10 +41,12 @@ import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables
  * but to directly chain method calls,
  * like `ctx.db.quest.on_insert(...)`.
  */
-export class QuestTableHandle {
-  tableCache: TableCache<Quest>;
+export class QuestTableHandle<TableName extends string> implements __TableHandle<TableName> {
+  // phantom type to track the table name
+  readonly tableName!: TableName;
+  tableCache: __TableCache<Quest>;
 
-  constructor(tableCache: TableCache<Quest>) {
+  constructor(tableCache: __TableCache<Quest>) {
     this.tableCache = tableCache;
   }
 
@@ -73,7 +73,7 @@ export class QuestTableHandle {
     // if such a row is present in the client cache.
     find: (col_val: string): Quest | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.questId, col_val)) {
+        if (__deepEqual(row.questId, col_val)) {
           return row;
         }
       }

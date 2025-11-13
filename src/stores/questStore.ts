@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type {
-  AddQuestInput,
+  AddQuest,
   Quest,
-} from '../module_bindings/client';
+} from '../spacetimedb';
 import { useMainStore } from './mainStore';
 
 export const useQuestStore = defineStore('questStore', () => {
@@ -42,7 +42,7 @@ export const useQuestStore = defineStore('questStore', () => {
   }
 
   // Returns the fully created Quest (with questId) once inserted
-  function createQuest(data: AddQuestInput): Promise<Quest> {
+  function createQuest(data: AddQuest): Promise<Quest> {
     return new Promise((resolve, reject) => {
       if (!connection.value) {
         console.warn('No active SpaceTimeDB connection');

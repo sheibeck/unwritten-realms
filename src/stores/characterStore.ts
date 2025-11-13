@@ -2,14 +2,14 @@ import { defineStore } from 'pinia';
 import { ref, shallowRef } from 'vue';
 import type {
   Character,
-  AddCharacterInput,
-  UpdateCharacterInput,
+  AddCharacter,
+  UpdateCharacter,
   Region
-} from '../module_bindings/client';
+} from '../spacetimedb';
 import { useMainStore } from './mainStore';
 import { useRegionStore } from './regionStore';
 import { emitPhase } from '@/engine/onboardingEvents';
-import type { DbConnection } from '../module_bindings/client';
+import type { DbConnection } from '../spacetimedb';
 
 export const useCharacterStore = defineStore('characterStore', () => {
   const characters = ref<Map<string, Character>>(new Map());
@@ -75,37 +75,76 @@ export const useCharacterStore = defineStore('characterStore', () => {
     });
   }
 
-  function addCharacter(character: AddCharacterInput) {
+  function addCharacter(character: AddCharacter) {
     if (!connection.value) {
       console.warn('No active SpaceTimeDB connection');
       return;
     }
-    connection.value.reducers.addCharacter(character);
+    // Pass all required arguments explicitly
+    connection.value.reducers.addCharacter(
+      character.name,
+      character.description,
+      character.race,
+      character.archetype,
+      character.profession,
+      character.startingRegion,
+      character.strength,
+      character.dexterity,
+      character.intelligence,
+      character.constitution,
+      character.wisdom,
+      character.charisma,
+      character.maxHealth,
+      character.currentHealth,
+      character.maxMana,
+      character.currentMana,
+      character.raceAbilities,
+      character.professionAbilities,
+      character.level,
+      character.xp,
+      character.equippedWeapon
+    );
   }
 
-  function updateCharacter(character: UpdateCharacterInput) {
+  function updateCharacter(character: UpdateCharacter) {
     if (!connection.value) {
       console.warn('No active SpaceTimeDB connection');
       return;
     }
-
-    const payload: UpdateCharacterInput = { ...character };
-
-    if (payload.quests && currentCharacter.value?.quests) {
-      const existingIds = new Set(
-        currentCharacter.value.quests.map((q) => q.questId)
-      );
-      const filtered = payload.quests.filter((q) => !existingIds.has(q.questId));
-
-      if (filtered.length > 0) {
-        payload.quests = filtered;
-      } else {
-        // prevent sending empty quest array
-        delete (payload as any).quests;
-      }
-    }
-
-    connection.value.reducers.updateCharacter(payload);
+    // Pass all required arguments explicitly
+    connection.value.reducers.updateCharacter(
+      character.characterId,
+      character.name,
+      character.description,
+      character.currentLocation,
+      character.strength,
+      character.dexterity,
+      character.intelligence,
+      character.constitution,
+      character.wisdom,
+      character.charisma,
+      character.maxHealth,
+      character.currentHealth,
+      character.maxMana,
+      character.currentMana,
+      character.raceAbilities,
+      character.professionAbilities,
+      character.armorType,
+      character.inventoryItems,
+      character.head,
+      character.shoulders,
+      character.back,
+      character.chest,
+      character.arms,
+      character.hands,
+      character.legs,
+      character.feet,
+      character.rings,
+      character.necklace,
+      character.earrings,
+      character.relic,
+      character.equippedWeapon
+    );
   }
 
   function setCurrentCharacter(character: Character | null) {
@@ -115,7 +154,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
   function setCurrentCharacterLocation(region: Region) {
     if (currentCharacter.value) {
       const updatedCharacter = { characterId: currentCharacter.value.characterId, currentLocation: region.regionId };
-      updateCharacter(updatedCharacter as UpdateCharacterInput);
+  updateCharacter(updatedCharacter as UpdateCharacter);
 
       //update current region
       regionStore.setCurrentRegion(region);
@@ -133,8 +172,9 @@ export const useCharacterStore = defineStore('characterStore', () => {
 
   // Stub quest logging helper used by interaction engine
   function logQuest(data: { characterId?: string; quests: { questId: string; step: number; status: string }[] }) {
+    // This function needs to be refactored to match the new UpdateCharacter signature or removed if not needed
     if (!data.characterId) return;
-    updateCharacter({ characterId: data.characterId, quests: data.quests } as UpdateCharacterInput);
+    // updateCharacter({ characterId: data.characterId, quests: data.quests } as UpdateCharacter); // REMOVE or REFACTOR
   }
 
   return {

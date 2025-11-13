@@ -30,12 +30,12 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 import type {
-  AddCharacterInput,
-  AddQuestInput,
-  CreateNpcInput,
+  AddCharacter,
+  AddQuest,
+  CreateNpc,
   CreateStarterRegion,
   DbConnection,
-} from '@/module_bindings/client';
+} from '../spacetimedb';
 import { useRegionStore } from '@/stores/regionStore'; // ✅ Pinia store
 import GameInterface from '@/components/GameInterface.vue';
 import { useCharacterStore } from '@/stores/characterStore';
@@ -67,7 +67,7 @@ async function addCharacterTest() {
   const createdRegion = regionStore.findRegionByName("Hollow Hill");
 
   if (createdRegion) {
-    const testCharacter: AddCharacterInput = {
+  const testCharacter: AddCharacter = {
       name: 'Jouctas',
       description: 'Pale, guant and humanoid, a Hollowborn dressed in a drab, gray cloak.',
       race: 'Hollowborn',
@@ -112,13 +112,13 @@ async function addNpc() {
     regionId: createdRegion?.regionId
   };
 
-  await npcStore.createNpc(npcData as CreateNpcInput);
+  await npcStore.createNpc(npcData as CreateNpc);
 }
 
 async function addQuest() {
   const createdNpc = npcStore.findNpcByName("Mysterious Stranger");
 
-  const data: AddQuestInput = {
+  const data: AddQuest = {
     name: `Mysterious Stranger's Quest`,
     description: `A really cool quest you know you want to do`,
     npcId: createdNpc?.npcId ?? "",
@@ -129,7 +129,7 @@ async function addQuest() {
     repeatable: false
   };
 
-  await questStore.createQuest(data as AddQuestInput);
+  await questStore.createQuest(data as AddQuest);
 }
 
 async function connectSpacetime() {
@@ -175,7 +175,7 @@ function subscribeToSpaceTime(conn: DbConnection) {
       console.debug('✅ Subscription initialized.');
 
       const currentUser = Array.from(ctx.db.user.iter()).find(
-        u => u.userId.toHexString() === conn.identity?.toHexString()
+        u => u.identity.toHexString() === conn.identity?.toHexString()
       ) || null;
       mainStore.setCurrentUser(currentUser);
 

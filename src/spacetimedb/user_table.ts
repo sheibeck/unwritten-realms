@@ -3,35 +3,33 @@
 
 /* eslint-disable */
 /* tslint:disable */
-// @ts-nocheck
 import {
-  AlgebraicType,
-  AlgebraicValue,
-  BinaryReader,
-  BinaryWriter,
-  type CallReducerFlags,
-  ConnectionId,
-  DbConnectionBuilder,
-  DbConnectionImpl,
-  type DbContext,
-  type ErrorContextInterface,
-  type Event,
-  type EventContextInterface,
-  Identity,
-  ProductType,
-  ProductTypeElement,
-  type ReducerEventContextInterface,
-  SubscriptionBuilderImpl,
-  type SubscriptionEventContextInterface,
-  SumType,
-  SumTypeVariant,
-  TableCache,
-  TimeDuration,
-  Timestamp,
-  deepEqual,
-} from "@clockworklabs/spacetimedb-sdk";
+  AlgebraicType as __AlgebraicTypeValue,
+  BinaryReader as __BinaryReader,
+  BinaryWriter as __BinaryWriter,
+  ClientCache as __ClientCache,
+  ConnectionId as __ConnectionId,
+  DbConnectionBuilder as __DbConnectionBuilder,
+  DbConnectionImpl as __DbConnectionImpl,
+  Identity as __Identity,
+  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
+  TableCache as __TableCache,
+  TimeDuration as __TimeDuration,
+  Timestamp as __Timestamp,
+  deepEqual as __deepEqual,
+  type AlgebraicType as __AlgebraicTypeType,
+  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
+  type CallReducerFlags as __CallReducerFlags,
+  type ErrorContextInterface as __ErrorContextInterface,
+  type Event as __Event,
+  type EventContextInterface as __EventContextInterface,
+  type ReducerEventContextInterface as __ReducerEventContextInterface,
+  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
+  type TableHandle as __TableHandle,
+} from "spacetimedb";
 import { User } from "./user_type";
-import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables } from ".";
+import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
+declare type __keep = [EventContext, Reducer, RemoteReducers, RemoteTables];
 
 /**
  * Table handle for the table `user`.
@@ -43,10 +41,12 @@ import { type EventContext, type Reducer, type RemoteReducers, type RemoteTables
  * but to directly chain method calls,
  * like `ctx.db.user.on_insert(...)`.
  */
-export class UserTableHandle {
-  tableCache: TableCache<User>;
+export class UserTableHandle<TableName extends string> implements __TableHandle<TableName> {
+  // phantom type to track the table name
+  readonly tableName!: TableName;
+  tableCache: __TableCache<User>;
 
-  constructor(tableCache: TableCache<User>) {
+  constructor(tableCache: __TableCache<User>) {
     this.tableCache = tableCache;
   }
 
@@ -58,22 +58,22 @@ export class UserTableHandle {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `userId` unique index on the table `user`,
+   * Access to the `identity` unique index on the table `user`,
    * which allows point queries on the field of the same name
-   * via the [`UserUserIdUnique.find`] method.
+   * via the [`UserIdentityUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.user.userId().find(...)`.
+   * like `ctx.db.user.identity().find(...)`.
    *
-   * Get a handle on the `userId` unique index on the table `user`.
+   * Get a handle on the `identity` unique index on the table `user`.
    */
-  userId = {
-    // Find the subscribed row whose `userId` column value is equal to `col_val`,
+  identity = {
+    // Find the subscribed row whose `identity` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: Identity): User | undefined => {
+    find: (col_val: __Identity): User | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.userId, col_val)) {
+        if (__deepEqual(row.identity, col_val)) {
           return row;
         }
       }

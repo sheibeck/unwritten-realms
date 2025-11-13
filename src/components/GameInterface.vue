@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted } from 'vue';
 import { marked } from 'marked';
-import { CreateAndLinkNewRegion, UpdateCharacterInput, type AddCharacterInput, type Region, type Quest, CreateNpcInput, Npc } from '../module_bindings/client';
+import { CreateAndLinkNewRegion, UpdateCharacter, type AddCharacter, type Region, type Quest, CreateNpc, Npc } from '../spacetimedb';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
 import { useRegionStore } from '@/stores/regionStore';
@@ -307,7 +307,7 @@ async function handleCharacterCreationLoop(initialMessage: string, buildPayload:
   }
 }
 
-async function addCharacter(characterData: AddCharacterInput) {
+async function addCharacter(characterData: AddCharacter) {
   await characterStore.addCharacter(characterData);
   await pushMessage(`🎉 Character ${characterData.name} has been created!`);
 }
@@ -322,7 +322,7 @@ async function createAndLinkRegion(data: CreateAndLinkNewRegion) {
   pushMessage(`🎉 Region ${data.name} has been created!`);
 }
 
-async function updateCharacter(data: UpdateCharacterInput) {
+async function updateCharacter(data: UpdateCharacter) {
   console.debug('⚡ Character updated event received:', data);
   await characterStore.updateCharacter(data);
   pushMessage(`🎉 Character has been updated!`);
@@ -403,7 +403,7 @@ async function handleAiResponse(response: any, originalAction: string) {
 
   // Handle character creation
   if (jsonOutput.actions.createCharacter) {
-    const character: AddCharacterInput = jsonOutput.actions.createCharacter;
+    const character: AddCharacter = jsonOutput.actions.createCharacter;
     const allPropsHaveValues = Object.values(character).every(v => v !== null && v !== undefined && v !== 0 && v !== "");
     if (allPropsHaveValues) {
       await addCharacter(character);
@@ -422,7 +422,7 @@ async function handleAiResponse(response: any, originalAction: string) {
   }
 
   if (jsonOutput.actions.createNpc) {
-    const newNpc: CreateNpcInput = jsonOutput.actions.createNpc;
+    const newNpc: CreateNpc = jsonOutput.actions.createNpc;
     newNpc.regionId = regionStore.currentRegion?.regionId ?? "";
     const createdNpc: Npc = await npcStore.createNpc(newNpc);
     pushMessage(`🧙 A new NPC has emerged: **${createdNpc.name}**.`);
@@ -431,7 +431,7 @@ async function handleAiResponse(response: any, originalAction: string) {
   // Handle arrival logging
   if (jsonOutput.actions?.logEvent?.type?.toLowerCase() === "arrival") {
     const update = { characterId: props.character.characterId, currentLocation: jsonOutput.actions.logEvent.locationId };
-    await updateCharacter(update as UpdateCharacterInput);
+    await updateCharacter(update as UpdateCharacter);
   emitPhase('ARRIVAL_DESCRIBE', mainStore.currentUserId || null, { locationId: jsonOutput.actions.logEvent.locationId });
   }
 
@@ -447,7 +447,7 @@ async function handleAiResponse(response: any, originalAction: string) {
 
   if (jsonOutput.actions.updateCharacter) {
     const update = jsonOutput.actions.updateCharacter;
-    await updateCharacter(update as UpdateCharacterInput);
+    await updateCharacter(update as UpdateCharacter);
   }
 
   // Thread tracking

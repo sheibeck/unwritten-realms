@@ -1,7 +1,7 @@
 // composables/useInteractionEngine.ts
 import { ref } from 'vue';
 // Adjusted import to point to generated client bindings
-import type { Quest, Npc } from '../module_bindings/client';
+import type { Quest, Npc } from '../spacetimedb';
 import { useCharacterStore } from '@/stores/characterStore';
 
 type Step =

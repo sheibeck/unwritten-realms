@@ -1,6 +1,8 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"] // ⬅️ Match the alias
@@ -15,6 +17,24 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
+    "noImplicitAny": true,
+    "moduleResolution": "Bundler",
+    "isolatedDeclarations": false,
+
+    // This library is ESM-only, do not import commonjs modules
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": false,
+    "useDefineForClassFields": true,
+
+    // Crucial when using esbuild/swc/babel instead of tsc emit:
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }
