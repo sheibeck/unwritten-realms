@@ -125,3 +125,57 @@ Version Traceability:
 - Optional future enhancement: record prompt checksum alongside created region for historical attribution.
 
 Status: Draft v0.1 + AI prompt integration note
+
+## 16. Zones (Intra-Region Subareas)
+Purpose: Provide lightweight granularity for movement and description within a single region ("forest clearing", "ruined watchtower", "riverbank"). Enables richer exploration without requiring new regions.
+
+### 16.1 Scope (Initial)
+In Scope:
+- Textual description of current zone
+- Moving between zones inside the same region (no energy cost initially)
+Out of Scope (Initial):
+- Zone-specific resource harvesting modifiers
+- Combat encounter probability tuning
+- Persistence of dynamic changes per zone
+
+### 16.2 Zone Data Model (Minimal)
+Fields (proposed):
+- `zoneId: string`
+- `regionId: string` (parent)
+- `name: string`
+- `description: string`
+- `tags: string[]` (e.g., `['clearing','ruins','river']`)
+- `linkedZoneIds: string[]` (adjacency inside region)
+
+Open Questions:
+- Do zones form a graph separate from region graph? (Yes, region-local graph)
+- Max zones per region? (No hard cap initial)
+- Should zone transitions influence travelEnergyCost? (Not initially)
+
+### 16.3 Actions
+Canonical engine actions introduced:
+- `region.zone.describe` – Produce or update narrative of the current zone.
+- `travel.zone.move` – Move player avatar to a different zone within the same region.
+
+Classification Heuristics (assistantMap):
+- Descriptive queries containing phrases like "describe the current area", "look around", "what's around here" map to `region.zone.describe`.
+- Movement phrases with intra-region intent ("move within", "go deeper", "advance inside") map to `travel.zone.move`.
+
+### 16.4 Flow (Conceptual)
+Describe Zone:
+1. Player requests description (explicit command or auto after movement).
+2. Engine classifies to `region.zone.describe`.
+3. Resolver returns narrative; store updates currentZone description.
+
+Move Within Region:
+1. Player issues movement intent referencing internal landmark.
+2. Engine classifies to `travel.zone.move`.
+3. Validates adjacency; updates currentZone; triggers automatic `region.zone.describe` for new zone.
+
+### 16.5 Future Enhancements
+- Zone encounter tables (combat / loot)
+- Environmental modifiers (lighting, weather pocket)
+- Zone-based quests / triggers
+- Renown micro-interactions (gaining reputation by helping in a specific zone)
+
+Version: Introduced in taxonomy v0.2 (Zones) – pending reducer implementation.

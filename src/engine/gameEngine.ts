@@ -1,12 +1,12 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
-import { resolveAssistant } from './assistantMap.js';
-import type { AssistantDescriptor } from './assistantMap.js';
+import { resolveAssistant, classifyAction, normalizeAction, isSpecialized } from './assistantMap.js';
+import type { AssistantDescriptor, EngineAction } from './assistantMap.js';
 
 dotenv.config();
 
 export interface EngineRequest {
-  action: string; // e.g. create-character | explore | travel | general-action | level-up
+  action: string; // canonical action or legacy or 'auto'
   message: string; // player message or command
   threadId?: string; // optional existing thread id for continuity
   context?: Record<string, any>; // auxiliary contextual data
@@ -32,14 +32,20 @@ export class GameEngine {
 
   async process(req: EngineRequest): Promise<EngineResponse> {
     const started = Date.now();
-    const assistant = resolveAssistant(req.action);
+    // Determine action (support auto classification and legacy synonyms)
+    const resolvedAction: EngineAction = (() => {
+      if (req.action === 'auto') return classifyAction(req.message);
+      return normalizeAction(req.action);
+    })();
+
+    const assistant = resolveAssistant(resolvedAction);
 
     // Reuse or create thread
     const threadId = req.threadId || (await this.client.beta.threads.create()).id;
 
     // Build composite content (similar to n8n formatted context)
     const formattedContext = req.context ? JSON.stringify(req.context, null, 2) : '{}';
-    const composed = `Action: ${req.action}\nAssistant: ${assistant.name}\nMessage: ${req.message}\nContext:\n${formattedContext}`;
+  const composed = `Action: ${resolvedAction}\nAssistant: ${assistant.name}\nMessage: ${req.message}\nContext:\n${formattedContext}`;
 
     await this.client.beta.threads.messages.create(threadId, {
       role: 'user',
@@ -77,6 +83,11 @@ export class GameEngine {
         outputs.push(...parts);
       }
       raw.push(m);
+    }
+
+    // If specialized action, append a handoff marker advising client to resume world.general
+    if (isSpecialized(resolvedAction)) {
+      outputs.push('[handoff] Returning control to world.general.');
     }
 
     return {

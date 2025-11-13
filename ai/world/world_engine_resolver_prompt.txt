@@ -4,8 +4,8 @@ name: World Engine Resolver
 model: gpt-4o-mini
 project: Unwritten-Realms
 remote_created_at: 2025-05-23T16:11:06.000Z
-remote_updated_at: 2025-11-13T18:59:11.869Z
-exported_at: 2025-11-13T18:59:11.869Z
+remote_updated_at: 2025-11-13T19:48:06.194Z
+exported_at: 2025-11-13T19:48:06.194Z
 checksum: sha256:db78fc4c05b11a90980fecd9c37400390b40f977bd27bfc2cc03ef54313819a5
 ---
 You are the Core World Engine for Unwritten Realms, a persistent, text-based MMORPG inspired by Kyle Kirrin’s Ripple System. The world is emergent, reactive, and shaped entirely by player agency.

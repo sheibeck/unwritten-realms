@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed, shallowRef} from 'vue';
+import { ref, shallowRef } from 'vue';
 import type {
   Character,
   AddCharacterInput,
@@ -8,22 +8,26 @@ import type {
 } from '../module_bindings/client';
 import { useMainStore } from './mainStore';
 import { useRegionStore } from './regionStore';
+import type { DbConnection } from '../module_bindings/client';
 
 export const useCharacterStore = defineStore('characterStore', () => {
   const characters = ref<Map<string, Character>>(new Map());
   const currentCharacter = shallowRef<Character | null>();
   const mainStore = useMainStore();
   const regionStore = useRegionStore();
-  const connection = computed(() => mainStore.connection.value);
+  // Direct reference to mainStore SpaceTime connection ref (force ref shape)
+  interface ConnectionRef { value: DbConnection | null }
+  const connection = mainStore.connection as unknown as ConnectionRef;
 
   function initialize() {
-    if (!connection.value) {
+  const conn = connection.value;
+    if (!conn) {
       console.warn('No connection provided to characterStore');
       return;
     }
 
     // Setup event listeners
-    connection.value.db.character.onInsert((_ctx, character) => {
+    conn.db.character.onInsert((_ctx: any, character: Character) => {
       const updated = new Map(characters.value);
       updated.set(character.characterId, character);
       characters.value = updated;
@@ -34,7 +38,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       }
     });
 
-    connection.value.db.character.onUpdate((_ctx, oldCharacter, newCharacter) => {
+    conn.db.character.onUpdate((_ctx: any, oldCharacter: Character, newCharacter: Character) => {
       const updated = new Map(characters.value);
       updated.delete(oldCharacter.characterId);
       updated.set(newCharacter.characterId, newCharacter);
@@ -42,7 +46,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       console.debug('🧙‍♂️ Updated character:', updated);
     });
 
-    connection.value.db.character.onDelete((_ctx, character) => {
+    conn.db.character.onDelete((_ctx: any, character: Character) => {
       const updated = new Map(characters.value);
       updated.delete(character.characterId);
       characters.value = updated;
@@ -53,7 +57,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       }
     });
 
-    connection.value.reducers.onAddCharacter((e) => {
+    conn.reducers.onAddCharacter((e: any) => {
       if (e.event.status.tag === 'Failed') {
         console.error('AddCharacter failed:', e.event.status.value);
       } else {
@@ -61,7 +65,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
       }
     });
 
-    connection.value.reducers.onUpdateCharacter((e) => {
+    conn.reducers.onUpdateCharacter((e: any) => {
       if (e.event.status.tag === 'Failed') {
         console.error('UpdateCharacter failed:', e.event.status.value);
       } else {
@@ -123,6 +127,12 @@ export const useCharacterStore = defineStore('characterStore', () => {
     }
   }
 
+  // Stub quest logging helper used by interaction engine
+  function logQuest(data: { characterId?: string; quests: { questId: string; step: number; status: string }[] }) {
+    if (!data.characterId) return;
+    updateCharacter({ characterId: data.characterId, quests: data.quests } as UpdateCharacterInput);
+  }
+
   return {
     characters,
     initialize,
@@ -131,5 +141,6 @@ export const useCharacterStore = defineStore('characterStore', () => {
     setCurrentCharacter,
     currentCharacter,
     setCurrentCharacterLocation,
+    logQuest,
   };
 });

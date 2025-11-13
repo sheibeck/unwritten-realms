@@ -1,6 +1,7 @@
 // composables/useInteractionEngine.ts
 import { ref } from 'vue';
-import type { Quest, Npc } from '@/module_bindings';
+// Adjusted import to point to generated client bindings
+import type { Quest, Npc } from '../module_bindings/client';
 import { useCharacterStore } from '@/stores/characterStore';
 
 type Step =
@@ -22,7 +23,7 @@ export function useInteractionEngine() {
 
   const state = ref<InteractionContext | null>(null);
 
-  function startQuestInteraction(quest: Quest, npc: Npc, threadId?: string) {
+  function startQuestInteraction(quest: Quest, npc?: Npc, threadId?: string) {
     state.value = {
       step: 'awaitingQuestResponse',
       quest,
@@ -45,7 +46,9 @@ export function useInteractionEngine() {
 
     const accepted = /yes|accept/i.test(userInput);
 
-    await characterStore.logQuest({
+    // Log quest acceptance/refusal (store method provides persistence hook)
+    if (characterStore.logQuest) {
+      await characterStore.logQuest({
       characterId: characterStore.currentCharacter?.characterId,
       quests: [{
         questId: current.quest.questId,
@@ -53,6 +56,7 @@ export function useInteractionEngine() {
         status: accepted ? 'Active' : 'Refused',
       }]
     });
+    }
 
     clear();
     return accepted;

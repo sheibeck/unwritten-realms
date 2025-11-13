@@ -1,14 +1,16 @@
 import { defineStore } from 'pinia';
-import { ref, computed, shallowRef } from 'vue';
+import { ref, shallowRef } from 'vue';
 import type { CreateAndLinkNewRegion, CreateStarterRegion, Region } from '@/module_bindings/client';
 import { useMainStore } from './mainStore';
+import type { DbConnection } from '../module_bindings/client';
 
 export const useRegionStore = defineStore('regionStore', () => {
   const regions = ref<Map<string, Region>>(new Map());
   const currentRegion = shallowRef<Region | null>();
   const linkedRegions = shallowRef<Array<Region>>([]);
   const mainStore = useMainStore();
-  const connection = computed(() => mainStore.connection.value);
+  interface ConnectionRef { value: DbConnection | null }
+  const connection = mainStore.connection as unknown as ConnectionRef;
 
   function initialize() {
     if (!connection.value) {
@@ -16,14 +18,14 @@ export const useRegionStore = defineStore('regionStore', () => {
       return;
     }
 
-    connection.value.db.region.onInsert((_ctx, region) => {
+  connection.value.db.region.onInsert((_ctx: any, region: Region) => {
       const updated = new Map(regions.value);
       updated.set(region.regionId, region);
       regions.value = updated;
       console.debug('🌍 New region inserted:', region);
     });
 
-    connection.value.db.region.onUpdate((_ctx, oldRegion, newRegion) => {
+  connection.value.db.region.onUpdate((_ctx: any, oldRegion: Region, newRegion: Region) => {
       const updated = new Map(regions.value);
       updated.delete(oldRegion.regionId);
       updated.set(newRegion.regionId, newRegion);
@@ -31,7 +33,7 @@ export const useRegionStore = defineStore('regionStore', () => {
       console.debug('🌍 Region updated:', newRegion);
     });
 
-    connection.value.db.region.onDelete((_ctx, region) => {
+  connection.value.db.region.onDelete((_ctx: any, region: Region) => {
       const updated = new Map(regions.value);
       updated.delete(region.regionId);
       regions.value = updated;
@@ -54,7 +56,7 @@ export const useRegionStore = defineStore('regionStore', () => {
         reject('Timed out waiting for region creation');
       }, 15000);
 
-      connection.value.db.region.onInsert((_ctx, region) => {
+  connection.value.db.region.onInsert((_ctx: any, region: Region) => {
         if (region.name === data.name && region.linkedRegionIds.includes(data.fromRegionId)) {
           clearTimeout(timeout); // ✅ cancel the timeout
           qid.unsubscribe();

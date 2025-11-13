@@ -105,6 +105,14 @@ async function sendMessage(overrideMessage = false, msg = '', additionalData: Re
   const message = overrideMessage ? msg : userInput.value.trim();
   if (!message) return;
 
+  // Character creation loop awaiting raw user input
+  if (nextUserInputResolver) {
+    nextUserInputResolver(message);
+    nextUserInputResolver = null;
+    userInput.value = '';
+    return;
+  }
+
   // Step 1: Handle interaction response if mid-conversation
   if (interactionEngine.isAwaiting('awaitingQuestResponse')) {
     const accepted = await interactionEngine.handleQuestResponse(message);

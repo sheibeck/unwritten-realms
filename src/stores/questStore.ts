@@ -41,7 +41,8 @@ export const useQuestStore = defineStore('questStore', () => {
     });
   }
 
-  function createQuest(data: AddQuestInput): Promise<AddQuestInput> {
+  // Returns the fully created Quest (with questId) once inserted
+  function createQuest(data: AddQuestInput): Promise<Quest> {
     return new Promise((resolve, reject) => {
       if (!connection.value) {
         console.warn('No active SpaceTimeDB connection');
@@ -56,7 +57,7 @@ export const useQuestStore = defineStore('questStore', () => {
         reject('Timeout creating Quest');
       }, 10000);
 
-      connection.value.db.quest.onInsert((_ctx, quest) => {
+  connection.value.db.quest.onInsert((_ctx: any, quest: Quest) => {
         console.debug('🪄 Quest insert event received:', quest);
 
         if (quest.name === data.name) {
