@@ -141,7 +141,7 @@ async function connectSpacetime() {
   }
 
   // ✅ initialize stores
-  // characterStore.initialize();
+  characterStore.initialize();
   // regionStore.initialize();
   // npcStore.initialize();
   // questStore.initialize(); 

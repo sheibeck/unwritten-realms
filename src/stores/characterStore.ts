@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, shallowRef } from 'vue';
+import { ref, shallowRef, computed, watch } from 'vue';
 import type {
   Character,
   AddCharacter,
@@ -9,7 +9,6 @@ import type {
 import { useMainStore } from './mainStore';
 import { useRegionStore } from './regionStore';
 import { emitPhase } from '@/engine/onboardingEvents';
-import type { DbConnection } from '@/spacetimedb/client';
 
 export const useCharacterStore = defineStore('characterStore', () => {
   const characters = ref<Map<string, Character>>(new Map());
@@ -17,8 +16,15 @@ export const useCharacterStore = defineStore('characterStore', () => {
   const mainStore = useMainStore();
   const regionStore = useRegionStore();
   // Direct reference to mainStore SpaceTime connection ref (force ref shape)
-  interface ConnectionRef { value: DbConnection | null }
-  const connection = mainStore.connection as unknown as ConnectionRef;
+  const connection = computed(() => mainStore.connection);
+  // Watch for connection becoming available and initialize automatically
+  watch(
+    () => connection.value,
+    (conn) => {
+      if (conn) initialize();
+    },
+    { immediate: true }
+  );
 
   function initialize() {
     const conn = connection.value;

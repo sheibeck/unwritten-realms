@@ -1,16 +1,15 @@
+import { watch, computed } from 'vue';
 import { defineStore } from 'pinia';
 import { ref, shallowRef } from 'vue';
 import type { CreateAndLinkNewRegion, CreateStarterRegion, Region } from '@/spacetimedb/client';
 import { useMainStore } from './mainStore';
-import type { DbConnection } from '@/spacetimedb/client';
 
 export const useRegionStore = defineStore('regionStore', () => {
   const regions = ref<Map<string, Region>>(new Map());
   const currentRegion = shallowRef<Region | null>();
   const linkedRegions = shallowRef<Array<Region>>([]);
   const mainStore = useMainStore();
-  interface ConnectionRef { value: DbConnection | null }
-  const connection = mainStore.connection as unknown as ConnectionRef;
+  const connection = computed(() => mainStore.connection);
 
   function initialize() {
     if (!connection.value) {
@@ -18,14 +17,14 @@ export const useRegionStore = defineStore('regionStore', () => {
       return;
     }
 
-  connection.value.db.region.onInsert((_ctx: any, region: Region) => {
+    connection.value.db.region.onInsert((_ctx: any, region: Region) => {
       const updated = new Map(regions.value);
       updated.set(region.regionId, region);
       regions.value = updated;
       console.debug('🌍 New region inserted:', region);
     });
 
-  connection.value.db.region.onUpdate((_ctx: any, oldRegion: Region, newRegion: Region) => {
+    connection.value.db.region.onUpdate((_ctx: any, oldRegion: Region, newRegion: Region) => {
       const updated = new Map(regions.value);
       updated.delete(oldRegion.regionId);
       updated.set(newRegion.regionId, newRegion);
@@ -33,13 +32,22 @@ export const useRegionStore = defineStore('regionStore', () => {
       console.debug('🌍 Region updated:', newRegion);
     });
 
-  connection.value.db.region.onDelete((_ctx: any, region: Region) => {
+    connection.value.db.region.onDelete((_ctx: any, region: Region) => {
       const updated = new Map(regions.value);
       updated.delete(region.regionId);
       regions.value = updated;
       console.debug('🌍 Region deleted:', region);
     });
   }
+
+  // Watch for connection becoming available and initialize automatically
+  watch(
+    () => connection.value,
+    (conn) => {
+      if (conn) initialize();
+    },
+    { immediate: true }
+  );
 
   function createAndLinkNewRegion(data: CreateAndLinkNewRegion): Promise<Region> {
     return new Promise((resolve, reject) => { 

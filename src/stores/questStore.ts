@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type {
   AddQuest,
   Quest,
@@ -13,19 +13,19 @@ export const useQuestStore = defineStore('questStore', () => {
 
   function initialize() {
     if (!connection.value) {
-      console.warn('No connection provided to charcterStore');
+      console.warn('No connection provided to questStore');
       return;
     }
 
     // Setup event listeners
-  connection.value.db.quest.onInsert((_ctx: any, quest: Quest) => {
+    connection.value.db.quest.onInsert((_ctx: any, quest: Quest) => {
       const updated = new Map(quests.value);
       updated.set(quest.questId, quest);
       quests.value = updated;
       console.debug('🌍 New quest inserted:', quest);
     });
 
-  connection.value.db.quest.onUpdate((_ctx: any, oldQuest: Quest, newQuest: Quest) => {
+    connection.value.db.quest.onUpdate((_ctx: any, oldQuest: Quest, newQuest: Quest) => {
       const updated = new Map(quests.value);
       updated.delete(oldQuest.questId);
       updated.set(newQuest.questId, newQuest);
@@ -33,13 +33,22 @@ export const useQuestStore = defineStore('questStore', () => {
       console.debug('🌍 Quest updated:', newQuest);
     });
 
-  connection.value.db.quest.onDelete((_ctx: any, quest: Quest) => {
+    connection.value.db.quest.onDelete((_ctx: any, quest: Quest) => {
       const updated = new Map(quests.value);
       updated.delete(quest.questId);
       quests.value = updated;
       console.debug('🌍 Quest deleted:', quest);
     });
   }
+
+  // Watch for connection becoming available and initialize automatically
+  watch(
+    () => connection.value,
+    (conn) => {
+      if (conn) initialize();
+    },
+    { immediate: true }
+  );
 
   // Returns the fully created Quest (with questId) once inserted
   function createQuest(data: AddQuest): Promise<Quest> {

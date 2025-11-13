@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useMainStore } from "./mainStore";
 import type { Npc, CreateNpc } from '@/spacetimedb/client';
 
@@ -11,27 +11,36 @@ export const useNpcStore = defineStore('npcStore', () => {
   function initialize() {
     if (!connection.value) return;
 
-  connection.value.db.npc.onInsert((_ctx: any, npc: Npc) => {
+    connection.value.db.npc.onInsert((_ctx: any, npc: Npc) => {
       const updated = new Map(npcs.value);
       updated.set(npc.npcId, npc);
       npcs.value = updated;
       console.debug('🌍 NPC inserted:', npc);
     });
 
-  connection.value.db.npc.onUpdate((_ctx: any, npc: Npc) => {
+    connection.value.db.npc.onUpdate((_ctx: any, npc: Npc) => {
       const updated = new Map(npcs.value);
       updated.set(npc.npcId, npc);
       npcs.value = updated;
       console.debug('🌍 NPC updated:', npc);
     });
 
-  connection.value.db.npc.onDelete((_ctx: any, npc: Npc) => {
+    connection.value.db.npc.onDelete((_ctx: any, npc: Npc) => {
       const updated = new Map(npcs.value);
       updated.set(npc.npcId, npc);
       npcs.value = updated;
       console.debug('🌍 NPC deleted:', npc);
     });
   }
+
+  // Watch for connection becoming available and initialize automatically
+  watch(
+    () => connection.value,
+    (conn) => {
+      if (conn) initialize();
+    },
+    { immediate: true }
+  );
 
   async function createNpc(data: CreateNpc): Promise<Npc> {
     return new Promise((resolve, reject) => {
