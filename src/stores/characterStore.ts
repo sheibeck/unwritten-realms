@@ -154,7 +154,7 @@ export const useCharacterStore = defineStore('characterStore', () => {
   function setCurrentCharacterLocation(region: Region) {
     if (currentCharacter.value) {
       const updatedCharacter = { characterId: currentCharacter.value.characterId, currentLocation: region.regionId };
-  updateCharacter(updatedCharacter as UpdateCharacter);
+      updateCharacter(updatedCharacter as UpdateCharacter);
 
       //update current region
       regionStore.setCurrentRegion(region);

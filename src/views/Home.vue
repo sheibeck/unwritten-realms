@@ -141,13 +141,13 @@ async function connectSpacetime() {
   }
 
   // ✅ initialize stores
-  characterStore.initialize();
-  regionStore.initialize();
-  npcStore.initialize();
-  questStore.initialize(); 
+  // characterStore.initialize();
+  // regionStore.initialize();
+  // npcStore.initialize();
+  // questStore.initialize(); 
 
   // Subscribe to space and time
-  subscribeToSpaceTime(mainStore.connection);
+  await subscribeToSpaceTime(mainStore.connection);
 }
 
 function getLinkedRegions(ctx: any) {
@@ -192,8 +192,8 @@ function subscribeToSpaceTime(conn: DbConnection) {
     });
 
   const sub = builder.subscribe([
-    `SELECT * FROM user WHERE UserId = '${conn.identity?.toHexString()}'`,
-    `SELECT * FROM character WHERE UserId = '${conn.identity?.toHexString()}'`,
+    `SELECT * FROM user WHERE identity = '${conn.identity?.toHexString()}'`,
+    `SELECT * FROM character WHERE userId = '${conn.identity?.toHexString()}'`,
     `SELECT * FROM region`
   ]);
 
@@ -229,9 +229,9 @@ function subscribeToSpaceTime(conn: DbConnection) {
         console.error('Region subscription error:', e);
       })
       .subscribe([
-        `SELECT * FROM region WHERE RegionId = '${characterStore.currentCharacter?.currentLocation}'`,
-        `SELECT * FROM npc WHERE RegionId = '${region.regionId}'`,
-        `SELECT q.* FROM quest q JOIN npc n WHERE q.NpcId = n.NpcId AND n.RegionId = '${region.regionId}'`
+        `SELECT * FROM region WHERE regionId = '${characterStore.currentCharacter?.currentLocation}'`,
+        `SELECT * FROM npc WHERE regionId = '${region.regionId}'`,
+        `SELECT q.* FROM quest q JOIN npc n WHERE q.npcId = n.npcId AND n.regionId = '${region.regionId}'`
       ]);
 
     activeRegionUnsub.value = () => regionSubscriptions.unsubscribe();
