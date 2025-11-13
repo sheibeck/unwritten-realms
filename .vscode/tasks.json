@@ -60,23 +60,22 @@
 			],
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"type": "npm",
+			"script": "build",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: build",
+			"detail": "vue-tsc -b && vite build"
 		}
 		,
 		{
-			"label": "engine-start",
-			"type": "shell",
-			"command": "powershell",
-			"args": [
-				"-NoLogo",
-				"-NoProfile",
-				"-ExecutionPolicy",
-				"Bypass",
-				"-Command",
-				"npm run engine"
-			],
-			"isBackground": true,
-			"problemMatcher": [],
-			"detail": "Starts AI Game Engine Express server on configured port (default 8787)."
+			"label": "npm: engine",
+			"type": "npm",
+			"script": "engine",
+			"group": "build",
+			"detail": "Starts AI Game Engine Express server (same as engine-start)."
 		}
 	]
 }
