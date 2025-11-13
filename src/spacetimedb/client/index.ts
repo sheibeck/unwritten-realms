@@ -33,6 +33,8 @@ import {
 // Import and reexport all reducer arg types
 import { SetName } from "./set_name_reducer.ts";
 export { SetName };
+import { ClearUsers } from "./clear_users_reducer.ts";
+export { ClearUsers };
 import { AddCharacter } from "./add_character_reducer.ts";
 export { AddCharacter };
 import { UpdateCharacter } from "./update_character_reducer.ts";
@@ -53,8 +55,6 @@ import { OnConnect } from "./on_connect_reducer.ts";
 export { OnConnect };
 import { OnDisconnect } from "./on_disconnect_reducer.ts";
 export { OnDisconnect };
-import { ClearUsers } from "./clear_users_reducer.ts";
-export { ClearUsers };
 
 // Import and reexport all table handle types
 import { CharacterTableHandle } from "./character_table.ts";
@@ -133,6 +133,10 @@ const REMOTE_MODULE = {
       reducerName: "set_name",
       argsType: SetName.getTypeScriptAlgebraicType(),
     },
+    clear_users: {
+      reducerName: "clear_users",
+      argsType: ClearUsers.getTypeScriptAlgebraicType(),
+    },
     add_character: {
       reducerName: "add_character",
       argsType: AddCharacter.getTypeScriptAlgebraicType(),
@@ -173,10 +177,6 @@ const REMOTE_MODULE = {
       reducerName: "on_disconnect",
       argsType: OnDisconnect.getTypeScriptAlgebraicType(),
     },
-    clear_users: {
-      reducerName: "clear_users",
-      argsType: ClearUsers.getTypeScriptAlgebraicType(),
-    },
   },
   versionInfo: {
     cliVersion: "1.8.0",
@@ -208,6 +208,7 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "SetName", args: SetName }
+| { name: "ClearUsers", args: ClearUsers }
 | { name: "AddCharacter", args: AddCharacter }
 | { name: "UpdateCharacter", args: UpdateCharacter }
 | { name: "ClearCharacters", args: ClearCharacters }
@@ -218,7 +219,6 @@ export type Reducer = never
 | { name: "CreateAndLinkNewRegion", args: CreateAndLinkNewRegion }
 | { name: "OnConnect", args: OnConnect }
 | { name: "OnDisconnect", args: OnDisconnect }
-| { name: "ClearUsers", args: ClearUsers }
 ;
 
 export class RemoteReducers {
@@ -238,6 +238,18 @@ export class RemoteReducers {
 
   removeOnSetName(callback: (ctx: ReducerEventContext, name: string) => void) {
     this.connection.offReducer("set_name", callback);
+  }
+
+  clearUsers() {
+    this.connection.callReducer("clear_users", new Uint8Array(0), this.setCallReducerFlags.clearUsersFlags);
+  }
+
+  onClearUsers(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("clear_users", callback);
+  }
+
+  removeOnClearUsers(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("clear_users", callback);
   }
 
   addCharacter(name: string, description: string, race: string, archetype: string, profession: string, startingRegion: string, strength: number, dexterity: number, intelligence: number, constitution: number, wisdom: number, charisma: number, maxHealth: number, currentHealth: number, maxMana: number, currentMana: number, raceAbilities: string, professionAbilities: string, level: number, xp: number, equippedWeapon: string) {
@@ -380,24 +392,17 @@ export class RemoteReducers {
     this.connection.offReducer("on_disconnect", callback);
   }
 
-  clearUsers() {
-    this.connection.callReducer("clear_users", new Uint8Array(0), this.setCallReducerFlags.clearUsersFlags);
-  }
-
-  onClearUsers(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("clear_users", callback);
-  }
-
-  removeOnClearUsers(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("clear_users", callback);
-  }
-
 }
 
 export class SetReducerFlags {
   setNameFlags: __CallReducerFlags = 'FullUpdate';
   setName(flags: __CallReducerFlags) {
     this.setNameFlags = flags;
+  }
+
+  clearUsersFlags: __CallReducerFlags = 'FullUpdate';
+  clearUsers(flags: __CallReducerFlags) {
+    this.clearUsersFlags = flags;
   }
 
   addCharacterFlags: __CallReducerFlags = 'FullUpdate';
@@ -438,11 +443,6 @@ export class SetReducerFlags {
   createAndLinkNewRegionFlags: __CallReducerFlags = 'FullUpdate';
   createAndLinkNewRegion(flags: __CallReducerFlags) {
     this.createAndLinkNewRegionFlags = flags;
-  }
-
-  clearUsersFlags: __CallReducerFlags = 'FullUpdate';
-  clearUsers(flags: __CallReducerFlags) {
-    this.clearUsersFlags = flags;
   }
 
 }
