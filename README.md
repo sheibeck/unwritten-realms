@@ -97,46 +97,55 @@ Runs `scripts/engine-server.ts` (Express) on port `8787` (override with `ENGINE_
 Invoke-RestMethod -Uri http://localhost:8787/health
 ```
 
-### POST /uwengine Endpoint
-Request body shape:
+### Assistant Endpoints (/assistant/run & /assistant/stream)
+Canonical actions only. Examples: `character.create | region.create | travel.move | world.general | character.level_up | combat.encounter.resolve | quest.create | renown.manage | npc.dialogue.open | unknown`
+
+#### POST /assistant/run
 ```json
 {
-	"action": "travel",        // create-character | explore | travel | general-action | level-up | unknown
-	"message": "Travel from A to B via northern pass",
-	"threadId": "optional-existing-thread",
-	"context": { "currentRegion": "A", "targetRegion": "B" }
+  "action": "travel.move",
+  "message": "Journey from A to B via the northern pass",
+  "threadId": "optional-existing-thread",
+  "context": { "currentRegion": "A", "targetRegion": "B" }
 }
 ```
 
-Sample invocation (PowerShell):
+PowerShell example:
 ```powershell
-Invoke-RestMethod -Method Post -Uri http://localhost:8787/uwengine -Body (@{ action='travel'; message='Travel from A to B'; context=@{ currentRegion='A'; targetRegion='B' }} | ConvertTo-Json) -ContentType 'application/json'
+Invoke-RestMethod -Method Post -Uri http://localhost:8787/assistant/run -Body (@{ action='travel.move'; message='Journey from A to B'; context=@{ currentRegion='A'; targetRegion='B' }} | ConvertTo-Json) -ContentType 'application/json'
 ```
 
-### Response Shape
+#### Streaming (POST /assistant/stream)
+Sends Server-Sent Events: `meta`, multiple `message` events (chunks), a final `result` with consolidated outputs, then `done`.
+
+```powershell
+$body = @{ action='world.general'; message='Describe the shifting sky above the crystal dunes'; context=@{ currentRegion='Crystal Dunes' } } | ConvertTo-Json
+Invoke-WebRequest -Method Post -Uri http://localhost:8787/assistant/stream -Body $body -ContentType 'application/json'
+```
+
+#### Typical /assistant/run Response
 ```json
 {
-	"assistant": "Region Travel Resolver",
-	"assistant_id": "asst_...",
-	"threadId": "thread_x",
-	"runId": "run_y",
-	"output": ["Narrative line 1", "Narrative line 2"],
-	"elapsedMs": 1240
+  "assistantId": "asst_...",
+  "action": "travel.move",
+  "threadId": "thread_x",
+  "runId": "run_y",
+  "output": ["Narrative line 1", "Narrative line 2"]
 }
 ```
 
-### Internal Flow
-1. Map `action` to assistant via `src/engine/assistantMap.ts`.
+#### Internal Flow (run & stream)
+1. Map canonical `action` to assistant (`src/engine/assistantMap.ts`).
 2. Create or reuse thread.
-3. Compose message with action + context JSON.
-4. Poll run until `completed`.
-5. Aggregate assistant message chunks into `output`.
+3. Add user message (includes action + context JSON block).
+4. Run assistant; poll (run) or incremental poll emitting SSE (stream).
+5. Collect assistant messages into ordered `output` (final `result` on stream).
 
-### Extending
-- Add new assistant: update `assistantMap.ts` with ID & purpose.
-- Add classification layer: if `action` missing, implement a small heuristic or LLM classifier before routing.
-- Streaming: replace polling loop in `gameEngine.process()` with event or incremental fetch for lower latency.
-- Audit: record prompt checksum with generated artifact (future enhancement).
+#### Extending
+- Add assistant: update `assistantMap.ts` with canonical action key and metadata.
+- Classification: send `action: "auto"` (future expansion—currently heuristic in `classifyAction`).
+- Streaming enhancements: tune poll interval or migrate to native OpenAI event streams when available.
+- Auditing: add checksum logging for prompt + context package.
 
 ## Project Structure (High-Level)
 ```

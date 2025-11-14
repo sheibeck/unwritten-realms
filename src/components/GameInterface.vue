@@ -59,9 +59,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue';
-import { marked } from 'marked';
-import { CreateAndLinkNewRegion, UpdateCharacter, type AddCharacter, type Region, type Quest, CreateNpc, Npc } from '@/spacetimedb/client';
+import { ref, onMounted } from 'vue';
+import type { Region } from '@/spacetimedb/client';
 import TravelPanel from './TravelPanel.vue';
 import CharacterPanel from './CharacterPanel.vue';
 import { useRegionStore } from '@/stores/regionStore';
@@ -70,9 +69,13 @@ import { useQuestStore } from '@/stores/questStore';
 import { useNpcStore } from '@/stores/npcStore';
 import { useInteractionEngine } from '@/composables/useInteractionEngine';
 // normalizeAction removed; use canonical action strings directly
-import { useAssistantStream } from '@/composables/useAssistantStream';
-import { shouldStream } from '@/engine/endpointPolicy';
 import { emitPhase } from '@/engine/onboardingEvents';
+import { useMessages } from '@/composables/useMessages';
+import { useGameContext } from '@/composables/useGameContext';
+import { useLocalActions } from '@/composables/useLocalActions';
+import { useGameThreads } from '@/composables/useGameThreads';
+import { useCharacterCreation } from '@/composables/useCharacterCreation';
+import { useAiHandler } from '@/composables/useAiHandler';
 import { useMainStore } from '@/stores/mainStore';
 
 const interactionEngine = useInteractionEngine();
@@ -82,16 +85,24 @@ const questStore = useQuestStore();
 const npcStore = useNpcStore();
 const mainStore = useMainStore();
 const props = defineProps<{ character: any, currentRegion: any, linkedRegions: any }>();
-const messages = ref<{ raw: string; html: string }[]>([]);
+const chatContainer = ref<HTMLDivElement | null>(null);
+const chatInput = ref<HTMLInputElement | null>(null);
+const { messages, pushMessage } = useMessages(() => chatContainer.value, () => chatInput.value);
 const userInput = ref('');
 const isLoading = ref(false);
-const isStreaming = ref(false);
-const streamedBuffer = ref<string[]>([]);
-const { startStream } = useAssistantStream();
-
+const { getErrorMessage, getLoadingMessage } = useGameContext();
+const { resolveLocalAction } = useLocalActions(characterStore);
+const { activeGameThreadId, updateMainThread, initFromStorage } = useGameThreads();
+function buildContext() {
+  const ctx = { character: { ...props.character }, region: props.currentRegion, npcs: Array.from(npcStore.npcs.values()), quests: Array.from(questStore.quests.values()) };
+  delete (ctx.character as any)?.userId;
+  return ctx;
+}
 // Resolver ref (set when waiting for next input)
-const chatContainer = ref<HTMLDivElement | null>(null);
-let nextUserInputResolver: ((msg: string) => void) | null = null;
+let _nextUserInputResolver: ((msg: string) => void) | null = null; // resolver set when awaiting user input
+function getNextUserInput(): Promise<string> { return new Promise(r => { void _nextUserInputResolver; _nextUserInputResolver = r; }); }
+const { handleCharacterCreationLoopStreaming } = useCharacterCreation({ characterStore, mainStore, buildContext, pushMessage, updateMainThread });
+const { sendMessage: aiSendMessage } = useAiHandler({ characterStore, regionStore, questStore, npcStore, mainStore, activeGameThreadId, updateMainThread, buildContext, resolveLocalAction, pushMessage, getErrorMessage, getNextUserInput, handleCharacterCreationLoopStreaming });
 
 const hasActiveCharacter = ref(false);
 const newCharacter = ref(true);
@@ -108,317 +119,49 @@ if (props.character) {
   emitPhase('INITIATION', mainStore.currentUserId || null);
 }
 
-const activeGameThreadId = ref<string | null>(null);
+// activeGameThreadId managed by useGameThreads
 
-// Streamlined sendMessage function with local, interaction, and AI delegation
+// Wrapper for AI send with quest interaction and user echo
 async function sendMessage(overrideMessage = false, msg = '', additionalData: Record<string, any> = {}) {
-  const message = overrideMessage ? msg : userInput.value.trim();
-  if (!message) return;
-
-  // Character creation loop awaiting raw user input
-  if (nextUserInputResolver) {
-    nextUserInputResolver(message);
-    nextUserInputResolver = null;
-    userInput.value = '';
-    return;
-  }
-
-  // Step 1: Handle interaction response if mid-conversation
+  const input = overrideMessage ? msg : userInput.value.trim();
+  if (!input) return;
   if (interactionEngine.isAwaiting('awaitingQuestResponse')) {
-    const accepted = await interactionEngine.handleQuestResponse(message);
-    if (accepted) {
-      pushMessage(`📜 Quest accepted.`);
-    } else {
-      pushMessage(`🌀 Quest declined.`);
-    }
+    const accepted = await interactionEngine.handleQuestResponse(input);
+    await pushMessage(accepted ? '📜 Quest accepted.' : '🌀 Quest declined.');
     userInput.value = '';
     return;
   }
-
-  // Step 2: Display user message
-  pushMessage(`🗨️ You: ${message}`);
+  await pushMessage(`🗨️ You: ${input}`);
   userInput.value = '';
-
-  // Step 3: Route local commands
-  const action = resolveLocalAction(message, overrideMessage);
-
-  if (action === 'look') {
-    pushMessage(`🧙 ${props.currentRegion.fullDescription}`);
-    return;
-  }
-
-  if (action === 'travel') {
-    pushMessage(`🧙 ${additionalData.targetRegion.description}`);
-    characterStore.setCurrentCharacterLocation(additionalData.targetRegion);
-    return;
-  }
-
-  // Step 4: Handle AI-integrated commands
-  if (action === 'character.create') {
-    await handleCharacterCreationLoopStreaming(message, getNextUserInput, updateMainThread);
-    return;
-  }
-
-  // Default AI interaction (explore/general-action) with policy-based streaming vs single-run
-  if (['region.create', 'world.general'].includes(action)) {
-    const normalized = action; // already canonical
-    const payload = buildPayload(action, message, { ...buildContext(), ...additionalData });
-    if (activeGameThreadId.value) payload.threadId = activeGameThreadId.value;
-
-    // Decide path
-    if (shouldStream(normalized)) {
-      isStreaming.value = true;
-      streamedBuffer.value = [];
-      const narrativeChunks: string[] = [];
-
-      await startStream({
-        message: payload.message,
-        action: normalized,
-        context: payload.context,
-        threadId: payload.threadId,
-        onChunk: async (text) => {
-          // Try to parse; if structured with narrative show that, else raw text
-          let parsed: any; try { parsed = JSON.parse(text); } catch { parsed = null; }
-          if (parsed?.narrative) {
-            narrativeChunks.push(parsed.narrative);
-            await pushMessage(`🧙 ${parsed.narrative}`);
-          } else {
-            narrativeChunks.push(text);
-            await pushMessage(`🧙 ${text}`);
-          }
-        },
-        onResult: async (res) => {
-          // Final structured outputs from server; hand off directly
-          isStreaming.value = false;
-          await handleAiResponse(res, action);
-          await nextTick();
-          scrollToBottom();
-        },
-        onDone: async () => {
-          // done arrives after result; nothing additional required
-        },
-        onError: async (err) => {
-          if (err === 'aborted') return;
-          console.error('Stream error:', err);
-          isStreaming.value = false;
-          // Fallback to single-run
-          try {
-            isLoading.value = true;
-            const response = await fetch('/assistant/run', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
-              body: JSON.stringify({ message: payload.message, action: normalized, context: payload.context, threadId: payload.threadId, auto: false })
-            });
-            isLoading.value = false;
-            if (response.ok) {
-              const result = await response.json();
-              await handleAiResponse(result, action);
-            } else {
-              pushMessage(getErrorMessage());
-            }
-          } catch (e) {
-            isLoading.value = false;
-            console.error('Fallback fetch error:', e);
-            pushMessage(getErrorMessage());
-          }
-        }
-      });
-    } else {
-      // Non-stream path
-      try {
-        isLoading.value = true;
-        const response = await fetch('/assistant/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
-          body: JSON.stringify({ message: payload.message, action: normalized, context: payload.context, threadId: payload.threadId, auto: false })
-        });
-        isLoading.value = false;
-        if (response.ok) {
-          const result = await response.json();
-          await handleAiResponse(result, action);
-          await nextTick();
-          scrollToBottom();
-        } else {
-          pushMessage(getErrorMessage());
-        }
-      } catch (e) {
-        isLoading.value = false;
-        console.error('Run endpoint error:', e);
-        pushMessage(getErrorMessage());
-      }
-    }
-  }
+  await aiSendMessage(overrideMessage, input, additionalData);
 }
 
-// Resolves local commands like 'look', 'travel', 'explore', or fallback to 'general-action'
-function resolveLocalAction(message: string, isOverride = false): string {
-  const lower = message.toLowerCase();
-  if (lower === 'look') return 'look';
-  if (isOverride && lower.includes('traveling from')) return 'travel.move';
-  if (isOverride && lower.includes('exploring from')) return 'region.create';
-  if (lower === 'awaken' && !characterStore.currentCharacter) return 'character.create';
-  return 'world.general';
-}
+// Local action resolution handled in useLocalActions
 
-// Builds a sanitized context object to pass to the AI payload
-function buildContext(): Record<string, any> {
-  const ctx = {
-    character: { ...props.character },
-    region: props.currentRegion,
-    npcs: Array.from(npcStore.npcs.values()),     // ✅ array of Npc
-    quests: Array.from(questStore.quests.values()) // ✅ array of Quest
-  };
+// Context builder handled above
 
-  //remove sensitive/unused information
-  delete ctx.character.userId;
-  return ctx;
-}
+// pushMessage provided by useMessages
 
-async function pushMessage(message: string) {
-  const html = await marked.parse(message);
-  messages.value.push({ raw: `${message}`, html });
+// updateMainThread provided by useGameThreads
 
-  await nextTick();
-  scrollToBottom(); 
-}
-
-function updateMainThread(threadId: string) {
-  if(threadId) {
-    localStorage.setItem('unwrittenRealmsThreadId', threadId);
-  }
-  activeGameThreadId.value = threadId;
-}
-
-function parseOutput(output: string) {
-  const json = JSON.parse(output);
-  return json;
-}
+// parseOutput removed (handled inside composables)
 
 // Waits for next user input during loop
-function getNextUserInput(): Promise<string> {
-  return new Promise((resolve) => {
-    nextUserInputResolver = resolve;
-  });
-}
+// getNextUserInput provided above for character creation loop
 
-const chatInput = ref<HTMLInputElement | null>(null);
+// chatInput ref defined earlier
 
-function scrollToBottom() {
-  nextTick(() => {
-    if (chatContainer.value) {
-      chatContainer.value.scrollTo({
-        top: chatContainer.value.scrollHeight,
-        behavior: 'smooth', // ✨ makes the scroll animate!
-      });
-    }
-    if (chatInput.value) {
-      chatInput.value.focus();
-    }
-  });
-}
+// scrollToBottom handled by useMessages
 
-async function handleCharacterCreationLoopStreaming(initialMessage: string, getNextUserInput: () => Promise<string>, updateMainThread: Function) {
-  let currentMessage = initialMessage;
-  let iteration = 0;
-  let threadId: string | null = activeGameThreadId.value;
+// Character creation loop provided by useCharacterCreation
 
-  while (!characterStore.currentCharacter?.characterId) {
-    emitPhase(iteration === 0 ? 'CONCEPT' : 'REFINEMENT', mainStore.currentUserId || null, { iteration });
+// Character add handled in composables
 
-    // Capture final structured output via result event
-    let finalJson: any = null;
+// Region creation handled in AI handler
 
-    await startStream({
-      message: currentMessage,
-      action: 'character.create',
-      threadId: threadId,
-      context: buildContext(),
-      onMeta: (m) => { threadId = m.threadId; },
-      onChunk: async (text) => {
-        // Display narrative as it streams
-        let parsed: any; try { parsed = JSON.parse(text); } catch { parsed = null; }
-        if (parsed?.narrative) {
-          await pushMessage(`🧙 ${parsed.narrative}`);
-          finalJson = parsed; // keep latest structured
-        } else {
-          await pushMessage(`🧙 ${text}`);
-        }
-      },
-      onResult: async (res) => {
-        // Parse final output array
-        const last = res.output[res.output.length - 1] || '{}';
-        let parsed: any; try { parsed = JSON.parse(last); } catch { parsed = { narrative: last }; }
-        finalJson = parsed;
-        if (finalJson.actions?.createCharacter) {
-          const character = finalJson.actions.createCharacter as AddCharacter;
-          const complete = Object.values(character).every(v => v !== null && v !== undefined && v !== 0 && v !== '');
-          if (complete) {
-            emitPhase('CONFIRMATION', mainStore.currentUserId || null);
-            await addCharacter(character);
-            const charId = (character as any).characterId || (character as any).id || null;
-            emitPhase('PERSISTENCE', mainStore.currentUserId || null, { characterId: charId });
-            updateMainThread(res.threadId);
-          }
-        }
-      },
-      onDone: async () => {
-        // No additional logic needed; actions handled in onResult
-      },
-      onError: async (err) => {
-        if (err === 'aborted') return;
-        console.error('Character creation stream error:', err);
-        pushMessage(getErrorMessage());
-        emitPhase('ERROR', mainStore.currentUserId || null, { reason: 'character_creation_stream_failed' });
-      }
-    });
+// Character update handled elsewhere
 
-    if (characterStore.currentCharacter?.characterId) break; // completed
-
-    currentMessage = await getNextUserInput();
-    await pushMessage(`🗨️ You: ${currentMessage}`);
-    iteration++;
-  }
-}
-
-async function addCharacter(characterData: AddCharacter) {
-  await characterStore.addCharacter(characterData);
-  await pushMessage(`🎉 Character ${characterData.name} has been created!`);
-}
-
-async function createAndLinkRegion(data: CreateAndLinkNewRegion) {
-  console.debug('⚡ Region created event received:', data);
-  const newRegion = await regionStore.createAndLinkNewRegion(data); // ✅ updated
-
-  //move character to new region
-  await characterStore.setCurrentCharacterLocation(newRegion);
-
-  pushMessage(`🎉 Region ${data.name} has been created!`);
-}
-
-async function updateCharacter(data: UpdateCharacter) {
-  console.debug('⚡ Character updated event received:', data);
-  await characterStore.updateCharacter(data);
-  pushMessage(`🎉 Character has been updated!`);
-}
-
-function getLoadingMessage(): string {
-  const messages: string[] = [
-    "Arcane currents shift as your will takes form",
-    "The aether hums as your intent ripples through the weave",
-    "The winds of fate pause, awaiting your decree",
-    "The realm holds its breath for your command"
-  ];
-  return `⏳ ${messages[Math.floor(Math.random() * messages.length)]}...`;
-}
-
-function getErrorMessage(): string {
-  const messages: string[] = [
-    "The Ripple falters. Your words were lost to the shadow. Cast them once more into the stream",
-    "A rift in the weave sundered your message. Resend it to breach the veil",
-    "The lattice glitched—your message vanished into the void. Try again, wanderer"
-  ];
-  return `❌ ${messages[Math.floor(Math.random() * messages.length)]}`;
-}
+// Loading & error messages provided by useGameContext
 
 //Character
 const showCharacter = ref(false);
@@ -446,89 +189,9 @@ async function handleExplore(originRegion: Region) {
   showTravel.value = false;
 }
 
-function buildPayload(
-  action: string,
-  messageContent: string,
-  additionalData: Record<string, any> = {}
-): Record<string, any> {
-  const payload: Record<string, any> = {
-    action,
-    message: messageContent,
-    characterId: props.character?.characterId ?? null,
-    context: additionalData,
-  };
-  return payload;
-}
+// buildPayload now handled in useAiHandler
 
-async function handleAiResponse(response: any, originalAction: string) {
-  const assistantOutputArr: string[] = response.output || [];
-  const assistantOutput = assistantOutputArr[assistantOutputArr.length - 1] || '';
-  const jsonOutput = parseOutput(assistantOutput);
-
-  pushMessage(`🧙 ${jsonOutput.narrative}`);
-
-  if (!jsonOutput.actions) return;
-
-  //Log AI generatd actions
-  for (const [key, value] of Object.entries(jsonOutput.actions)) {
-    console.log(`AI Action: ${key}`);
-    console.log("Value:", JSON.stringify(value, null, 2));
-  }
-
-  // Handle character creation
-  if (jsonOutput.actions.createCharacter) {
-    const character: AddCharacter = jsonOutput.actions.createCharacter;
-    const allPropsHaveValues = Object.values(character).every(v => v !== null && v !== undefined && v !== 0 && v !== "");
-    if (allPropsHaveValues) {
-      await addCharacter(character);
-      hasActiveCharacter.value = true;
-      newCharacter.value = true;
-    }
-  }
-
-  // Handle region creation
-  if (jsonOutput.actions.createRegion) {
-    const region: CreateAndLinkNewRegion = jsonOutput.actions.createRegion;
-    region.fullDescription = jsonOutput.narrative;
-    region.fromRegionId = props.character.currentLocation;
-    region.travelEnergyCost = 100;
-    await createAndLinkRegion(region);
-  }
-
-  if (jsonOutput.actions.createNpc) {
-    const newNpc: CreateNpc = jsonOutput.actions.createNpc;
-    newNpc.regionId = regionStore.currentRegion?.regionId ?? "";
-    const createdNpc: Npc = await npcStore.createNpc(newNpc);
-    pushMessage(`🧙 A new NPC has emerged: **${createdNpc.name}**.`);
-  }
-
-  // Handle arrival logging
-  if (jsonOutput.actions?.logEvent?.type?.toLowerCase() === "arrival") {
-    const update = { characterId: props.character.characterId, currentLocation: jsonOutput.actions.logEvent.locationId };
-    await updateCharacter(update as UpdateCharacter);
-  emitPhase('ARRIVAL_DESCRIBE', mainStore.currentUserId || null, { locationId: jsonOutput.actions.logEvent.locationId });
-  }
-
-  // Handle quest creation with interaction engine
-  if (jsonOutput.actions.createQuest) {
-    const quest: Quest = jsonOutput.actions.createQuest;
-    let npc = await npcStore.findNpcById?.(quest.npcId);
-    const finalQuest = await questStore.createQuest(quest);
-
-  interactionEngine.startQuestInteraction(finalQuest, npc, response.threadId);
-    pushMessage(`🧙 ${npc?.name} offers you a quest: \"${quest.name}\". Do you accept?`);
-  }
-
-  if (jsonOutput.actions.updateCharacter) {
-    const update = jsonOutput.actions.updateCharacter;
-    await updateCharacter(update as UpdateCharacter);
-  }
-
-  // Thread tracking
-  if (originalAction === "general-action" || originalAction === "create-character") {
-    updateMainThread(response.threadId || activeGameThreadId.value);
-  }
-}
+// handleAiResponse now part of useAiHandler
 
 // Optional future abort hook
 // Aborting not yet wired to UI; keep function commented for future use
@@ -542,10 +205,10 @@ async function handleAiResponse(response: any, originalAction: string) {
 
 
 onMounted(() => {
-  activeGameThreadId.value = localStorage.getItem('unwrittenRealmsThreadId') ?? null;
+  initFromStorage();
   emitPhase('AUTH', mainStore.currentUserId || null);
   emitPhase('CHECK_CHARACTER', mainStore.currentUserId || null, { hasCharacter: !!props.character });
-})
+});
 </script>
 
 <style lang="scss" scoped>
