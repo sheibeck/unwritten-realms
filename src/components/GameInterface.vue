@@ -20,6 +20,13 @@
         :disabled="isLoading"
       />
       <button class="btn btn-primary" :disabled="isLoading" @click="sendMessage()">Send</button>
+      <button
+        v-if="!hasActiveCharacter && !creationStarted"
+        class="btn btn-secondary ms-2"
+        :disabled="isLoading"
+        @click="beginCharacterCreation()"
+        title="Begin character creation"
+      >Awaken</button>
     </div>
 
     <!-- Fixed Bottom Toolbar -->
@@ -90,22 +97,32 @@ const chatInput = ref<HTMLInputElement | null>(null);
 const { messages, pushMessage } = useMessages(() => chatContainer.value, () => chatInput.value);
 const userInput = ref('');
 const isLoading = ref(false);
+function setLoading(v: boolean) { isLoading.value = v; }
 const { getErrorMessage, getLoadingMessage } = useGameContext();
 const { resolveLocalAction } = useLocalActions(characterStore);
 const { activeGameThreadId, updateMainThread, initFromStorage } = useGameThreads();
 function buildContext() {
-  const ctx = { character: { ...props.character }, region: props.currentRegion, npcs: Array.from(npcStore.npcs.values()), quests: Array.from(questStore.quests.values()) };
+  const ctx = { character: { ...characterStore.currentCharacter }, region: { ...regionStore.currentRegion }, npcs: Array.from(npcStore.npcs.values()), quests: Array.from(questStore.quests.values()) };
   delete (ctx.character as any)?.userId;
   return ctx;
 }
 // Resolver ref (set when waiting for next input)
 let _nextUserInputResolver: ((msg: string) => void) | null = null; // resolver set when awaiting user input
 function getNextUserInput(): Promise<string> { return new Promise(r => { void _nextUserInputResolver; _nextUserInputResolver = r; }); }
-const { handleCharacterCreationLoopStreaming } = useCharacterCreation({ characterStore, mainStore, buildContext, pushMessage, updateMainThread });
-const { sendMessage: aiSendMessage } = useAiHandler({ characterStore, regionStore, questStore, npcStore, mainStore, activeGameThreadId, updateMainThread, buildContext, resolveLocalAction, pushMessage, getErrorMessage, getNextUserInput, handleCharacterCreationLoopStreaming });
+const { handleCharacterCreationLoopStreaming } = useCharacterCreation({ characterStore, mainStore, buildContext, pushMessage, updateMainThread, setLoading });
+const { sendMessage: aiSendMessage } = useAiHandler({ characterStore, regionStore, questStore, npcStore, mainStore, activeGameThreadId, updateMainThread, buildContext, resolveLocalAction, pushMessage, getErrorMessage, getNextUserInput, handleCharacterCreationLoopStreaming, setLoading });
 
 const hasActiveCharacter = ref(false);
 const newCharacter = ref(true);
+const creationStarted = ref(false);
+
+function beginCharacterCreation() {
+  if (creationStarted.value) return;
+  creationStarted.value = true;
+  const initialCreationPrompt = 'Begin character creation.';
+  pushMessage('🧙 The mists stir with anticipation...');
+  void handleCharacterCreationLoopStreaming(initialCreationPrompt, getNextUserInput);
+}
 
 if (props.character) {
   hasActiveCharacter.value = true;
@@ -114,7 +131,7 @@ if (props.character) {
 } else {
   newCharacter.value = true;
   pushMessage('✨ Welcome, brave soul, to Unwritten Worlds!');
-  pushMessage('Your story has yet to be inked across the stars.');
+  pushMessage('🧙 Your story has yet to be inked across the stars. Type <strong>Awaken</strong> to forge your identity.');
   emitPhase('INITIATION', mainStore.currentUserId || null);
 }
 
@@ -124,6 +141,13 @@ if (props.character) {
 async function sendMessage(overrideMessage = false, msg = '', additionalData: Record<string, any> = {}) {
   const input = overrideMessage ? msg : userInput.value.trim();
   if (!input) return;
+  // Begin character creation if user typed Awaken
+  if (!hasActiveCharacter.value && !creationStarted.value && input.toLowerCase() === 'awaken') {
+    await pushMessage(`🗨️ You: ${input}`);
+    userInput.value = '';
+    beginCharacterCreation();
+    return;
+  }
   if (interactionEngine.isAwaiting('awaitingQuestResponse')) {
     const accepted = await interactionEngine.handleQuestResponse(input);
     await pushMessage(accepted ? '📜 Quest accepted.' : '🌀 Quest declined.');
@@ -207,14 +231,7 @@ onMounted(() => {
   initFromStorage();
   emitPhase('AUTH', mainStore.currentUserId || null);
   emitPhase('CHECK_CHARACTER', mainStore.currentUserId || null, { hasCharacter: !!props.character });
-  // Auto-start character creation if no existing character
-  if (!props.character) {
-    // Seed initial message instructing strict JSON structure and first step only.
-    //const initialCreationPrompt = `Begin character creation. Respond ONLY with a single valid JSON object matching this shape: {"narrative":"<text asking me to choose race only>","actions":{"createCharacter":{"name":"","description":"","race":"","archetype":"","profession":"","startingRegion":"","strength":20,"dexterity":20,"intelligence":20,"constitution":20,"wisdom":20,"charisma":20,"maxHealth":100,"currentHealth":100,"maxMana":50,"currentMana":50,"raceAbilities":"","professionAbilities":"","armorType":"","level":1,"xp":1,"equippedWeapon":""},"createRace":{"id":"","name":"","abilities":""},"createProfession":{"id":"","name":"","abilities":""},"logEvent":{"type":"character_creation_start","details":{"character":"","startingRegion":""}}}}. Do NOT include any extra commentary outside JSON. Do NOT advance beyond asking for race. Wait for my race reply before any refinement.`;
-    const initialCreationPrompt = `Begin character creation.`;
-    pushMessage('🧙 The Creation Engine stirs... let us forge your identity.');
-    void handleCharacterCreationLoopStreaming(initialCreationPrompt, getNextUserInput);
-  }
+  // No auto-start; user must type or click Awaken.
 });
 </script>
 

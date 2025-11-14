@@ -15,6 +15,7 @@ interface AiHandlerDeps {
     getErrorMessage: () => string;
     getNextUserInput: () => Promise<string>;
     handleCharacterCreationLoopStreaming: (initialMessage: string, getNextUserInput: () => Promise<string>) => Promise<void>;
+    setLoading?: (loading: boolean) => void;
 }
 
 export function useAiHandler(deps: AiHandlerDeps) {
@@ -62,7 +63,9 @@ export function useAiHandler(deps: AiHandlerDeps) {
         const action = characterIncomplete ? 'character.create' : deps.resolveLocalAction(message, overrideMessage);
 
         if (action === 'character.create') {
+            deps.setLoading?.(true);
             await deps.handleCharacterCreationLoopStreaming(message, deps.getNextUserInput);
+            deps.setLoading?.(false);
             return;
         }
 
@@ -72,6 +75,7 @@ export function useAiHandler(deps: AiHandlerDeps) {
             const canonicalAction = action;
             if (shouldStream(canonicalAction)) {
                 isStreaming.value = true;
+                deps.setLoading?.(true);
                 await startStream({
                     message: payload.message,
                     action: canonicalAction,
@@ -83,11 +87,13 @@ export function useAiHandler(deps: AiHandlerDeps) {
                     },
                     onResult: async (res) => {
                         isStreaming.value = false;
+                        deps.setLoading?.(false);
                         await handleAiResponse(res, action);
                     },
                     onError: async (err) => {
                         if (err === 'aborted') return;
                         isStreaming.value = false;
+                        deps.setLoading?.(false);
                         try {
                             const response = await fetch('/assistant/run', {
                                 method: 'POST',
@@ -108,6 +114,7 @@ export function useAiHandler(deps: AiHandlerDeps) {
                 });
             } else {
                 try {
+                    deps.setLoading?.(true);
                     const response = await fetch('/assistant/run', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
@@ -122,7 +129,7 @@ export function useAiHandler(deps: AiHandlerDeps) {
                 } catch (e) {
                     console.error('Run endpoint error:', e);
                     await deps.pushMessage(deps.getErrorMessage());
-                }
+                } finally { deps.setLoading?.(false); }
             }
         }
     }
