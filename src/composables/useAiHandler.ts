@@ -57,7 +57,9 @@ export function useAiHandler(deps: AiHandlerDeps) {
     async function sendMessage(overrideMessage = false, msg = '', additionalData: Record<string, any> = {}) {
         const message = overrideMessage ? msg : msg.trim();
         if (!message) return;
-        const action = deps.resolveLocalAction(message, overrideMessage);
+        // If character creation is not complete, always stay in character.create loop
+        const characterIncomplete = !deps.characterStore.currentCharacter?.characterId;
+        const action = characterIncomplete ? 'character.create' : deps.resolveLocalAction(message, overrideMessage);
 
         if (action === 'character.create') {
             await deps.handleCharacterCreationLoopStreaming(message, deps.getNextUserInput);

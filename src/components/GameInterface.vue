@@ -115,7 +115,6 @@ if (props.character) {
   newCharacter.value = true;
   pushMessage('✨ Welcome, brave soul, to Unwritten Worlds!');
   pushMessage('Your story has yet to be inked across the stars.');
-  pushMessage('Type `Awaken` to forge your destiny and begin your journey.');
   emitPhase('INITIATION', mainStore.currentUserId || null);
 }
 
@@ -208,6 +207,14 @@ onMounted(() => {
   initFromStorage();
   emitPhase('AUTH', mainStore.currentUserId || null);
   emitPhase('CHECK_CHARACTER', mainStore.currentUserId || null, { hasCharacter: !!props.character });
+  // Auto-start character creation if no existing character
+  if (!props.character) {
+    // Seed initial message instructing strict JSON structure and first step only.
+    //const initialCreationPrompt = `Begin character creation. Respond ONLY with a single valid JSON object matching this shape: {"narrative":"<text asking me to choose race only>","actions":{"createCharacter":{"name":"","description":"","race":"","archetype":"","profession":"","startingRegion":"","strength":20,"dexterity":20,"intelligence":20,"constitution":20,"wisdom":20,"charisma":20,"maxHealth":100,"currentHealth":100,"maxMana":50,"currentMana":50,"raceAbilities":"","professionAbilities":"","armorType":"","level":1,"xp":1,"equippedWeapon":""},"createRace":{"id":"","name":"","abilities":""},"createProfession":{"id":"","name":"","abilities":""},"logEvent":{"type":"character_creation_start","details":{"character":"","startingRegion":""}}}}. Do NOT include any extra commentary outside JSON. Do NOT advance beyond asking for race. Wait for my race reply before any refinement.`;
+    const initialCreationPrompt = `Begin character creation.`;
+    pushMessage('🧙 The Creation Engine stirs... let us forge your identity.');
+    void handleCharacterCreationLoopStreaming(initialCreationPrompt, getNextUserInput);
+  }
 });
 </script>
 

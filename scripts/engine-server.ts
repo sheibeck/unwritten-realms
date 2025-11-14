@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import { gameEngine } from '../src/engine/gameEngine.js';
 import OpenAI from 'openai';
-import { resolveAssistant, classifyAction } from '../src/engine/assistantMap.js';
+import { resolveAssistant, classifyAction } from '../src/engine/assistantMap';
 
 dotenv.config();
 
@@ -43,6 +43,9 @@ app.post('/assistant/run', async (req: Request, res: Response) => {
     }
 
     const thread = threadId || (await client.beta.threads.create()).id;
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('[assistant/run] using assistant', { action: resolvedAction, assistantId: resolvedAssistantId });
+    }
     const formattedContext = context ? JSON.stringify(context, null, 2) : '{}';
     const composed = `Action: ${resolvedAction || 'direct'}\nMessage: ${message}\nContext:\n${formattedContext}`;
     await client.beta.threads.messages.create(thread, { role: 'user', content: composed });
@@ -121,11 +124,15 @@ app.post('/assistant/stream', async (req: Request, res: Response) => {
     }
 
     const thread = threadId || (await client.beta.threads.create()).id;
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('[assistant/stream] using assistant', { action: resolvedAction, assistantId: resolvedAssistantId });
+    }
     const formattedContext = context ? JSON.stringify(context, null, 2) : '{}';
     const composed = `Action: ${resolvedAction || 'direct'}\nMessage: ${message}\nContext:\n${formattedContext}`;
     await client.beta.threads.messages.create(thread, { role: 'user', content: composed });
     const run = await client.beta.threads.runs.create(thread, { assistant_id: resolvedAssistantId });
     sendEvent('meta', { threadId: thread, runId: run.id, assistantId: resolvedAssistantId, action: resolvedAction });
+    sendEvent('assistant', { assistantId: resolvedAssistantId, action: resolvedAction });
 
     let status = run.status;
     let currentRun = run;
@@ -134,20 +141,42 @@ app.post('/assistant/stream', async (req: Request, res: Response) => {
     const emittedMessageIds = new Set<string>();
     const collectedOutputs: string[] = [];
 
+    let loopCount = 0;
     while (!['completed', 'failed', 'cancelled', 'expired'].includes(status)) {
       await new Promise(r => setTimeout(r, 700));
       currentRun = await client.beta.threads.runs.retrieve(thread, run.id);
       status = currentRun.status;
+      loopCount++;
+      // Emit status heartbeat every ~5s (700ms * 7 ≈ 4.9s)
+      if (loopCount % 7 === 0) {
+        sendEvent('status', { status, loopCount });
+      }
       const list = await client.beta.threads.messages.list(thread, { order: 'asc' });
+      let newAssistantContent = false;
       for (const m of list.data) {
         if (m.role === 'assistant' && !emittedMessageIds.has(m.id)) {
           emittedMessageIds.add(m.id);
-          const parts = m.content?.map(c => ('text' in c ? c.text.value : '')).filter(Boolean) || [];
-          for (const p of parts) {
+          const partsRaw: any[] = m.content || [];
+          const parts: string[] = [];
+          for (const c of partsRaw) {
+            // Support multiple possible content shapes (future-proofing)
+            if ((c as any).text?.value) parts.push((c as any).text.value);
+            else if ((c as any).output_text) parts.push((c as any).output_text);
+            else if (typeof (c as any).value === 'string') parts.push((c as any).value);
+          }
+          sendEvent('debug', { note: 'assistant-message', id: m.id, partsTypes: partsRaw.map(pr => pr.type), partsCount: parts.length });
+          for (const p of parts.filter(Boolean)) {
             sendEvent('message', { text: p });
             collectedOutputs.push(p);
+            newAssistantContent = true;
+          }
+          if (parts.length === 0) {
+            sendEvent('debug', { note: 'assistant-message-empty-parts', id: m.id, raw: partsRaw });
           }
         }
+      }
+      if (!newAssistantContent && loopCount % 10 === 0) {
+        sendEvent('debug', { note: 'no-new-assistant-messages-yet', status, elapsedMs: Date.now() - started });
       }
       if (Date.now() - started > timeoutMs) {
         sendEvent('error', { error: `Run timeout after ${timeoutMs}ms status=${status}` });
@@ -160,18 +189,83 @@ app.post('/assistant/stream', async (req: Request, res: Response) => {
       return res.end();
     }
 
+    // After completion, inspect run steps for hidden/structured outputs
+    try {
+      const steps = await client.beta.threads.runs.steps.list(thread, run.id);
+      const stepSummaries: any[] = [];
+      const recoveredOutputs: string[] = [];
+      for (const step of steps.data) {
+        const summary: any = { id: step.id, type: step.type, status: step.status };
+        // message_creation steps may hold message IDs with potentially empty content arrays; retrieve directly
+        const details: any = (step as any).step_details;
+        if (details?.type === 'message_creation') {
+          const msgId = details.message_creation?.message_id;
+          summary.messageId = msgId;
+          if (msgId) {
+            try {
+              const msg = await client.beta.threads.messages.retrieve(thread, msgId);
+              const partsRaw: any[] = msg.content || [];
+              summary.partsTypes = partsRaw.map(p => p.type);
+              const parts: string[] = [];
+              for (const c of partsRaw) {
+                if ((c as any).text?.value) parts.push((c as any).text.value);
+                else if ((c as any).output_text) parts.push((c as any).output_text);
+                else if (typeof (c as any).value === 'string') parts.push((c as any).value);
+              }
+              summary.partsCount = parts.length;
+              if (parts.length > 0) {
+                recoveredOutputs.push(...parts);
+              }
+            } catch (e: any) {
+              summary.messageRetrieveError = e.message || 'retrieve-failed';
+            }
+          }
+        }
+        if (details?.type === 'tool_calls') {
+          summary.toolCalls = details.tool_calls?.length || 0;
+          summary.toolTypes = details.tool_calls?.map((tc: any) => tc.type) || [];
+        }
+        stepSummaries.push(summary);
+      }
+      sendEvent('debug', { note: 'run-steps', steps: stepSummaries });
+      if (recoveredOutputs.length && recoveredOutputs.length > 0) {
+        sendEvent('debug', { note: 'recovered-outputs', count: recoveredOutputs.length });
+        // Merge any recovered outputs not already collected
+        for (const ro of recoveredOutputs) {
+          if (!collectedOutputs.includes(ro)) {
+            collectedOutputs.push(ro);
+          }
+        }
+      }
+    } catch (e: any) {
+      sendEvent('debug', { note: 'run-steps-error', error: e.message || 'unknown' });
+    }
+
     const finalList = await client.beta.threads.messages.list(thread, { order: 'asc' });
     for (const m of finalList.data) {
       if (m.role === 'assistant' && !emittedMessageIds.has(m.id)) {
         emittedMessageIds.add(m.id);
-        const parts = m.content?.map(c => ('text' in c ? c.text.value : '')).filter(Boolean) || [];
-        for (const p of parts) {
+        const partsRaw: any[] = m.content || [];
+        const parts: string[] = [];
+        for (const c of partsRaw) {
+          if ((c as any).text?.value) parts.push((c as any).text.value);
+          else if ((c as any).output_text) parts.push((c as any).output_text);
+          else if (typeof (c as any).value === 'string') parts.push((c as any).value);
+        }
+        sendEvent('debug', { note: 'assistant-final-message', id: m.id, partsTypes: partsRaw.map(pr => pr.type), partsCount: parts.length });
+        for (const p of parts.filter(Boolean)) {
           sendEvent('message', { text: p });
           collectedOutputs.push(p);
         }
+        if (parts.length === 0) {
+          sendEvent('debug', { note: 'assistant-final-message-empty-parts', id: m.id, raw: partsRaw });
+        }
       }
     }
-    // Consolidated full output for clients wanting final payload
+    sendEvent('debug', { note: 'assistant-output-aggregate', total: collectedOutputs.length });
+    // Emit raw joined output for easier JSON parsing client-side
+    const joinedOutput = collectedOutputs.join('\n');
+    sendEvent('raw', { joined: joinedOutput });
     sendEvent('result', { threadId: thread, runId: currentRun.id, assistantId: resolvedAssistantId, action: resolvedAction, output: collectedOutputs });
     sendEvent('done', { threadId: thread, runId: currentRun.id });
     res.end();

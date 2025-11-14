@@ -9,7 +9,9 @@ export function useGameThreads() {
     }
 
     function initFromStorage() {
-        activeGameThreadId.value = localStorage.getItem('unwrittenRealmsThreadId');
+        // Always start with a new session: clear any previous threadId
+        localStorage.removeItem('unwrittenRealmsThreadId');
+        activeGameThreadId.value = null;
     }
 
     return { activeGameThreadId, updateMainThread, initFromStorage };
