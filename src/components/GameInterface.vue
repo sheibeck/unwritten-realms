@@ -69,6 +69,9 @@ import { useCharacterStore } from '@/stores/characterStore';
 import { useQuestStore } from '@/stores/questStore';
 import { useNpcStore } from '@/stores/npcStore';
 import { useInteractionEngine } from '@/composables/useInteractionEngine';
+// normalizeAction removed; use canonical action strings directly
+import { useAssistantStream } from '@/composables/useAssistantStream';
+import { shouldStream } from '@/engine/endpointPolicy';
 import { emitPhase } from '@/engine/onboardingEvents';
 import { useMainStore } from '@/stores/mainStore';
 
@@ -82,6 +85,9 @@ const props = defineProps<{ character: any, currentRegion: any, linkedRegions: a
 const messages = ref<{ raw: string; html: string }[]>([]);
 const userInput = ref('');
 const isLoading = ref(false);
+const isStreaming = ref(false);
+const streamedBuffer = ref<string[]>([]);
+const { startStream } = useAssistantStream();
 
 // Resolver ref (set when waiting for next input)
 const chatContainer = ref<HTMLDivElement | null>(null);
@@ -148,54 +154,99 @@ async function sendMessage(overrideMessage = false, msg = '', additionalData: Re
   }
 
   // Step 4: Handle AI-integrated commands
-  if (action === 'create-character') {
-    await handleCharacterCreationLoop(
-      message,
-      buildPayload,
-      async (payload: Function) => fetch('/webhook/uwengine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
-        body: JSON.stringify(payload),
-      }),
-      getNextUserInput,
-      updateMainThread
-    );
+  if (action === 'character.create') {
+    await handleCharacterCreationLoopStreaming(message, getNextUserInput, updateMainThread);
     return;
   }
 
-  // Default AI interaction
-  if (['explore', 'general-action'].includes(action)) {
-    const payload = buildPayload(action, message, {
-      ...buildContext(),
-      ...additionalData,
-    });
-    if (activeGameThreadId.value) {
-      payload.threadId = activeGameThreadId.value;
-    }
+  // Default AI interaction (explore/general-action) with policy-based streaming vs single-run
+  if (['region.create', 'world.general'].includes(action)) {
+    const normalized = action; // already canonical
+    const payload = buildPayload(action, message, { ...buildContext(), ...additionalData });
+    if (activeGameThreadId.value) payload.threadId = activeGameThreadId.value;
 
-    try {
-      isLoading.value = true;
-      const response = await fetch('/webhook/uwengine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
-        body: JSON.stringify(payload),
+    // Decide path
+    if (shouldStream(normalized)) {
+      isStreaming.value = true;
+      streamedBuffer.value = [];
+      const narrativeChunks: string[] = [];
+
+      await startStream({
+        message: payload.message,
+        action: normalized,
+        context: payload.context,
+        threadId: payload.threadId,
+        onChunk: async (text) => {
+          // Try to parse; if structured with narrative show that, else raw text
+          let parsed: any; try { parsed = JSON.parse(text); } catch { parsed = null; }
+          if (parsed?.narrative) {
+            narrativeChunks.push(parsed.narrative);
+            await pushMessage(`🧙 ${parsed.narrative}`);
+          } else {
+            narrativeChunks.push(text);
+            await pushMessage(`🧙 ${text}`);
+          }
+        },
+        onResult: async (res) => {
+          // Final structured outputs from server; hand off directly
+          isStreaming.value = false;
+          await handleAiResponse(res, action);
+          await nextTick();
+          scrollToBottom();
+        },
+        onDone: async () => {
+          // done arrives after result; nothing additional required
+        },
+        onError: async (err) => {
+          if (err === 'aborted') return;
+          console.error('Stream error:', err);
+          isStreaming.value = false;
+          // Fallback to single-run
+          try {
+            isLoading.value = true;
+            const response = await fetch('/assistant/run', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
+              body: JSON.stringify({ message: payload.message, action: normalized, context: payload.context, threadId: payload.threadId, auto: false })
+            });
+            isLoading.value = false;
+            if (response.ok) {
+              const result = await response.json();
+              await handleAiResponse(result, action);
+            } else {
+              pushMessage(getErrorMessage());
+            }
+          } catch (e) {
+            isLoading.value = false;
+            console.error('Fallback fetch error:', e);
+            pushMessage(getErrorMessage());
+          }
+        }
       });
-      isLoading.value = false;
-
-      if (response.ok) {
-        const result = await response.json();
-        await handleAiResponse(result, action);
-      } else {
+    } else {
+      // Non-stream path
+      try {
+        isLoading.value = true;
+        const response = await fetch('/assistant/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Origin': 'localhost' },
+          body: JSON.stringify({ message: payload.message, action: normalized, context: payload.context, threadId: payload.threadId, auto: false })
+        });
+        isLoading.value = false;
+        if (response.ok) {
+          const result = await response.json();
+          await handleAiResponse(result, action);
+          await nextTick();
+          scrollToBottom();
+        } else {
+          pushMessage(getErrorMessage());
+        }
+      } catch (e) {
+        isLoading.value = false;
+        console.error('Run endpoint error:', e);
         pushMessage(getErrorMessage());
       }
-    } catch (error) {
-      isLoading.value = false;
-      console.error('Fetch error:', error);
-      pushMessage(getErrorMessage());
     }
-
-    await nextTick();
-    scrollToBottom();
   }
 }
 
@@ -203,10 +254,10 @@ async function sendMessage(overrideMessage = false, msg = '', additionalData: Re
 function resolveLocalAction(message: string, isOverride = false): string {
   const lower = message.toLowerCase();
   if (lower === 'look') return 'look';
-  if (isOverride && lower.includes('traveling from')) return 'travel';
-  if (isOverride && lower.includes('exploring from')) return 'explore';
-  if (lower === 'awaken' && !characterStore.currentCharacter) return 'create-character';
-  return 'general-action';
+  if (isOverride && lower.includes('traveling from')) return 'travel.move';
+  if (isOverride && lower.includes('exploring from')) return 'region.create';
+  if (lower === 'awaken' && !characterStore.currentCharacter) return 'character.create';
+  return 'world.general';
 }
 
 // Builds a sanitized context object to pass to the AI payload
@@ -266,40 +317,62 @@ function scrollToBottom() {
   });
 }
 
-async function handleCharacterCreationLoop(initialMessage: string, buildPayload: Function, sendPayload: Function, getNextUserInput: () => Promise<string>, updateMainThread: Function) {
+async function handleCharacterCreationLoopStreaming(initialMessage: string, getNextUserInput: () => Promise<string>, updateMainThread: Function) {
   let currentMessage = initialMessage;
   let iteration = 0;
+  let threadId: string | null = activeGameThreadId.value;
 
   while (!characterStore.currentCharacter?.characterId) {
-  emitPhase(iteration === 0 ? 'CONCEPT' : 'REFINEMENT', mainStore.currentUserId || null, { iteration });
-    const payload = buildPayload('create-character', currentMessage);
-    const response = await sendPayload(payload);
+    emitPhase(iteration === 0 ? 'CONCEPT' : 'REFINEMENT', mainStore.currentUserId || null, { iteration });
 
-    if (response.ok) {
-      const result = await response.json();
-      const assistantOutput = result[0].output || '';
-      const jsonOutput = JSON.parse(assistantOutput);
+    // Capture final structured output via result event
+    let finalJson: any = null;
 
-      if (jsonOutput.narrative) {
-        await pushMessage(`🧙 ${jsonOutput.narrative}`);
-      }
-
-      if (jsonOutput.actions?.createCharacter) {
-        const character = jsonOutput.actions.createCharacter;
-        const complete = Object.values(character).every(v => v !== null && v !== undefined && v !== 0 && v !== '');
-        if (complete) {
-          emitPhase('CONFIRMATION', mainStore.currentUserId || null);
-          await addCharacter(character);
-          emitPhase('PERSISTENCE', mainStore.currentUserId || null, { characterId: character.characterId });
-          updateMainThread(result[0].threadId);
-          break;
+    await startStream({
+      message: currentMessage,
+      action: 'character.create',
+      threadId: threadId,
+      context: buildContext(),
+      onMeta: (m) => { threadId = m.threadId; },
+      onChunk: async (text) => {
+        // Display narrative as it streams
+        let parsed: any; try { parsed = JSON.parse(text); } catch { parsed = null; }
+        if (parsed?.narrative) {
+          await pushMessage(`🧙 ${parsed.narrative}`);
+          finalJson = parsed; // keep latest structured
+        } else {
+          await pushMessage(`🧙 ${text}`);
         }
+      },
+      onResult: async (res) => {
+        // Parse final output array
+        const last = res.output[res.output.length - 1] || '{}';
+        let parsed: any; try { parsed = JSON.parse(last); } catch { parsed = { narrative: last }; }
+        finalJson = parsed;
+        if (finalJson.actions?.createCharacter) {
+          const character = finalJson.actions.createCharacter as AddCharacter;
+          const complete = Object.values(character).every(v => v !== null && v !== undefined && v !== 0 && v !== '');
+          if (complete) {
+            emitPhase('CONFIRMATION', mainStore.currentUserId || null);
+            await addCharacter(character);
+            const charId = (character as any).characterId || (character as any).id || null;
+            emitPhase('PERSISTENCE', mainStore.currentUserId || null, { characterId: charId });
+            updateMainThread(res.threadId);
+          }
+        }
+      },
+      onDone: async () => {
+        // No additional logic needed; actions handled in onResult
+      },
+      onError: async (err) => {
+        if (err === 'aborted') return;
+        console.error('Character creation stream error:', err);
+        pushMessage(getErrorMessage());
+        emitPhase('ERROR', mainStore.currentUserId || null, { reason: 'character_creation_stream_failed' });
       }
-    } else {
-      pushMessage(getErrorMessage());
-  emitPhase('ERROR', mainStore.currentUserId || null, { reason: 'character_creation_fetch_failed' });
-      break;
-    }
+    });
+
+    if (characterStore.currentCharacter?.characterId) break; // completed
 
     currentMessage = await getNextUserInput();
     await pushMessage(`🗨️ You: ${currentMessage}`);
@@ -388,7 +461,8 @@ function buildPayload(
 }
 
 async function handleAiResponse(response: any, originalAction: string) {
-  const assistantOutput = response[0].output || '';
+  const assistantOutputArr: string[] = response.output || [];
+  const assistantOutput = assistantOutputArr[assistantOutputArr.length - 1] || '';
   const jsonOutput = parseOutput(assistantOutput);
 
   pushMessage(`🧙 ${jsonOutput.narrative}`);
@@ -441,7 +515,7 @@ async function handleAiResponse(response: any, originalAction: string) {
     let npc = await npcStore.findNpcById?.(quest.npcId);
     const finalQuest = await questStore.createQuest(quest);
 
-    interactionEngine.startQuestInteraction(finalQuest, npc, response[0].threadId);
+  interactionEngine.startQuestInteraction(finalQuest, npc, response.threadId);
     pushMessage(`🧙 ${npc?.name} offers you a quest: \"${quest.name}\". Do you accept?`);
   }
 
@@ -452,9 +526,19 @@ async function handleAiResponse(response: any, originalAction: string) {
 
   // Thread tracking
   if (originalAction === "general-action" || originalAction === "create-character") {
-    updateMainThread(response[0].threadId || activeGameThreadId.value);
+    updateMainThread(response.threadId || activeGameThreadId.value);
   }
 }
+
+// Optional future abort hook
+// Aborting not yet wired to UI; keep function commented for future use
+// function abortStreaming() {
+//   if (isStreaming.value) {
+//     abort();
+//     isStreaming.value = false;
+//     pushMessage('⛔ Stream aborted.');
+//   }
+// }
 
 
 onMounted(() => {

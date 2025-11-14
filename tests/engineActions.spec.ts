@@ -1,14 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeAction, classifyAction, assistantMap, resolveAssistant } from '../src/engine/assistantMap.ts';
+import { classifyAction, assistantMap, resolveAssistant } from '../src/engine/assistantMap.ts';
 
-describe('normalizeAction', () => {
-  it('maps legacy create-character to character.create', () => {
-    expect(normalizeAction('create-character')).toBe('character.create');
-  });
-  it('returns unknown for gibberish', () => {
-    expect(normalizeAction('@@@')).toBe('unknown');
-  });
-});
+// normalizeAction removed; callers must use canonical action strings.
 
 describe('classifyAction', () => {
   it('detects character creation', () => {

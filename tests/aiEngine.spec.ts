@@ -5,7 +5,7 @@ import { GameEngine } from '../src/engine/gameEngine.ts';
 // Basic mapping tests
 describe('assistant mapping', () => {
   it('resolves known action', () => {
-    const a = resolveAssistant('travel');
+    const a = resolveAssistant('travel.move');
     expect(a.name).toMatch(/Travel Resolver/);
   });
   it('falls back for unknown action', () => {
@@ -35,7 +35,7 @@ vi.mock('openai', () => {
         }
       }
     };
-    constructor(_: any) {}
+    constructor(_: any) { }
   }
   return { default: FakeOpenAI };
 });
@@ -43,7 +43,7 @@ vi.mock('openai', () => {
 describe('game engine processing', () => {
   it('processes a request and returns output', async () => {
     const engine = new GameEngine('fake-key');
-    const response = await engine.process({ action: 'general-action', message: 'Ping', context: { foo: 'bar' } });
+    const response = await engine.process({ action: 'world.general', message: 'Ping', context: { foo: 'bar' } });
     expect(response.output.length).toBeGreaterThan(0);
     expect(response.threadId).toBe('thread_mock');
   });

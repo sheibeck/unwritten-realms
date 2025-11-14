@@ -131,23 +131,7 @@ export const assistantMap: Partial<Record<EngineAction, AssistantDescriptor>> = 
   }
 };
 
-// Legacy synonyms for backward compatibility (incoming action normalization)
-const legacyMap: Record<string, EngineAction> = {
-  'create-character': 'character.create',
-  'explore': 'region.create',
-  'travel': 'travel.move',
-  'general-action': 'world.general',
-  'level-up': 'character.level_up',
-  // legacy faction terminology
-  'faction.manage': 'renown.manage'
-};
-
-export function normalizeAction(raw: string | undefined | null): EngineAction {
-  if (!raw) return 'unknown';
-  if (raw in assistantMap) return raw as EngineAction;
-  if (raw in legacyMap) return legacyMap[raw];
-  return 'unknown';
-}
+// Legacy action normalization removed. All callers must now use canonical EngineAction strings.
 
 // Simple heuristic classification from freeform message when action='auto'
 export function classifyAction(message: string): EngineAction {
@@ -170,8 +154,7 @@ export function classifyAction(message: string): EngineAction {
 }
 
 export function resolveAssistant(action: string): AssistantDescriptor {
-  const normalized = normalizeAction(action);
-  return assistantMap[normalized] || assistantMap['world.general']!; // fallback
+  return assistantMap[action as EngineAction] || assistantMap['world.general']!; // fallback
 }
 
 // Indicates whether the action is specialized (after handling, flow returns to world.general)

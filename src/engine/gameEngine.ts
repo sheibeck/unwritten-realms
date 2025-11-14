@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import * as dotenv from 'dotenv';
-import { resolveAssistant, classifyAction, normalizeAction, isSpecialized } from './assistantMap.js';
+import { resolveAssistant, classifyAction, isSpecialized } from './assistantMap.js';
 import type { AssistantDescriptor, EngineAction } from './assistantMap.js';
 
 dotenv.config();
@@ -35,7 +35,7 @@ export class GameEngine {
     // Determine action (support auto classification and legacy synonyms)
     const resolvedAction: EngineAction = (() => {
       if (req.action === 'auto') return classifyAction(req.message);
-      return normalizeAction(req.action);
+      return (req.action as EngineAction) || 'unknown';
     })();
 
     const assistant = resolveAssistant(resolvedAction);
@@ -45,7 +45,7 @@ export class GameEngine {
 
     // Build composite content (similar to n8n formatted context)
     const formattedContext = req.context ? JSON.stringify(req.context, null, 2) : '{}';
-  const composed = `Action: ${resolvedAction}\nAssistant: ${assistant.name}\nMessage: ${req.message}\nContext:\n${formattedContext}`;
+    const composed = `Action: ${resolvedAction}\nAssistant: ${assistant.name}\nMessage: ${req.message}\nContext:\n${formattedContext}`;
 
     await this.client.beta.threads.messages.create(threadId, {
       role: 'user',

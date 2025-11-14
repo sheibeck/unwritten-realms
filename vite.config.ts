@@ -8,12 +8,12 @@ export default defineConfig({
   plugins: [vue(), basicSsl()],
   server: {
     proxy: {
-      '/webhook': {
-        target: 'https://sterling.braceyourself.solutions',
+      // Local engine proxy replacing former n8n webhook
+      '/uwengine': {
+        target: 'http://localhost:8787',
         changeOrigin: true,
-        secure: false, // if your backend has a self-signed cert (otherwise leave out)
-        rewrite: (path) => path.replace(/^\/webhook/, '/webhook'),
-      }
+        rewrite: (path) => path.replace(/^\/uwengine/, '/uwengine'), // passthrough
+      },
     }
   },
   resolve: {
