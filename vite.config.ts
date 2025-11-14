@@ -8,11 +8,10 @@ export default defineConfig({
   plugins: [vue(), basicSsl()],
   server: {
     proxy: {
-      // Local engine proxy replacing former n8n webhook
-      '/uwengine': {
+      // Proxy assistant endpoints to engine server to avoid CORS in dev
+      '/assistant': {
         target: 'http://localhost:8787',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/uwengine/, '/uwengine'), // passthrough
       },
     }
   },

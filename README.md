@@ -147,6 +147,12 @@ Invoke-WebRequest -Method Post -Uri http://localhost:8787/assistant/stream -Body
 - Streaming enhancements: tune poll interval or migrate to native OpenAI event streams when available.
 - Auditing: add checksum logging for prompt + context package.
 
+### Thread Lifecycle (Server-Side Only)
+Threads and messages are created exclusively via the OpenAI SDK inside the server endpoints (`/assistant/run` & `/assistant/stream`). The frontend never calls OpenAI directly (avoids exposing `OPENAI_API_KEY`). If you need multi-turn continuity, pass the returned `threadId` back on subsequent `/assistant/run` or `/assistant/stream` requests. A future enhancement may persist thread metadata (e.g., last action, entity bindings) in SpaceTimeDB; currently only the ID is reused.
+
+### Dev Proxy (CORS Avoidance)
+In local development Vite proxies `/assistant/*` to `http://localhost:8787` (see `vite.config.ts`). This removes CORS complexity for both JSON and SSE endpoints. If you access the engine from a different origin, either extend the proxy or add that origin to the CORS allow list in `scripts/engine-server.ts`.
+
 ## Project Structure (High-Level)
 ```
 src/
