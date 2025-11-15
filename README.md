@@ -2,6 +2,71 @@
 
 Persistent, specification-driven collaborative world building. Players create regions, characters, NPCs, and quests inside an evolving simulation powered by SpaceTimeDB and a Vue 3 frontend.
 
+## Assistant Prompt Sync Workflow
+All OpenAI resolver assistants are defined by prompt files inside the `ai/` directory (e.g., `ai/character/character_creation_resolver_prompt.txt`). Each prompt begins with a front matter header delimited by `---` lines:
+
+```text
+---
+assistant_id: asst_XXXXXXX
+name: Character Creation Resolver
+model: gpt-4.1
+project: Unwritten-Realms
+checksum: sha256:...
+---
+<instructions body used as assistant instructions>
+```
+
+### Sync Script
+Use the npm script to scan all prompt files, detect changes (content hash), and update assistants via the OpenAI API. No separate config file is required (the previous `assistants.config.json` has been removed).
+
+```powershell
+# Preview changes (no API updates, shows which assistants would update)
+npm run assistants:sync -- --dry-run
+
+# Perform updates (creates/updates instructions; saves .assistants-state.json hashes)
+npm run assistants:sync
+
+# Update only one assistant by ID
+npm run assistants:sync -- --only asst_fm4HRzMm9JU3stu21Dzcadec
+
+# Force update (ignore stored hashes; re-send all)
+npm run assistants:sync -- --force
+
+# Scan mode (explicit; identical to default since config removed)
+npm run assistants:sync -- --scan
+```
+
+### Flags
+| Flag | Purpose |
+|------|---------|
+| `--dry-run` | Show which assistants would be updated without calling OpenAI |
+| `--only <id>` | Restrict update to a single assistant |
+| `--force` | Bypass hash comparison; push all prompt bodies |
+| `--scan` | Ignore any config file even if added later (currently default) |
+
+### State Tracking
+The script writes `.assistants-state.json` containing `{ assistant_id: { hash, updatedAt } }`. This prevents unnecessary API calls when prompt content hasn't changed. Delete the file to force a full re-hash (or use `--force`).
+
+### Adding a New Assistant
+1. Create a new prompt file under `ai/<domain>/<name>_resolver_prompt.txt` with front matter including a valid `assistant_id` (create the assistant manually once, or extend script later to auto-create).
+2. Run a dry-run to confirm detection.
+3. Run sync to apply.
+
+### Troubleshooting
+| Issue | Resolution |
+|-------|------------|
+| `OPENAI_API_KEY not set` | Export the key: `$Env:OPENAI_API_KEY="sk-..."` |
+| Assistant skipped | Missing or placeholder `assistant_id` in front matter |
+| Unchanged reported unexpectedly | File body identical; use `--force` if you require re-push |
+| Large instructions size warning | Consider splitting docs vs operational instructions |
+
+### Future Enhancements
+- Auto-create assistants if `assistant_id` absent (store returned ID back into front matter).
+- Metadata propagation (e.g., `project:`) into assistant `metadata` automatically (currently only config metadata if present).
+- Validation script to ensure required sections exist before sync.
+
+> Note: `assistants.config.json` has been removed; the sync process is now fully driven by front matter in prompt files.
+
 ## Stack Overview
 | Layer | Tech |
 |-------|------|

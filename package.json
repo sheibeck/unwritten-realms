@@ -12,7 +12,9 @@
     "mcp:openai": "tsx scripts/openai-mcp-server.ts",
     "engine": "tsx scripts/engine-server.ts",
     "spacetime:generate": "spacetime generate --lang typescript --out-dir src/spacetimedb/client",
-    "spacetime:publish": "spacetime publish unwrittenrealms"
+    "spacetime:publish": "spacetime publish unwrittenrealms",
+    "assistants:sync": "tsx scripts/sync-openai-assistants.ts",
+    "assistants:sync:dry": "tsx scripts/sync-openai-assistants.ts --dry-run"
   },
   "dependencies": {
     "@aws-amplify/ui-vue": "^4.3.3",
@@ -24,9 +26,9 @@
     "marked": "^15.0.12",
     "openai": "^4.70.0",
     "sass": "^1.89.0",
+    "spacetimedb": "^1.8.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.1",
-    "spacetimedb": "^1.8.0"
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.16.1",
@@ -40,7 +42,7 @@
     "constructs": "^10.4.2",
     "esbuild": "^0.25.4",
     "pinia": "^3.0.3",
-    "tsx": "^4.19.4",
+    "tsx": "^4.20.6",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^1.6.1",
