@@ -162,6 +162,9 @@ function getLinkedRegions(ctx: any) {
 }
 const activeRegionUnsub = ref<(() => void) | null>(null);
 const initialCharacterUnsub = ref<(() => void) | null>(null);
+// Track NPC IDs in current region to manage quest subscriptions
+const lastNpcIds = ref<string[]>([]);
+let currentQuestUnsub: (() => void) | null = null;
 
 function subscribeToSpaceTime(conn: DbConnection) {
   const builder = conn.subscriptionBuilder()
@@ -206,7 +209,7 @@ function subscribeToSpaceTime(conn: DbConnection) {
     { immediate: true }
   );
 
-  // Subscribe to region and NPCs for the current region
+  // Subscribe to region & NPCs; then dynamically subscribe to quests per NPC (no JOIN / IN)
   watch(() => regionStore.currentRegion, (region) => {
     if (!region || !conn) return;
 
@@ -215,21 +218,53 @@ function subscribeToSpaceTime(conn: DbConnection) {
       activeRegionUnsub.value = null;
     }
 
-    const regionSubscriptions = conn.subscriptionBuilder()
-      .onApplied(() => {
-        console.debug(`🔄 Subscribed to region ${region.name} and its NPCs.`);
+    const regionNpcSub = conn.subscriptionBuilder()
+      .onApplied((ctx) => {
+        // Collect NPC IDs for this region
+        const npcIds = Array.from(ctx.db.npc.iter())
+          .filter((n: any) => n.regionId === region.regionId)
+          .map((n: any) => n.npcId);
+
+        // If NPC list changed, rebuild quest subscriptions
+        const changed = npcIds.length !== lastNpcIds.value.length || npcIds.some((id, i) => id !== lastNpcIds.value[i]);
+        if (changed) {
+          console.debug(`♻️ NPC set changed in region ${region.name}. Resubscribing quests.`);
+          lastNpcIds.value = npcIds;
+          if (currentQuestUnsub) {
+            currentQuestUnsub();
+            currentQuestUnsub = null;
+          }
+          if (npcIds.length > 0) {
+            const questQueries = npcIds.map(id => `SELECT * FROM quest WHERE npcId = '${id}'`);
+            console.debug(`🔄 Subscribing to quests for NPCs:`, questQueries);
+            const questSub = conn.subscriptionBuilder()
+              .onApplied(() => {
+                console.debug(`🔄 Subscribed to quests for ${npcIds.length} NPC(s) in region ${region.name}.`);
+              })
+              .onError((e) => {
+                console.error('Quest per-NPC subscription error:', e);
+              })
+              .subscribe(questQueries);
+            currentQuestUnsub = () => questSub.unsubscribe();
+          } else {
+            console.debug(`🛑 No NPCs in region ${region.name}; skipping quest subscription.`);
+          }
+        }
+        console.debug(`🔄 Subscribed to region ${region.name} & NPC list (NPCs=${npcIds.length}).`);
       })
       .onError((e) => {
-        console.error('Region subscription error:', e);
+        console.error('Region/NPC subscription error:', e);
       })
       .subscribe([
         `SELECT * FROM region WHERE regionId = '${characterStore.currentCharacter?.currentLocation}'`,
-        `SELECT * FROM npc WHERE regionId = '${region.regionId}'`,
-        `SELECT q.* FROM quest q JOIN npc n WHERE q.npcId = n.npcId AND n.regionId = '${region.regionId}'`
+        `SELECT * FROM npc WHERE regionId = '${region.regionId}'`
       ]);
 
-    activeRegionUnsub.value = () => regionSubscriptions.unsubscribe();
-    console.debug(`Region subscriptions active`, regionSubscriptions);
+    activeRegionUnsub.value = () => {
+      regionNpcSub.unsubscribe();
+      if (currentQuestUnsub) currentQuestUnsub();
+    };
+    console.debug(`Region subscriptions active`, regionNpcSub);
   }, { immediate: true });
 
   conn.reducers.onCreateAndLinkNewRegion((e) => {

@@ -13,6 +13,11 @@ export function registerQuestReducers() {
         type: t.string(),
         repeatable: t.bool(),
     }, (ctx, input) => {
+        const npcExists = Array.from(ctx.db.npc.iter()).some((n: any) => n.npcId === input.npcId);
+        if (!npcExists) {
+            console.warn(`add_quest: NPC not found for npcId=${input.npcId}`);
+            return;
+        }
         ctx.db.quest.insert({
             questId: uuidv4(),
             ...input,
