@@ -14,7 +14,7 @@ export const Character = table(
     {
         userId: t.identity().unique(),
         characterId: t.string().primaryKey(),
-        name: t.string(),
+        name: t.string().index('btree'),
         description: t.string(),
         race: t.string(),
         archetype: t.string(),
@@ -55,10 +55,12 @@ export const Character = table(
     });
 
 export const Npc = table(
-    { name: 'npc', public: true },
+    {
+        name: 'npc', public: true
+    },
     {
         npcId: t.string().primaryKey(),
-        name: t.string(),
+        name: t.string().index('btree'),
         description: t.string(),
         race: t.string(),
         profession: t.string(),
@@ -67,14 +69,16 @@ export const Npc = table(
         maxMana: t.i32(),
         currentMana: t.i32(),
         abilities: t.string(),
-        regionId: t.string(),
+        regionId: t.string().index('btree'),
     });
 
 export const Quest = table(
-    { name: 'quest', public: true },
+    {
+        name: 'quest', public: true
+    },
     {
         questId: t.string().primaryKey(),
-        npcId: t.string(),
+        npcId: t.string().index('btree'),
         name: t.string(),
         description: t.string(),
         steps: t.i32(),
