@@ -4,7 +4,7 @@ import './style.scss'
 import App from './App.vue'
 import { createPinia } from 'pinia';
 import { Amplify } from 'aws-amplify';
-import outputs from '../amplify_outputs.json' assert { type: 'json' };
+import * as outputs from '../amplify_outputs.json';
 import AmplifyVue from '@aws-amplify/ui-vue';
 import '@aws-amplify/ui-vue/styles.css';
 

@@ -56,11 +56,6 @@ export function useCharacterCreation(deps: CharacterCreationDeps) {
         return missing;
     }
 
-    function isComplete(character: Record<string, any>): boolean {
-        return getMissingFields(character).length === 0;
-    }
-    // characterStore.currentCharacter will be the single source of truth
-
     async function ensureStarterRegion(rawName: string): Promise<string | null> {
         if (!rawName) return null;
         // Already an id?

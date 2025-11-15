@@ -1,5 +1,3 @@
-
-import { spacetimedb } from './spacetimedb/server/schema';
 import { registerUserReducers } from './spacetimedb/server/userReducers';
 import { registerCharacterReducers } from './spacetimedb/server/characterReducers';
 import { registerNpcReducers } from './spacetimedb/server/npcReducers';
