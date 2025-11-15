@@ -8,6 +8,8 @@ import { useMainStore } from './mainStore';
 
 export const useQuestStore = defineStore('questStore', () => {
   const quests = ref<Map<string, Quest>>(new Map());
+  // Track in-flight quest creations by composite key (npcId + name) to avoid duplicate reducer calls
+  const pendingQuestKeys = ref<Set<string>>(new Set());
   const mainStore = useMainStore();
   const connection = computed(() => mainStore.connection);
 
@@ -58,21 +60,43 @@ export const useQuestStore = defineStore('questStore', () => {
         return;
       }
 
+      // Escape single quotes in quest name for safe literal embedding
+      const escapeSqlLiteral = (v: string) => v.replace(/'/g, "''");
+      const compositeKey = `${data.npcId || ''}::${data.name}`;
+      // If already created (by name) resolve immediately
+      const existing = Array.from(quests.value.values()).find(q => q.name === data.name && q.npcId === data.npcId);
+      if (existing) {
+        return resolve(existing);
+      }
+      if (pendingQuestKeys.value.has(compositeKey)) {
+        // Poll for its eventual presence instead of launching another reducer call
+        const start = Date.now();
+        const poll = setInterval(() => {
+          const found = Array.from(quests.value.values()).find(q => q.name === data.name && q.npcId === data.npcId);
+          if (found) { clearInterval(poll); resolve(found); }
+          else if (Date.now() - start > 10000) { clearInterval(poll); reject('Timeout waiting for pending quest'); }
+        }, 250);
+        return;
+      }
+      pendingQuestKeys.value.add(compositeKey);
+
       const builder = connection.value.subscriptionBuilder();
-      const qid = builder.subscribe([`SELECT * FROM quest WHERE name = '${data.name}'`]);
+      const safeName = escapeSqlLiteral(data.name);
+      const qid = builder.subscribe([`SELECT * FROM quest WHERE name = '${safeName}'`]);
 
       const timeout = setTimeout(() => {
         qid.unsubscribe();
+        pendingQuestKeys.value.delete(compositeKey);
         reject('Timeout creating Quest');
       }, 10000);
 
-  connection.value.db.quest.onInsert((_ctx: any, quest: Quest) => {
+      connection.value.db.quest.onInsert((_ctx: any, quest: Quest) => {
         console.debug('🪄 Quest insert event received:', quest);
-
-        if (quest.name === data.name) {
+        if (quest.name === data.name && quest.npcId === data.npcId) {
           console.debug('✅ Matching quest found, resolving promise');
           clearTimeout(timeout);
           qid.unsubscribe();
+          pendingQuestKeys.value.delete(compositeKey);
           resolve(quest);
         }
       });
@@ -90,9 +114,14 @@ export const useQuestStore = defineStore('questStore', () => {
     });
   }
 
+  const findQuestByName = (name: string, npcId?: string): Quest | undefined => {
+    return Array.from(quests.value.values()).find(q => q.name === name && (npcId ? q.npcId === npcId : true));
+  };
+
   return {
     initialize,
     createQuest,
-    quests
+    quests,
+    findQuestByName
   };
 });
