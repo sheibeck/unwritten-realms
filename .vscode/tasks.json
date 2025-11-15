@@ -39,14 +39,27 @@
 			"problemMatcher": [],
 			"label": "npm: build",
 			"detail": "vue-tsc -b && vite build"
-		}
-		,
+		},
 		{
 			"label": "npm: engine",
 			"type": "npm",
 			"script": "engine",
 			"group": "build",
 			"detail": "Starts AI Game Engine Express server (same as engine-start)."
+		},
+		{
+			"label": "assistant: sync",
+			"type": "npm",
+			"script": "assistants:sync",
+			"group": "build",
+			"detail": "Sync OpenAI Assistants from local definitions to OpenAI."
+		},
+		{
+			"label": "assistant: dry",
+			"type": "npm",
+			"script": "assistants:sync:dry",
+			"group": "build",
+			"detail": "Sync OpenAI Assistants from local definitions to OpenAI."
 		}
 	]
 }
