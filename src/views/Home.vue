@@ -140,12 +140,6 @@ async function connectSpacetime() {
     return;
   }
 
-  // ✅ initialize stores
-  characterStore.initialize();
-  // regionStore.initialize();
-  // npcStore.initialize();
-  // questStore.initialize(); 
-
   // Subscribe to space and time
   await subscribeToSpaceTime(mainStore.connection);
 }

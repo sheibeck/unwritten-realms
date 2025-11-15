@@ -86,6 +86,37 @@ export const useCharacterStore = defineStore('characterStore', () => {
       console.warn('No active SpaceTimeDB connection');
       return;
     }
+    // Sanitize & validate before reducer call to avoid fatal errors
+    try {
+      const numericKeys = ['strength', 'dexterity', 'intelligence', 'constitution', 'wisdom', 'charisma', 'maxHealth', 'currentHealth', 'maxMana', 'currentMana', 'level', 'xp'] as const;
+      for (const k of numericKeys) {
+        const v: any = (character as any)[k];
+        if (v === '' || v === null || v === undefined || isNaN(Number(v))) {
+          throw new Error(`Numeric field '${k}' invalid: ${v}`);
+        }
+        (character as any)[k] = Number(v);
+      }
+      const stringKeys = ['name', 'description', 'race', 'archetype', 'profession', 'startingRegion', 'raceAbilities', 'professionAbilities', 'equippedWeapon'] as const;
+      for (const k of stringKeys) {
+        let v: any = (character as any)[k];
+        if (v === null || v === undefined) v = '';
+        if (typeof v !== 'string') v = String(v);
+        (character as any)[k] = v.trim();
+        if ((character as any)[k].length === 0) {
+          // Provide minimal placeholder to satisfy non-null string requirement without leaking internals
+          (character as any)[k] = 'unknown';
+        }
+      }
+      // Ensure startingRegion references an existing region if possible
+      if (!(character as any).startingRegion || (character as any).startingRegion === 'unknown') {
+        const currentRegion = regionStore.currentRegion;
+        if (currentRegion?.regionId) (character as any).startingRegion = currentRegion.regionId; else (character as any).startingRegion = 'origin';
+      }
+    } catch (e) {
+      console.error('[characterStore] validation failed, aborting addCharacter:', e);
+      return;
+    }
+    console.debug('[characterStore] invoking addCharacter reducer with payload:', character);
     // Pass all required arguments explicitly
     connection.value.reducers.addCharacter(
       character.name,

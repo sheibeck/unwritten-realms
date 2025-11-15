@@ -1,7 +1,10 @@
 import { t, SenderError } from 'spacetimedb/server';
 import { spacetimedb } from './schema';
+import { uuidv4 } from './uuid';
 
 export function registerCharacterReducers() {
+    // uuidv4 imported from ./uuid
+
     spacetimedb.reducer('add_character', {
         name: t.string(),
         description: t.string(),
@@ -28,7 +31,7 @@ export function registerCharacterReducers() {
         const existing = ctx.db.character.userId.find(ctx.sender);
         if (existing) throw new SenderError('User already has a character.');
         ctx.db.character.insert({
-            characterId: crypto.randomUUID(),
+            characterId: uuidv4(),
             userId: ctx.sender,
             name: input.name,
             description: input.description,

@@ -1,7 +1,10 @@
 import { t, SenderError } from 'spacetimedb/server';
 import { spacetimedb } from './schema';
+import { uuidv4 } from './uuid';
 
 export function registerRegionReducers() {
+    // uuidv4 imported from ./uuid
+
     spacetimedb.reducer('create_starter_region', {
         name: t.string(),
         description: t.string(),
@@ -11,7 +14,7 @@ export function registerRegionReducers() {
         resources: t.array(t.string()),
     }, (ctx, input) => {
         ctx.db.region.insert({
-            regionId: crypto.randomUUID(),
+            regionId: uuidv4(),
             name: input.name,
             description: input.description,
             fullDescription: input.fullDescription,
@@ -59,7 +62,7 @@ export function registerRegionReducers() {
         const fromRegion = ctx.db.region.regionId.find(input.fromRegionId);
         if (!fromRegion) throw new SenderError('From-region not found.');
         if (fromRegion.linkedRegionIds.length >= 5) throw new SenderError(`${fromRegion.name} cannot link to more than 5 regions.`);
-        const regionId = crypto.randomUUID();
+        const regionId = uuidv4();
         const newRegion = ctx.db.region.insert({
             regionId,
             name: input.name,

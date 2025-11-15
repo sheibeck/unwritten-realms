@@ -1,5 +1,6 @@
 import { t } from 'spacetimedb/server';
 import { spacetimedb } from './schema';
+import { uuidv4 } from './uuid';
 
 export function registerQuestReducers() {
     spacetimedb.reducer('add_quest', {
@@ -13,7 +14,7 @@ export function registerQuestReducers() {
         repeatable: t.bool(),
     }, (ctx, input) => {
         ctx.db.quest.insert({
-            questId: crypto.randomUUID(),
+            questId: uuidv4(),
             ...input,
         });
     });

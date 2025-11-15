@@ -109,7 +109,7 @@ function buildContext() {
 // Resolver ref (set when waiting for next input)
 let _nextUserInputResolver: ((msg: string) => void) | null = null; // resolver set when awaiting user input
 function getNextUserInput(): Promise<string> { return new Promise(r => { void _nextUserInputResolver; _nextUserInputResolver = r; }); }
-const { handleCharacterCreationLoopStreaming } = useCharacterCreation({ characterStore, mainStore, buildContext, pushMessage, updateMainThread, setLoading });
+const { handleCharacterCreationLoopStreaming } = useCharacterCreation({ characterStore, regionStore, mainStore, buildContext, pushMessage, updateMainThread, setLoading });
 const { sendMessage: aiSendMessage } = useAiHandler({ characterStore, regionStore, questStore, npcStore, mainStore, activeGameThreadId, updateMainThread, buildContext, resolveLocalAction, pushMessage, getErrorMessage, getNextUserInput, handleCharacterCreationLoopStreaming, setLoading });
 
 const hasActiveCharacter = ref(false);

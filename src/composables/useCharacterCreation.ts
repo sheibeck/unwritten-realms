@@ -4,6 +4,7 @@ import { emitPhase } from '@/engine/onboardingEvents';
 interface CharacterCreationDeps {
     characterStore: any;
     mainStore: any;
+    regionStore: any; // new: for provisioning starter region
     buildContext: () => Record<string, any>;
     pushMessage: (msg: string) => Promise<void> | void;
     updateMainThread: (threadId: string) => void;
@@ -60,6 +61,81 @@ export function useCharacterCreation(deps: CharacterCreationDeps) {
     }
     // characterStore.currentCharacter will be the single source of truth
 
+    async function ensureStarterRegion(rawName: string): Promise<string | null> {
+        if (!rawName) return null;
+        // Already an id?
+        const byId = deps.regionStore.findRegionById?.(rawName);
+        if (byId) return byId.regionId;
+        const existing = deps.regionStore.findRegionByName?.(rawName);
+        if (existing) return existing.regionId;
+        const candidateName = rawName.trim();
+        // Invoke Region Creation Resolver assistant for structured region suggestion
+        let regionPlan: any = null;
+        try {
+            deps.setLoading?.(true);
+            const ctx = { character: { ...(deps.characterStore.currentCharacter || {}) }, existingRegions: Array.from(deps.regionStore.regions?.values?.() || []) };
+            const response = await fetch('/assistant/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'region.create', message: `Create a starter region named ${candidateName}`, context: ctx })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                // Attempt to parse last output part as JSON (same pattern as other handlers)
+                const last = data.output[data.output.length - 1] || '{}';
+                try { regionPlan = JSON.parse(last); } catch { /* ignore */ }
+                if (!regionPlan) {
+                    // Try substring extraction fallback
+                    const firstBrace = last.indexOf('{');
+                    const lastBrace = last.lastIndexOf('}');
+                    if (firstBrace !== -1 && lastBrace > firstBrace) {
+                        const candidate = last.slice(firstBrace, lastBrace + 1).trim();
+                        try { regionPlan = JSON.parse(candidate); } catch { /* ignore */ }
+                    }
+                }
+            } else {
+                console.warn('Region creation assistant non-OK status', response.status);
+            }
+        } catch (e) {
+            console.error('Region creation assistant request failed', e);
+        } finally {
+            deps.setLoading?.(false);
+        }
+
+        // Expected shape: { actions: { createRegion: { name, id?, description, climate, resources, tier, connectedRegions? } }, narrative? }
+        let createRegionAction = regionPlan?.actions?.createRegion;
+        if (!createRegionAction) {
+            // Fallback minimal stub if assistant failed
+            createRegionAction = {
+                name: candidateName,
+                description: `${candidateName} – an uncharted origin.`,
+                climate: 'temperate',
+                resources: ['herbs'],
+                tier: 1,
+                connectedRegions: []
+            };
+        }
+        // Decide starter vs linked creation; for initial character we use starter (no fromRegion)
+        const starterPayload = {
+            name: createRegionAction.name || candidateName,
+            description: createRegionAction.description || `${candidateName} – nascent refuge`,
+            fullDescription: createRegionAction.description || `${candidateName} – nascent refuge`, // assistant separate narrative may be integrated later
+            climate: createRegionAction.climate || 'temperate',
+            culture: createRegionAction.culture || 'frontier',
+            resources: Array.isArray(createRegionAction.resources) ? createRegionAction.resources : ['herbs']
+        };
+        try { deps.regionStore.createStarterRegion?.(starterPayload); } catch (e) { console.error('Failed createStarterRegion via assistant data', e); return null; }
+        // Wait for insertion
+        const start = Date.now();
+        return await new Promise(resolve => {
+            const interval = setInterval(() => {
+                const found = deps.regionStore.findRegionByName?.(starterPayload.name);
+                if (found) { clearInterval(interval); resolve(found.regionId); }
+                else if (Date.now() - start > 10000) { clearInterval(interval); resolve(null); }
+            }, 250);
+        });
+    }
+
     async function handleCharacterCreationLoopStreaming(initialMessage: string, getNextUserInput: () => Promise<string>) {
         let currentMessage = initialMessage;
         let iteration = 0;
@@ -72,13 +148,17 @@ export function useCharacterCreation(deps: CharacterCreationDeps) {
             }
             const working = deps.characterStore.currentCharacter;
             const missingBefore = getMissingFields(working);
-            emitPhase(iteration === 0 ? 'CONCEPT' : 'REFINEMENT', deps.mainStore.currentUserId || null, { iteration, missing: missingBefore });
+            if (iteration === 0) {
+                emitPhase('CONCEPT', deps.mainStore.currentUserId || null, { iteration, missing: missingBefore });
+            } else {
+                emitPhase('REFINEMENT', deps.mainStore.currentUserId || null, { iteration, missing: missingBefore });
+            }
 
             let finalJson: any = null;
             let receivedChunk = false;
 
-            // Provide current progress & missing fields to assistant
-            const context = { ...deps.buildContext(), characterProgress: { ...working }, missingFields: missingBefore };
+            // Provide current progress & missing fields to assistant (regionProgress included)
+            const context = { ...deps.buildContext(), characterProgress: { ...working }, regionProgress: { ...(deps.regionStore.currentRegion || {}) }, missingFields: missingBefore };
 
             deps.setLoading?.(true);
             await startStream({
@@ -119,15 +199,6 @@ export function useCharacterCreation(deps: CharacterCreationDeps) {
                     if (finalJson.actions?.createCharacter) {
                         const normalized = normalizeAssistantCharacter(finalJson.actions.createCharacter);
                         Object.assign(working, normalized);
-                        const missing = getMissingFields(working);
-                        if (missing.length === 0) {
-                            emitPhase('CONFIRMATION', deps.mainStore.currentUserId || null, { character: { ...working } });
-                            await deps.characterStore.addCharacter(working);
-                            const charId = (working as any).characterId || null;
-                            emitPhase('PERSISTENCE', deps.mainStore.currentUserId || null, { characterId: charId });
-                            deps.updateMainThread(res.threadId);
-                            deps.setLoading?.(false);
-                        }
                     }
                 },
                 onDone: async () => { deps.setLoading?.(false); },
@@ -139,6 +210,27 @@ export function useCharacterCreation(deps: CharacterCreationDeps) {
                     deps.setLoading?.(false);
                 }
             });
+
+            // At this point, check if we have a starter region name and it hasn't been created yet (not a UUID)
+            if (working.startingRegion && typeof working.startingRegion === 'string' && working.startingRegion.length < 40) {
+                const regionId = await ensureStarterRegion(working.startingRegion);
+                if (regionId) {
+                    working.startingRegion = regionId;
+                    const regionObj = deps.regionStore.findRegionById?.(regionId);
+                    if (regionObj) deps.regionStore.setCurrentRegion?.(regionObj);
+                }
+            }
+
+            const missing = getMissingFields(working);
+            if (missing.length === 0) {
+                emitPhase('CONFIRMATION', deps.mainStore.currentUserId || null, { character: { ...working }, region: deps.regionStore.currentRegion || null });
+                await deps.characterStore.addCharacter(working);
+                const charId = (working as any).characterId || null;
+                emitPhase('PERSISTENCE', deps.mainStore.currentUserId || null, { characterId: charId, startingRegion: working.startingRegion });
+                if (threadId) deps.updateMainThread(threadId);
+                deps.setLoading?.(false);
+                break;
+            }
 
             // Fallback if stream produced no chunks/result
             if (!receivedChunk && !finalJson) {
@@ -159,13 +251,6 @@ export function useCharacterCreation(deps: CharacterCreationDeps) {
                         if (finalJson.actions?.createCharacter) {
                             const normalized = normalizeAssistantCharacter(finalJson.actions.createCharacter);
                             Object.assign(working, normalized);
-                            if (isComplete(working)) {
-                                emitPhase('CONFIRMATION', deps.mainStore.currentUserId || null, { character: { ...working } });
-                                await deps.characterStore.addCharacter(working);
-                                const charId = (working as any).characterId || null;
-                                emitPhase('PERSISTENCE', deps.mainStore.currentUserId || null, { characterId: charId });
-                                deps.setLoading?.(false);
-                            }
                         }
                     } else {
                         if (import.meta.env.DEV) console.error('[characterCreation] fallback /assistant/run non-OK', response.status);

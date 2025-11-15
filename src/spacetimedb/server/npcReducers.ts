@@ -1,5 +1,6 @@
 import { t } from 'spacetimedb/server';
 import { spacetimedb } from './schema';
+import { uuidv4 } from './uuid';
 
 export function registerNpcReducers() {
     spacetimedb.reducer('create_npc', {
@@ -15,7 +16,7 @@ export function registerNpcReducers() {
         regionId: t.string(),
     }, (ctx, input) => {
         ctx.db.npc.insert({
-            npcId: crypto.randomUUID(),
+            npcId: uuidv4(),
             ...input,
         });
     });
