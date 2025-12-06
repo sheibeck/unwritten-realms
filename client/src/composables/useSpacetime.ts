@@ -1,57 +1,67 @@
 import { ref } from 'vue';
+// Module bindings are generated via `spacetime generate`.
+// We load them dynamically to avoid build errors if not present in dev.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let stdbClient: any | null = null;
-// Placeholder client; replace with actual SpacetimeDB client SDK usage
+let moduleBindings: any | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Identity = any;
 
 export function useSpacetime() {
     const connected = ref(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let connection: any | null = null;
+
     async function connect(token?: string) {
-        // Connect to SpacetimeDB using client SDK and subscribe to narrative_events
-        try {
-            // Dynamically import to avoid build issues if SDK is missing
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            const sdk = await import('spacetimedb');
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const Client = (sdk as any).Client || (sdk as any).default || sdk;
-            stdbClient = await Client.connect({ db: 'unwritten_realms', token });
-            connected.value = true;
-        } catch (e) {
-            // Fallback: mark connected to let UI proceed; real SDK wiring can be added later
-            connected.value = true;
+        const uri = import.meta.env.VITE_SPACETIMEDB_URL ?? 'http://localhost:3000';
+        if (!moduleBindings) {
+            try {
+                // @ts-ignore: module bindings may not exist in dev until generated
+                moduleBindings = await import('../module_bindings/index');
+            } catch (e) {
+                console.warn('SpacetimeDB module bindings not found. Generate them via `spacetime generate`.');
+                connected.value = true;
+                return;
+            }
         }
+        connection = moduleBindings.DbConnection
+            .builder()
+            .withUri(uri)
+            .withModuleName('unwrittenrealms')
+            .withToken(token)
+            .onConnect((_ctx: any, _identity: Identity) => {
+
+                localStorage.setItem('auth_token', token || '');
+                console.log(
+                    'Connected to SpacetimeDB with identity:',
+                    _identity.toHexString()
+                );
+
+                // subscribe to narrative_events
+                _ctx.subscriptionBuilder()
+                    .onApplied((_ctx: any) => {
+                        // register insert callback when rows are present
+                        connection!.db.narrativeEvents.onInsert((_c: any, row: any) => {
+                            // handled via onNarrativeEvent registration
+                            console.log(row);
+                        });
+                    })
+                    .subscribe('SELECT * FROM narrative_events');
+
+                connected.value = true;
+            })
+            .onDisconnect((_ctx: any, _identity: Identity) => {
+                console.log(
+                    'Client disconnected:',
+                    _identity.toHexString()
+                );
+            })
+            .onConnectError((_ctx: any, err: any) => {
+                console.error('SpacetimeDB connect error', err);
+            })
+            .build();
     }
 
-    const loginWithGoogle = async (idToken: string) => {
-        const response = await fetch('/auth/google', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
-        });
-        if (!response.ok) throw new Error('Login failed');
-        const { spacetimedb_token } = await response.json();
-        return spacetimedb_token as string;
-    };
 
-    function onNarrativeEvent(cb: (evt: { id: string; text: string; timestamp: number }) => void) {
-        if (stdbClient?.subscribe) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (stdbClient as any).subscribe('narrative_events', (row: any) => {
-                cb({ id: row.id, text: row.text, timestamp: row.timestamp });
-            });
-            return;
-        }
-        // Fallback simulation if SDK not present
-        setTimeout(() => {
-            cb({ id: String(Date.now()), text: 'Welcome to Unwritten Realms!', timestamp: Date.now() });
-        }, 500);
-    }
-
-    async function applyIntent(intent: unknown) {
-        // TODO: call reducer via SpacetimeDB client
-        console.log('applyIntent', intent);
-    }
-
-    return { connected, connect, onNarrativeEvent, applyIntent, loginWithGoogle };
+    return { connected, connect };
 }

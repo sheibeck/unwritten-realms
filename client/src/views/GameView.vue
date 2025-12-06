@@ -22,12 +22,12 @@ import { useSessionStore } from '../store/session';
 import { useNarrativeService } from '../composables/useNarrativeService';
 
 const store = useGameStore();
-const { connected, connect, onNarrativeEvent, applyIntent } = useSpacetime();
+const { connected, connect } = useSpacetime();
 const session = useSessionStore();
 const { interpret } = useNarrativeService();
 
 const input = ref('');
-const events = computed(() => store.narrativeEvents);
+const events = computed(() => store.narrative_events);
 
 onMounted(async () => {
   if (session.token) {
@@ -35,14 +35,13 @@ onMounted(async () => {
   } else {
     await connect();
   }
-  onNarrativeEvent(evt => store.addEvent(evt));
 });
 
 async function send() {
   if (!input.value.trim()) return;
   const res = await interpret(input.value, { /* TODO */ }, { /* TODO */ });
   if (res?.intent) {
-    await applyIntent(res.intent);
+    // await applyIntent(res.intent);
   }
   if (res?.narrative_output) {
     store.addEvent({ id: String(Date.now()), text: res.narrative_output, timestamp: Date.now() });

@@ -4,8 +4,7 @@
   "packageManager": "pnpm@9.0.0",
   "workspaces": ["server", "client", "narrative-service", "shared"],
   "scripts": {
-    "dev": "concurrently \"pnpm -C server run dev\" \"pnpm -C client run dev\" \"pnpm -C narrative-service run dev\"",
-    "generate": "pnpm -C server spacetime generate --out ../client/src/stdb-generated"
+    "dev": "concurrently \"pnpm -C server run dev\" \"pnpm -C client run dev\" \"pnpm -C narrative-service run dev\""
   },
   "devDependencies": {
     "concurrently": "^8.2.0"
