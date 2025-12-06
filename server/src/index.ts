@@ -41,7 +41,7 @@ export const spacetimedb = schema(
             ]
         },
         {
-            id: t.identity(),
+            id: t.identity().index('btree'),
             provider: t.string(),
             provider_sub: t.string(),
             email: t.string().unique(),
@@ -83,18 +83,41 @@ spacetimedb.reducer("init", (_ctx) => {
     // Called when the module is initially published
 });
 
-spacetimedb.reducer("client_connected", (_ctx) => {
-    // Called every time a new client connects
-    const ctx = _ctx as any;
-    const sender = ctx.sender;
-    if (!sender) {
-        throw new SenderError('Unauthenticated');
-    }
-    console.info(`Connect ${String(sender)}`);
+
+// Application reducers
+// ensure_user: inserts or fetches a user based on email
+spacetimedb.clientDisconnected((ctx) => {
+    const identity = ctx.sender;
+    if (!identity) throw new SenderError('Unauthenticated');
 
     // Attempt to find user by identity (id)
     let user: any = null;
-    for (const u of ctx.db.users.id.filter(sender)) {
+    for (const u of ctx.db.users.id.filter(ctx.sender)) {
+        user = u;
+        break;
+    }
+
+    if (user) {
+        user.online = false;
+    }
+}
+);
+
+// OIDC configuration for local auth (modules cannot read process.env)
+// Adjust these literals during development/publish as needed.
+const OIDC_CLIENT_IDS = ["client_local_dev"]; // comma-separated client IDs not supported inside module
+const OIDC_ISSUER = "http://localhost:8081/oidc";
+
+spacetimedb.clientConnected((ctx) => {
+    const jwt = ctx.senderAuth.jwt;
+    if (jwt == null) {
+        throw new SenderError("Unauthorized: JWT is required to connect");
+    }
+    console.info(`Client connected with sub: ${jwt.subject}, iss: ${jwt.issuer}`);
+
+    // Attempt to find user by identity (id)
+    let user: any = null;
+    for (const u of ctx.db.users.id.filter(ctx.sender)) {
         user = u;
         break;
     }
@@ -110,7 +133,7 @@ spacetimedb.reducer("client_connected", (_ctx) => {
         }
     } else {
         ctx.db.users.insert({
-            id: sender,
+            id: ctx.sender,
             provider: 'google',
             provider_sub: '',
             email: '',
@@ -118,72 +141,6 @@ spacetimedb.reducer("client_connected", (_ctx) => {
             online: true,
         });
     }
-});
-
-spacetimedb.reducer("client_disconnected", (_ctx) => {
-    // Called every time a client disconnects
-    const ctx = _ctx as any;
-    const sender = ctx.sender;
-    if (!sender) {
-        return;
-    }
-    let user: any = null;
-    for (const u of ctx.db.users.id.filter(sender)) {
-        user = u;
-        break;
-    }
-    if (user) {
-        user.online = false;
-        if (user.email) {
-            ctx.db.users.email.update(user);
-        } else {
-            ctx.db.users.insert(user);
-        }
-    }
-});
-
-// Application reducers
-// ensure_user: inserts or fetches a user based on email
-spacetimedb.reducer(
-    'ensure_user',
-    { provider: t.string(), provider_sub: t.string(), email: t.string() },
-    (ctx, { provider, provider_sub, email }) => {
-        const identity = ctx.sender;
-        if (!identity) throw new SenderError('Unauthenticated');
-        if (!email) throw new SenderError('Email is required');
-
-        // Look up user by email (unique accessor)
-        const existing = ctx.db.users.email.find(email);
-
-        if (!existing) {
-            // Create new user
-            const newUser = {
-                id: identity,
-                provider,
-                provider_sub,
-                email,
-                created_at: Date.now(),
-                online: true,
-            };
-            ctx.db.users.insert(newUser);
-        } else {
-            existing.online = true;
-            ctx.db.users.email.update(existing);
-        }
-    }
-);
-
-// OIDC configuration for local auth (modules cannot read process.env)
-// Adjust these literals during development/publish as needed.
-const OIDC_CLIENT_IDS = ["client_local_dev"]; // comma-separated client IDs not supported inside module
-const OIDC_ISSUER = "http://localhost:8081/oidc";
-
-spacetimedb.clientConnected((ctx) => {
-    const jwt = ctx.senderAuth.jwt;
-    if (jwt == null) {
-        throw new SenderError("Unauthorized: JWT is required to connect");
-    }
-    console.info(`Client connected with sub: ${jwt.subject}, iss: ${jwt.issuer}`);
 });
 
 // Auth: login with Google ID token
@@ -203,19 +160,6 @@ spacetimedb.reducer('login_with_google_id', { device_id: t.option(t.string()), e
     if (!jwt?.audience.some((aud) => OIDC_CLIENT_IDS.includes(aud))) {
         throw new SenderError(`Unauthorized: Invalid audience ${jwt?.audience}`);
     }
-
-    // Look up user by email (unique accessor)
-    const userId = ctx.sender;
-    const foundUser = ctx.db.users.email.find(email);
-    if (!foundUser) {
-        const subject = jwt.subject;
-        ctx.db.users.insert({ id: userId, provider: 'google', provider_sub: subject, email, created_at: Date.now() });
-    }
-
-    // create session (module-local; no external crypto/Buffer usage)
-    ctx.db.sessions.insert({ account_id: userId, device_id: device_id ?? 'unknown', last_seen: Date.now() });
-    console.log(`login_with_google_id: ${email} -> ${userId}`);
-    // reducers don't return values
 });
 
 // Auth: logout

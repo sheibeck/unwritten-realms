@@ -33,12 +33,8 @@ import {
 // Import and reexport all reducer arg types
 import { Init } from "./init_reducer.ts";
 export { Init };
-import { ClientConnected } from "./client_connected_reducer.ts";
-export { ClientConnected };
-import { ClientDisconnected } from "./client_disconnected_reducer.ts";
-export { ClientDisconnected };
-import { EnsureUser } from "./ensure_user_reducer.ts";
-export { EnsureUser };
+import { OnDisconnect } from "./on_disconnect_reducer.ts";
+export { OnDisconnect };
 import { OnConnect } from "./on_connect_reducer.ts";
 export { OnConnect };
 import { LoginWithGoogleId } from "./login_with_google_id_reducer.ts";
@@ -94,17 +90,9 @@ const REMOTE_MODULE = {
       reducerName: "init",
       argsType: Init.getTypeScriptAlgebraicType(),
     },
-    client_connected: {
-      reducerName: "client_connected",
-      argsType: ClientConnected.getTypeScriptAlgebraicType(),
-    },
-    client_disconnected: {
-      reducerName: "client_disconnected",
-      argsType: ClientDisconnected.getTypeScriptAlgebraicType(),
-    },
-    ensure_user: {
-      reducerName: "ensure_user",
-      argsType: EnsureUser.getTypeScriptAlgebraicType(),
+    on_disconnect: {
+      reducerName: "on_disconnect",
+      argsType: OnDisconnect.getTypeScriptAlgebraicType(),
     },
     on_connect: {
       reducerName: "on_connect",
@@ -157,9 +145,7 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "Init", args: Init }
-| { name: "ClientConnected", args: ClientConnected }
-| { name: "ClientDisconnected", args: ClientDisconnected }
-| { name: "EnsureUser", args: EnsureUser }
+| { name: "OnDisconnect", args: OnDisconnect }
 | { name: "OnConnect", args: OnConnect }
 | { name: "LoginWithGoogleId", args: LoginWithGoogleId }
 | { name: "Logout", args: Logout }
@@ -182,44 +168,12 @@ export class RemoteReducers {
     this.connection.offReducer("init", callback);
   }
 
-  clientConnected() {
-    this.connection.callReducer("client_connected", new Uint8Array(0), this.setCallReducerFlags.clientConnectedFlags);
+  onOnDisconnect(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("on_disconnect", callback);
   }
 
-  onClientConnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("client_connected", callback);
-  }
-
-  removeOnClientConnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("client_connected", callback);
-  }
-
-  clientDisconnected() {
-    this.connection.callReducer("client_disconnected", new Uint8Array(0), this.setCallReducerFlags.clientDisconnectedFlags);
-  }
-
-  onClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("client_disconnected", callback);
-  }
-
-  removeOnClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("client_disconnected", callback);
-  }
-
-  ensureUser(provider: string, providerSub: string, email: string) {
-    const __args = { provider, providerSub, email };
-    let __writer = new __BinaryWriter(1024);
-    EnsureUser.serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("ensure_user", __argsBuffer, this.setCallReducerFlags.ensureUserFlags);
-  }
-
-  onEnsureUser(callback: (ctx: ReducerEventContext, provider: string, providerSub: string, email: string) => void) {
-    this.connection.onReducer("ensure_user", callback);
-  }
-
-  removeOnEnsureUser(callback: (ctx: ReducerEventContext, provider: string, providerSub: string, email: string) => void) {
-    this.connection.offReducer("ensure_user", callback);
+  removeOnOnDisconnect(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("on_disconnect", callback);
   }
 
   onOnConnect(callback: (ctx: ReducerEventContext) => void) {
@@ -292,21 +246,6 @@ export class SetReducerFlags {
   initFlags: __CallReducerFlags = 'FullUpdate';
   init(flags: __CallReducerFlags) {
     this.initFlags = flags;
-  }
-
-  clientConnectedFlags: __CallReducerFlags = 'FullUpdate';
-  clientConnected(flags: __CallReducerFlags) {
-    this.clientConnectedFlags = flags;
-  }
-
-  clientDisconnectedFlags: __CallReducerFlags = 'FullUpdate';
-  clientDisconnected(flags: __CallReducerFlags) {
-    this.clientDisconnectedFlags = flags;
-  }
-
-  ensureUserFlags: __CallReducerFlags = 'FullUpdate';
-  ensureUser(flags: __CallReducerFlags) {
-    this.ensureUserFlags = flags;
   }
 
   loginWithGoogleIdFlags: __CallReducerFlags = 'FullUpdate';
