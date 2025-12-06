@@ -1,0 +1,6 @@
+[module]
+name = "unwritten_realms"
+version = "0.0.1"
+
+[build]
+main = "src/index.ts"

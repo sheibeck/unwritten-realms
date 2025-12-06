@@ -1,0 +1,21 @@
+﻿node : (node:6024) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+At line:1 char:61
++ ... rrative-service; node --loader ts-node/esm src/server.ts 2>&1 | Out-F ...
++                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:6024) Exp...e `register()`::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; 
+register("ts-node/esm", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:6024) [DEP0180] DeprecationWarning: fs.Stats constructor is deprecated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+[Object: null prototype] {
+  Symbol(nodejs.util.inspect.custom): [Function: [nodejs.util.inspect.custom]]
+}
+
+Node.js v24.11.1

@@ -1,0 +1,17 @@
+{
+  "name": "shared",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo shared has no dev server"
+  },
+  "exports": {
+    "./intent-schema": "./intent-schema.ts",
+    "./narrative-event-schema": "./narrative-event-schema.ts",
+    "./types": "./types.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

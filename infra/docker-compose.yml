@@ -1,0 +1,17 @@
+version: '3.9'
+services:
+  spacetime:
+    image: ghcr.io/clockworklabs/spacetimedb:latest
+    ports:
+      - '3000:3000'
+    environment:
+      - STDB_LOG_LEVEL=info
+  narrative-service:
+    build: ../narrative-service
+    ports:
+      - '8081:8081'
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - STDB_URL=http://spacetime:3000
+    depends_on:
+      - spacetime

@@ -1,0 +1,14 @@
+import { defineStore } from 'pinia';
+
+export const useGameStore = defineStore('game', {
+    state: () => ({
+        narrativeEvents: [] as Array<{ id: string; text: string; timestamp: number }>,
+        loading: false,
+        error: '' as string | null,
+    }),
+    actions: {
+        addEvent(evt: { id: string; text: string; timestamp: number }) {
+            this.narrativeEvents.unshift(evt);
+        }
+    }
+});
