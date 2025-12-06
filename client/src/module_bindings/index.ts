@@ -230,19 +230,19 @@ export class RemoteReducers {
     this.connection.offReducer("on_connect", callback);
   }
 
-  loginWithGoogleId(deviceId: string | undefined) {
-    const __args = { deviceId };
+  loginWithGoogleId(deviceId: string | undefined, email: string) {
+    const __args = { deviceId, email };
     let __writer = new __BinaryWriter(1024);
     LoginWithGoogleId.serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
     this.connection.callReducer("login_with_google_id", __argsBuffer, this.setCallReducerFlags.loginWithGoogleIdFlags);
   }
 
-  onLoginWithGoogleId(callback: (ctx: ReducerEventContext, deviceId: string | undefined) => void) {
+  onLoginWithGoogleId(callback: (ctx: ReducerEventContext, deviceId: string | undefined, email: string) => void) {
     this.connection.onReducer("login_with_google_id", callback);
   }
 
-  removeOnLoginWithGoogleId(callback: (ctx: ReducerEventContext, deviceId: string | undefined) => void) {
+  removeOnLoginWithGoogleId(callback: (ctx: ReducerEventContext, deviceId: string | undefined, email: string) => void) {
     this.connection.offReducer("login_with_google_id", callback);
   }
 

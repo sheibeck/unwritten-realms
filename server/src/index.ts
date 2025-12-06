@@ -1,18 +1,50 @@
 import { schema, table, t, SenderError } from "spacetimedb/server";
 import { handleIntent } from './intent-handler';
 
+// Helper to authorize by email
+function requireEmail(ctx: any, requiredEmail: string): any {
+    if (!ctx.sender) throw new SenderError('Unauthenticated');
+
+    let user: any = null;
+    for (const u of ctx.db.users.id.filter(ctx.sender)) {
+        user = u;
+        break;
+    }
+
+    if (!user) throw new SenderError('User not found');
+    if (user.email !== requiredEmail) throw new SenderError('Email mismatch: unauthorized');
+
+    return user;
+}
+
+// Helper to get current user
+function getCurrentUser(ctx: any): any {
+    if (!ctx.sender) throw new SenderError('Unauthenticated');
+
+    let user: any = null;
+    for (const u of ctx.db.users.id.filter(ctx.sender)) {
+        user = u;
+        break;
+    }
+
+    if (!user) throw new SenderError('User not found');
+    return user;
+}
+
 export const spacetimedb = schema(
     // Auth users table per Google OAuth -> SpacetimeDB identity flow
     table(
         {
             name: "users", public: true,
-            indexes: [{ name: 'byProviderSub', algorithm: 'btree', columns: ['provider_sub'] }]
+            indexes: [
+                { name: 'byProviderSub', algorithm: 'btree', columns: ['provider_sub'] }
+            ]
         },
         {
             id: t.identity(),
             provider: t.string(),
             provider_sub: t.string(),
-            email: t.string(),
+            email: t.string().unique(),
             created_at: t.number()
         }
     ),
@@ -59,30 +91,29 @@ spacetimedb.reducer("client_disconnected", (_ctx) => {
 });
 
 // Application reducers
-// ensure_user: inserts or fetches a user based on provider_sub
+// ensure_user: inserts or fetches a user based on email
 spacetimedb.reducer(
     'ensure_user',
     { provider: t.string(), provider_sub: t.string(), email: t.string() },
     (ctx, { provider, provider_sub, email }) => {
         const identity = ctx.sender;
         if (!identity) throw new SenderError('Unauthenticated');
+        if (!email) throw new SenderError('Email is required');
 
-        let existing: any | null = null;
-        for (const u of ctx.db.users.byProviderSub.filter(provider_sub)) {
-            existing = u;
-            break;
+        // Look up user by email (unique accessor)
+        const existing = ctx.db.users.email.find(email);
+
+        if (!existing) {
+            // Create new user
+            const newUser = {
+                id: identity,
+                provider,
+                provider_sub,
+                email,
+                created_at: Date.now(),
+            };
+            ctx.db.users.insert(newUser);
         }
-        if (existing) return existing;
-
-        const newUser = {
-            id: identity,
-            provider,
-            provider_sub,
-            email,
-            created_at: Date.now(),
-        };
-        ctx.db.users.insert(newUser);
-        return newUser;
     }
 );
 
@@ -97,12 +128,15 @@ spacetimedb.clientConnected((ctx) => {
 });
 
 // Auth: login with Google ID token
-spacetimedb.reducer('login_with_google_id', { device_id: t.option(t.string()) }, (ctx, { device_id }) => {
+spacetimedb.reducer('login_with_google_id', { device_id: t.option(t.string()), email: t.string() }, (ctx, { device_id, email }) => {
     // Prefer the documented senderAuth.jwt helpers (subject/issuer/aud)
     const jwt = ctx.senderAuth.jwt;
 
     if (jwt == null) {
         throw new SenderError("Unauthorized: JWT is required to connect");
+    }
+    if (!email) {
+        throw new SenderError("Email is required");
     }
     if (jwt?.issuer != "https://auth.spacetimedb.com/oidc") {
         throw new SenderError(`Unauthorized: Invalid issuer ${jwt?.issuer}`);
@@ -111,18 +145,18 @@ spacetimedb.reducer('login_with_google_id', { device_id: t.option(t.string()) },
         throw new SenderError(`Unauthorized: Invalid audience ${jwt?.audience}`);
     }
 
-    // upsert user using ensure_user semantics
-    const subject = jwt.subject;
+    // Look up user by email (unique accessor)
     const userId = ctx.sender;
-    let foundUser: any = null;
-    for (const u of ctx.db.users.byProviderSub.filter(subject)) { foundUser = u; break; }
+    const foundUser = ctx.db.users.email.find(email);
     if (!foundUser) {
-        ctx.db.users.insert({ id: userId, provider: 'google', provider_sub: subject, email: '', created_at: Date.now() });
+        const subject = jwt.subject;
+        ctx.db.users.insert({ id: userId, provider: 'google', provider_sub: subject, email, created_at: Date.now() });
     }
 
     // create session (module-local; no external crypto/Buffer usage)
     ctx.db.sessions.insert({ account_id: userId, device_id: device_id ?? 'unknown', last_seen: Date.now() });
-    console.log(`login_with_google_id: ${subject} -> ${userId}`);
+    console.log(`login_with_google_id: ${email} -> ${userId}`);
+    // reducers don't return values
 });
 
 // Auth: logout
@@ -133,6 +167,12 @@ spacetimedb.reducer('logout', (ctx) => {
 });
 
 spacetimedb.reducer('apply_intent', { intent_json: t.string() }, (ctx, { intent_json }) => {
+    // Ensure user is authenticated and has valid email
+    const user = getCurrentUser(ctx);
+    if (!user.email) {
+        throw new SenderError('User email not verified');
+    }
+
     let parsed: any = null;
     try {
         parsed = JSON.parse(intent_json);
@@ -151,7 +191,7 @@ spacetimedb.reducer('apply_intent', { intent_json: t.string() }, (ctx, { intent_
 
     // Use camelCase table accessor generated by SpacetimeDB
     ctx.db.narrative_events.insert(event);
-    console.log(`apply_intent: ${event.text}`);
+    console.log(`apply_intent: ${event.text} by ${user.email}`);
 });
 
 spacetimedb.reducer('tick', (ctx) => {

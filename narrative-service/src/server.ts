@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import fetch from 'cross-fetch';
 import { z } from 'zod';
 import { IntentSchema } from '../../shared/intent-schema.js';
@@ -6,6 +7,12 @@ import { CharacterContextSchema, WorldContextSchema } from '../../shared/types.j
 import { loginWithGoogle } from './auth/auth-controller.js';
 
 const app = Fastify({ logger: true });
+
+// Enable CORS for development
+app.register(cors, {
+    origin: process.env.CORS_ORIGIN || ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true
+});
 
 const InterpretInputSchema = z.object({
     text: z.string(),

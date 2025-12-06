@@ -16,24 +16,28 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useGameStore } from '../store/game';
+import { useAuthStore } from '../store/auth';
 import { useSpacetime } from '../composables/useSpacetime';
-import { useSessionStore } from '../store/session';
 import { useNarrativeService } from '../composables/useNarrativeService';
 
+const router = useRouter();
 const store = useGameStore();
+const authStore = useAuthStore();
 const { connected, connect } = useSpacetime();
-const session = useSessionStore();
 const { interpret } = useNarrativeService();
 
 const input = ref('');
 const events = computed(() => store.narrative_events);
 
 onMounted(async () => {
-  if (session.token) {
-    await connect(session.token);
+  // Only connect if user is authenticated
+  if (authStore.isAuthenticated && authStore.token) {
+    await connect(authStore.token);
   } else {
-    await connect();
+    // Redirect to login if not authenticated
+    router.push({ name: 'login' });
   }
 });
 

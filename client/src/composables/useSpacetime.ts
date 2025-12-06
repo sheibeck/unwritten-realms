@@ -12,6 +12,22 @@ export function useSpacetime() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let connection: any | null = null;
 
+    /**
+     * Exchange Google ID token for SpacetimeDB token via narrative-service
+     */
+    async function loginWithGoogle(idToken: string) {
+        const narrativeServiceUrl = import.meta.env.VITE_NARRATIVE_SERVICE_URL || 'http://localhost:8081';
+        const response = await fetch(`${narrativeServiceUrl}/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken })
+        });
+        if (!response.ok) {
+            throw new Error(`Login failed: ${response.statusText}`);
+        }
+        return response.json();
+    }
+
     async function connect(token?: string) {
         const uri = import.meta.env.VITE_SPACETIMEDB_URL ?? 'http://localhost:3000';
         if (!moduleBindings) {
@@ -63,5 +79,5 @@ export function useSpacetime() {
     }
 
 
-    return { connected, connect };
+    return { connected, connect, loginWithGoogle };
 }

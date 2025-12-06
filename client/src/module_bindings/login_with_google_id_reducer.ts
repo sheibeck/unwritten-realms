@@ -30,6 +30,7 @@ import {
 
 export type LoginWithGoogleId = {
   deviceId: string | undefined,
+  email: string,
 };
 let _cached_LoginWithGoogleId_type_value: __AlgebraicTypeType | null = null;
 
@@ -46,6 +47,7 @@ export const LoginWithGoogleId = {
     _cached_LoginWithGoogleId_type_value = __AlgebraicTypeValue.Product({ elements: [] });
     _cached_LoginWithGoogleId_type_value.value.elements.push(
       { name: "deviceId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String) },
+      { name: "email", algebraicType: __AlgebraicTypeValue.String },
     );
     return _cached_LoginWithGoogleId_type_value;
   },

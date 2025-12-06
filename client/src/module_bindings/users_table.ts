@@ -57,6 +57,28 @@ export class UsersTableHandle<TableName extends string> implements __TableHandle
   iter(): Iterable<Users> {
     return this.tableCache.iter();
   }
+  /**
+   * Access to the `email` unique index on the table `users`,
+   * which allows point queries on the field of the same name
+   * via the [`UsersEmailUnique.find`] method.
+   *
+   * Users are encouraged not to explicitly reference this type,
+   * but to directly chain method calls,
+   * like `ctx.db.users.email().find(...)`.
+   *
+   * Get a handle on the `email` unique index on the table `users`.
+   */
+  email = {
+    // Find the subscribed row whose `email` column value is equal to `col_val`,
+    // if such a row is present in the client cache.
+    find: (col_val: string): Users | undefined => {
+      for (let row of this.tableCache.iter()) {
+        if (__deepEqual(row.email, col_val)) {
+          return row;
+        }
+      }
+    },
+  };
 
   onInsert = (cb: (ctx: EventContext, row: Users) => void) => {
     return this.tableCache.onInsert(cb);
