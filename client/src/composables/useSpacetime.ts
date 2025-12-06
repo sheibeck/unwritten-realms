@@ -4,10 +4,22 @@ import { ref } from 'vue';
 export function useSpacetime() {
     const connected = ref(false);
 
-    async function connect() {
+    async function connect(token?: string) {
         // TODO: Connect to SpacetimeDB and subscribe to narrative_events
+        // token will be used with real client SDK
         connected.value = true;
     }
+
+    const loginWithGoogle = async (idToken: string) => {
+        const response = await fetch('/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+        });
+        if (!response.ok) throw new Error('Login failed');
+        const { spacetimedb_token } = await response.json();
+        return spacetimedb_token as string;
+    };
 
     function onNarrativeEvent(cb: (evt: { id: string; text: string; timestamp: number }) => void) {
         // TODO: real subscription; simulate for now
@@ -21,5 +33,5 @@ export function useSpacetime() {
         console.log('applyIntent', intent);
     }
 
-    return { connected, connect, onNarrativeEvent, applyIntent };
+    return { connected, connect, onNarrativeEvent, applyIntent, loginWithGoogle };
 }

@@ -12,7 +12,9 @@
     "fastify": "^4.26.2",
     "openai": "^4.57.0",
     "zod": "^3.23.8",
-    "cross-fetch": "^4.0.0"
+    "cross-fetch": "^4.0.0",
+    "axios": "^1.7.7",
+    "google-auth-library": "^9.1.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

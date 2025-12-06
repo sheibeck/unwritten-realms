@@ -3,6 +3,7 @@ import fetch from 'cross-fetch';
 import { z } from 'zod';
 import { IntentSchema } from '../../shared/intent-schema.js';
 import { CharacterContextSchema, WorldContextSchema } from '../../shared/types.js';
+import { loginWithGoogle } from './auth/auth-controller.js';
 
 const app = Fastify({ logger: true });
 
@@ -29,7 +30,7 @@ app.post('/interpret', async (req, reply) => {
     try {
         await fetch(`${stdbUrl}/apply_intent`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(req.headers.authorization ? { Authorization: req.headers.authorization as string } : {}) },
             body: JSON.stringify(intentGuess)
         });
     } catch (e) {
@@ -37,6 +38,18 @@ app.post('/interpret', async (req, reply) => {
     }
 
     return reply.send({ intent: intentGuess, narrative_output });
+});
+
+// Auth route: Google OAuth -> SpacetimeDB identity -> ensure_user
+app.post('/auth/google', async (req, reply) => {
+    try {
+        const result = await loginWithGoogle(req as any, reply as any);
+        // loginWithGoogle already writes response; return to satisfy Fastify
+        return result;
+    } catch (e) {
+        req.log.error(e);
+        return reply.code(500).send('Google login failed');
+    }
 });
 
 function guessIntent(text: string): 'move' | 'combat_action' | 'dialogue' | 'quest_action' | 'system_event' {

@@ -18,17 +18,23 @@
 import { ref, onMounted, computed } from 'vue';
 import { useGameStore } from '../store/game';
 import { useSpacetime } from '../composables/useSpacetime';
+import { useSessionStore } from '../store/session';
 import { useNarrativeService } from '../composables/useNarrativeService';
 
 const store = useGameStore();
 const { connected, connect, onNarrativeEvent, applyIntent } = useSpacetime();
+const session = useSessionStore();
 const { interpret } = useNarrativeService();
 
 const input = ref('');
 const events = computed(() => store.narrativeEvents);
 
 onMounted(async () => {
-  await connect();
+  if (session.token) {
+    await connect(session.token);
+  } else {
+    await connect();
+  }
   onNarrativeEvent(evt => store.addEvent(evt));
 });
 
