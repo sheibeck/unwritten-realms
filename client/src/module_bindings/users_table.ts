@@ -58,6 +58,28 @@ export class UsersTableHandle<TableName extends string> implements __TableHandle
     return this.tableCache.iter();
   }
   /**
+   * Access to the `id` unique index on the table `users`,
+   * which allows point queries on the field of the same name
+   * via the [`UsersIdUnique.find`] method.
+   *
+   * Users are encouraged not to explicitly reference this type,
+   * but to directly chain method calls,
+   * like `ctx.db.users.id().find(...)`.
+   *
+   * Get a handle on the `id` unique index on the table `users`.
+   */
+  id = {
+    // Find the subscribed row whose `id` column value is equal to `col_val`,
+    // if such a row is present in the client cache.
+    find: (col_val: __Identity): Users | undefined => {
+      for (let row of this.tableCache.iter()) {
+        if (__deepEqual(row.id, col_val)) {
+          return row;
+        }
+      }
+    },
+  };
+  /**
    * Access to the `email` unique index on the table `users`,
    * which allows point queries on the field of the same name
    * via the [`UsersEmailUnique.find`] method.
@@ -95,4 +117,12 @@ export class UsersTableHandle<TableName extends string> implements __TableHandle
   removeOnDelete = (cb: (ctx: EventContext, row: Users) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
-}
+
+  // Updates are only defined for tables with primary keys.
+  onUpdate = (cb: (ctx: EventContext, oldRow: Users, newRow: Users) => void) => {
+    return this.tableCache.onUpdate(cb);
+  }
+
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: Users, newRow: Users) => void) => {
+    return this.tableCache.removeOnUpdate(cb);
+  }}

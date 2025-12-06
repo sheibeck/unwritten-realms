@@ -41,10 +41,11 @@ export function useSpacetime() {
                 moduleBindings = await import('../module_bindings/index');
             } catch (e) {
                 console.warn('SpacetimeDB module bindings not found. Generate them via `spacetime generate`.');
-                connected.value = true;
+                connected.value = false;
                 return;
             }
         }
+        console.log('Connecting to SpacetimeDB', { uri, moduleName, hasToken: Boolean(token) });
         connection = moduleBindings.DbConnection
             .builder()
             .withUri(uri)
@@ -73,12 +74,13 @@ export function useSpacetime() {
             })
             .onDisconnect((_ctx: any, _identity: Identity) => {
                 console.log(
-                    'Client disconnected:',
-                    _identity.toHexString()
+                    'Client disconnected:'
                 );
+                connected.value = false;
             })
             .onConnectError((_ctx: any, err: any) => {
                 console.error('SpacetimeDB connect error', err);
+                connected.value = false;
             })
             .build();
     }

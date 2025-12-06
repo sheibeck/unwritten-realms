@@ -59,18 +59,25 @@ async function login(token?: string) {
   }
 
   try {
-    const { spacetimedb_token, user } = await loginWithGoogle(tokenToUse);
+    const { id_token, email } = await loginWithGoogle(tokenToUse);
 
-    // Set auth state before connecting to SpacetimeDB
-    authStore.setAuth(user, spacetimedb_token);
+    // Connect to SpacetimeDB with authenticated token (Google JWT)
+    await connect(id_token);
 
-    // Now connect to SpacetimeDB with authenticated token
-    await connect(spacetimedb_token);
-
-    // Navigate to game
-    router.push({ name: 'game' });
+    // Only mark authenticated after a successful DB connection
+    authStore.setAuth({
+      id: '',
+      email,
+      provider: 'google',
+      provider_sub: '',
+      created_at: Date.now()
+    }, id_token);
+    // Stay on the login page for troubleshooting; do not auto-navigate
+    isLoading.value = false;
   } catch (e: any) {
     error.value = e.message || 'Login failed';
+    // Ensure auth state is cleared on failure so login route is accessible
+    authStore.logout();
     isLoading.value = false;
   }
 }

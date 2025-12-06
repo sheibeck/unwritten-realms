@@ -41,7 +41,7 @@ export const spacetimedb = schema(
             ]
         },
         {
-            id: t.identity().index('btree'),
+            id: t.identity().primaryKey(),
             provider: t.string(),
             provider_sub: t.string(),
             email: t.string().unique(),
@@ -90,15 +90,10 @@ spacetimedb.clientDisconnected((ctx) => {
     const identity = ctx.sender;
     if (!identity) throw new SenderError('Unauthenticated');
 
-    // Attempt to find user by identity (id)
-    let user: any = null;
-    for (const u of ctx.db.users.id.filter(ctx.sender)) {
-        user = u;
-        break;
-    }
-
+    const user = ctx.db.users.id.find(identity);
     if (user) {
         user.online = false;
+        ctx.db.users.id.update(user);
     }
 }
 );
@@ -113,33 +108,31 @@ spacetimedb.clientConnected((ctx) => {
     if (jwt == null) {
         throw new SenderError("Unauthorized: JWT is required to connect");
     }
+    const emailClaim = (jwt as any)?.claims?.email as string | undefined;
     console.info(`Client connected with sub: ${jwt.subject}, iss: ${jwt.issuer}`);
-
-    // Attempt to find user by identity (id)
-    let user: any = null;
-    for (const u of ctx.db.users.id.filter(ctx.sender)) {
-        user = u;
-        break;
+    if (!emailClaim) {
+        throw new SenderError('Unauthorized: Email claim is required');
     }
-
-    if (user) {
-        user.online = true;
-        // Update via unique accessor: email is unique; if present, use it
-        if (user.email) {
-            ctx.db.users.email.update(user);
-        } else {
-            // Fallback: delete+insert when no unique accessor is available
-            ctx.db.users.insert(user);
+    {
+        // Prefer lookup by email; only insert if email doesn't exist
+        const byEmail = ctx.db.users.email.find(emailClaim);
+        if (byEmail) {
+            byEmail.online = true;
+            byEmail.provider = 'google';
+            byEmail.provider_sub = jwt.subject ?? byEmail.provider_sub ?? '';
+            ctx.db.users.email.update(byEmail);
+            return;
         }
-    } else {
+        // No existing user for this email; create new bound to current identity
         ctx.db.users.insert({
             id: ctx.sender,
             provider: 'google',
-            provider_sub: '',
-            email: '',
+            provider_sub: jwt.subject ?? '',
+            email: emailClaim,
             created_at: Date.now(),
             online: true,
         });
+        return;
     }
 });
 

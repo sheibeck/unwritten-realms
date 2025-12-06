@@ -21,6 +21,11 @@ export function useGoogleAuth() {
 
         google.accounts.id.initialize({
             client_id: clientId,
+            // Request email in the ID token
+            // Google Identity Services One Tap uses "auto" scope; adding "email" ensures claim inclusion
+            // See https://developers.google.com/identity/gsi/web/guides/overview
+            // Note: for button-based OAuth flows, ensure your server requests openid email profile as well
+            scope: 'openid email profile',
             callback: (response: { credential: string }) => {
                 onSuccess(response.credential);
             },

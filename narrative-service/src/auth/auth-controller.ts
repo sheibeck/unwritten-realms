@@ -11,6 +11,9 @@ export async function loginWithGoogle(req: FastifyRequest, res: FastifyReply) {
             googleUser = { sub: String(idToken), email: `${String(idToken)}@dev.local` };
         } else {
             const verified = await verifyGoogleIdToken(idToken);
+            if (!verified?.email) {
+                return res.code(400).send('Google token missing email claim');
+            }
             googleUser = { sub: verified.sub!, email: verified.email };
         }
         // Do not call SpacetimeDB from this service. The client will

@@ -83,6 +83,11 @@ const REMOTE_MODULE = {
     users: {
       tableName: "users" as const,
       rowType: Users.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+      primaryKeyInfo: {
+        colName: "id",
+        colType: (Users.getTypeScriptAlgebraicType() as __AlgebraicTypeVariants.Product).value.elements[0].algebraicType,
+      },
     },
   },
   reducers: {
