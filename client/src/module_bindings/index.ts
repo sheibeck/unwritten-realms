@@ -33,12 +33,10 @@ import {
 // Import and reexport all reducer arg types
 import { Init } from "./init_reducer.ts";
 export { Init };
-import { OnDisconnect } from "./on_disconnect_reducer.ts";
-export { OnDisconnect };
+import { ClientDisconnected } from "./client_disconnected_reducer.ts";
+export { ClientDisconnected };
 import { OnConnect } from "./on_connect_reducer.ts";
 export { OnConnect };
-import { LoginWithGoogleId } from "./login_with_google_id_reducer.ts";
-export { LoginWithGoogleId };
 import { Logout } from "./logout_reducer.ts";
 export { Logout };
 import { ApplyIntent } from "./apply_intent_reducer.ts";
@@ -95,17 +93,13 @@ const REMOTE_MODULE = {
       reducerName: "init",
       argsType: Init.getTypeScriptAlgebraicType(),
     },
-    on_disconnect: {
-      reducerName: "on_disconnect",
-      argsType: OnDisconnect.getTypeScriptAlgebraicType(),
+    client_disconnected: {
+      reducerName: "client_disconnected",
+      argsType: ClientDisconnected.getTypeScriptAlgebraicType(),
     },
     on_connect: {
       reducerName: "on_connect",
       argsType: OnConnect.getTypeScriptAlgebraicType(),
-    },
-    login_with_google_id: {
-      reducerName: "login_with_google_id",
-      argsType: LoginWithGoogleId.getTypeScriptAlgebraicType(),
     },
     logout: {
       reducerName: "logout",
@@ -150,9 +144,8 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "Init", args: Init }
-| { name: "OnDisconnect", args: OnDisconnect }
+| { name: "ClientDisconnected", args: ClientDisconnected }
 | { name: "OnConnect", args: OnConnect }
-| { name: "LoginWithGoogleId", args: LoginWithGoogleId }
 | { name: "Logout", args: Logout }
 | { name: "ApplyIntent", args: ApplyIntent }
 | { name: "Tick", args: Tick }
@@ -173,12 +166,16 @@ export class RemoteReducers {
     this.connection.offReducer("init", callback);
   }
 
-  onOnDisconnect(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("on_disconnect", callback);
+  clientDisconnected() {
+    this.connection.callReducer("client_disconnected", new Uint8Array(0), this.setCallReducerFlags.clientDisconnectedFlags);
   }
 
-  removeOnOnDisconnect(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("on_disconnect", callback);
+  onClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("client_disconnected", callback);
+  }
+
+  removeOnClientDisconnected(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("client_disconnected", callback);
   }
 
   onOnConnect(callback: (ctx: ReducerEventContext) => void) {
@@ -187,22 +184,6 @@ export class RemoteReducers {
 
   removeOnOnConnect(callback: (ctx: ReducerEventContext) => void) {
     this.connection.offReducer("on_connect", callback);
-  }
-
-  loginWithGoogleId(deviceId: string | undefined, email: string) {
-    const __args = { deviceId, email };
-    let __writer = new __BinaryWriter(1024);
-    LoginWithGoogleId.serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("login_with_google_id", __argsBuffer, this.setCallReducerFlags.loginWithGoogleIdFlags);
-  }
-
-  onLoginWithGoogleId(callback: (ctx: ReducerEventContext, deviceId: string | undefined, email: string) => void) {
-    this.connection.onReducer("login_with_google_id", callback);
-  }
-
-  removeOnLoginWithGoogleId(callback: (ctx: ReducerEventContext, deviceId: string | undefined, email: string) => void) {
-    this.connection.offReducer("login_with_google_id", callback);
   }
 
   logout() {
@@ -253,9 +234,9 @@ export class SetReducerFlags {
     this.initFlags = flags;
   }
 
-  loginWithGoogleIdFlags: __CallReducerFlags = 'FullUpdate';
-  loginWithGoogleId(flags: __CallReducerFlags) {
-    this.loginWithGoogleIdFlags = flags;
+  clientDisconnectedFlags: __CallReducerFlags = 'FullUpdate';
+  clientDisconnected(flags: __CallReducerFlags) {
+    this.clientDisconnectedFlags = flags;
   }
 
   logoutFlags: __CallReducerFlags = 'FullUpdate';

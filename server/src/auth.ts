@@ -8,17 +8,6 @@ export async function verifyGoogleIdToken(idToken: string) {
     if (!idToken) throw new Error('Invalid Google ID token');
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    if (!clientId || clientId === 'TODO' || clientId === 'DEV') {
-        // Dev fallback: accept token and synthesize payload
-        const payload = {
-            aud: clientId || 'DEV',
-            sub: `stub-${String(idToken).slice(0, 8)}`,
-            email: `${String(idToken).slice(0, 8)}@dev.local`,
-            email_verified: true
-        };
-        return GoogleIdTokenPayloadSchema.parse(payload);
-    }
-
     const client = new OAuth2Client(clientId);
     const ticket = await client.verifyIdToken({ idToken, audience: clientId });
     const payload = ticket.getPayload();

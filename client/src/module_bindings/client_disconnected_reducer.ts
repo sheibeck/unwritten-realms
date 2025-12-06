@@ -28,39 +28,34 @@ import {
   type TableHandle as __TableHandle,
 } from "spacetimedb";
 
-export type LoginWithGoogleId = {
-  deviceId: string | undefined,
-  email: string,
-};
-let _cached_LoginWithGoogleId_type_value: __AlgebraicTypeType | null = null;
+export type ClientDisconnected = {};
+let _cached_ClientDisconnected_type_value: __AlgebraicTypeType | null = null;
 
 /**
  * An object for generated helper functions.
  */
-export const LoginWithGoogleId = {
+export const ClientDisconnected = {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_LoginWithGoogleId_type_value) return _cached_LoginWithGoogleId_type_value;
-    _cached_LoginWithGoogleId_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_LoginWithGoogleId_type_value.value.elements.push(
-      { name: "deviceId", algebraicType: __AlgebraicTypeValue.createOptionType(__AlgebraicTypeValue.String) },
-      { name: "email", algebraicType: __AlgebraicTypeValue.String },
+    if (_cached_ClientDisconnected_type_value) return _cached_ClientDisconnected_type_value;
+    _cached_ClientDisconnected_type_value = __AlgebraicTypeValue.Product({ elements: [] });
+    _cached_ClientDisconnected_type_value.value.elements.push(
     );
-    return _cached_LoginWithGoogleId_type_value;
+    return _cached_ClientDisconnected_type_value;
   },
 
-  serialize(writer: __BinaryWriter, value: LoginWithGoogleId): void {
-    __AlgebraicTypeValue.serializeValue(writer, LoginWithGoogleId.getTypeScriptAlgebraicType(), value);
+  serialize(writer: __BinaryWriter, value: ClientDisconnected): void {
+    __AlgebraicTypeValue.serializeValue(writer, ClientDisconnected.getTypeScriptAlgebraicType(), value);
   },
 
-  deserialize(reader: __BinaryReader): LoginWithGoogleId {
-    return __AlgebraicTypeValue.deserializeValue(reader, LoginWithGoogleId.getTypeScriptAlgebraicType());
+  deserialize(reader: __BinaryReader): ClientDisconnected {
+    return __AlgebraicTypeValue.deserializeValue(reader, ClientDisconnected.getTypeScriptAlgebraicType());
   },
 
 }
 
-export default LoginWithGoogleId;
+export default ClientDisconnected;
 

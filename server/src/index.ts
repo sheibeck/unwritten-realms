@@ -82,61 +82,41 @@ spacetimedb.reducer('client_disconnected', (_ctx) => {
 }
 );
 
-// OIDC configuration for local auth (modules cannot read process.env)
-// Adjust these literals during development/publish as needed.
-const OIDC_CLIENT_IDS = ["client_local_dev"]; // comma-separated client IDs not supported inside module
-const OIDC_ISSUER = "http://localhost:8081/oidc";
-
-spacetimedb.reducer('client_connected', (ctx) => {
+spacetimedb.clientConnected((ctx) => {
     const jwt = ctx.senderAuth.jwt;
     if (jwt == null) {
         throw new SenderError("Unauthorized: JWT is required to connect");
     }
+
     const emailClaim = (jwt as any)?.claims?.email as string | undefined;
-    console.info(`Client connected with sub: ${jwt.subject}, iss: ${jwt.issuer}`);
-    if (!emailClaim) {
+    const email = emailClaim || (jwt.subject ? `${jwt.subject}@placeholder.local` : undefined);
+
+    console.log(`Client connected with sub: ${jwt.subject}, iss: ${jwt.issuer}, email: ${email ?? 'missing'}`);
+
+    if (!email) {
         throw new SenderError('Unauthorized: Email claim is required');
     }
-    {
-        // Prefer lookup by email; only insert if email doesn't exist
-        const byEmail = ctx.db.users.email.find(emailClaim);
-        if (byEmail) {
-            byEmail.online = true;
-            byEmail.provider = 'google';
-            byEmail.provider_sub = jwt.subject ?? byEmail.provider_sub ?? '';
-            ctx.db.users.email.update(byEmail);
-            return;
-        }
-        // No existing user for this email; create new bound to current identity
-        ctx.db.users.insert({
-            id: ctx.sender,
-            provider: 'google',
-            provider_sub: jwt.subject ?? '',
-            email: emailClaim,
-            created_at: Date.now(),
-            online: true,
-        });
+
+    // Prefer lookup by email; only insert if email doesn't exist
+    const byEmail = ctx.db.users.email.find(email);
+    if (byEmail) {
+        byEmail.online = true;
+        byEmail.provider = 'google';
+        byEmail.provider_sub = jwt.subject ?? byEmail.provider_sub ?? '';
+        ctx.db.users.email.update(byEmail);
         return;
     }
-});
 
-// Auth: login with Google ID token
-spacetimedb.reducer('login_with_google_id', { device_id: t.option(t.string()), email: t.string() }, (ctx, { device_id, email }) => {
-    // Prefer the documented senderAuth.jwt helpers (subject/issuer/aud)
-    const jwt = ctx.senderAuth.jwt;
-
-    if (jwt == null) {
-        throw new SenderError("Unauthorized: JWT is required to connect");
-    }
-    if (!email) {
-        throw new SenderError("Email is required");
-    }
-    if (jwt?.issuer != OIDC_ISSUER) {
-        throw new SenderError(`Unauthorized: Invalid issuer ${jwt?.issuer}`);
-    }
-    if (!jwt?.audience.some((aud) => OIDC_CLIENT_IDS.includes(aud))) {
-        throw new SenderError(`Unauthorized: Invalid audience ${jwt?.audience}`);
-    }
+    // No existing user for this email; create new bound to current identity
+    ctx.db.users.insert({
+        id: ctx.sender,
+        provider: 'google',
+        provider_sub: jwt.subject ?? '',
+        email,
+        created_at: Date.now(),
+        online: true,
+    });
+    return;
 });
 
 // Auth: logout

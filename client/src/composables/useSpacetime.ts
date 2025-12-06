@@ -57,7 +57,10 @@ export function useSpacetime() {
                             console.log(row);
                         });
                     })
-                    .subscribe('SELECT * FROM narrative_events');
+                    .subscribe([
+                        'SELECT * FROM narrative_events',
+                        'SELECT * FROM users WHERE id = $1', _identity.toHexString()
+                    ]);
 
                 connected.value = true;
             })
