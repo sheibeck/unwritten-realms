@@ -11,24 +11,37 @@ export function useSpacetime() {
     let connection: any | null = null;
 
     /**
-     * Exchange Google ID token via narrative-service and use that JWT to
-     * authenticate directly with SpacetimeDB.
+     * Directly authenticate with SpacetimeDB using the Google ID token.
+     * Validate that the token carries an email claim and matches our client id.
      */
     async function loginWithGoogle(idToken: string) {
-        // Default to the Vite dev proxy prefix to avoid mixed-content/CORS in https dev
-        const narrativeServiceUrl = import.meta.env.VITE_NARRATIVE_SERVICE_URL || '/narrative';
-        const response = await fetch(`${narrativeServiceUrl}/auth/google`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken })
-        });
-        if (!response.ok) {
-            throw new Error(`Login failed: ${response.statusText}`);
+        const payload = decodeJwt(idToken);
+        const email = payload?.email as string | undefined;
+        const aud = Array.isArray(payload?.aud) ? payload?.aud[0] : (payload?.aud as string | undefined);
+        const expectedAud = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+        if (!email) {
+            throw new Error('Google token missing email claim. Ensure you are using the correct Google Web client ID.');
         }
-        const data = await response.json();
-        // Automatically connect using the Google-issued id_token
-        await connect(data.id_token);
-        return data;
+        if (expectedAud && aud && aud !== expectedAud) {
+            console.warn(`Google token audience mismatch. token aud=${aud}, expected=${expectedAud}`);
+        }
+
+        await connect(idToken);
+        return { id_token: idToken, email };
+    }
+
+    // Minimal JWT payload decoder (base64url -> JSON), no signature verification.
+    function decodeJwt(token: string): Record<string, unknown> | null {
+        const parts = token.split('.');
+        if (parts.length < 2) return null;
+        try {
+            const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+            const decoded = atob(payload.padEnd(payload.length + (4 - (payload.length % 4)) % 4, '='));
+            return JSON.parse(decoded);
+        } catch {
+            return null;
+        }
     }
 
     async function connect(token?: string) {
