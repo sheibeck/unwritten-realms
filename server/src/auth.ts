@@ -1,18 +1,28 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { GoogleIdTokenPayloadSchema, SessionTokenSchema } from '../../shared/types';
+import { OAuth2Client } from 'google-auth-library';
 
 const SESSION_SECRET = process.env.SERVER_SESSION_SECRET || 'dev-secret-change-me';
 
 export async function verifyGoogleIdToken(idToken: string) {
-    // TODO: Replace with real Google token verification (fetch JWKS and verify RS256)
-    // For now, accept any non-empty token and fabricate a payload
-    if (!idToken || idToken.length < 10) throw new Error('Invalid Google ID token');
-    const payload = {
-        aud: process.env.GOOGLE_CLIENT_ID || 'TODO',
-        sub: `stub-${idToken.slice(0, 8)}`,
-        email: 'stub@example.com',
-        email_verified: true
-    };
+    if (!idToken) throw new Error('Invalid Google ID token');
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === 'TODO' || clientId === 'DEV') {
+        // Dev fallback: accept token and synthesize payload
+        const payload = {
+            aud: clientId || 'DEV',
+            sub: `stub-${String(idToken).slice(0, 8)}`,
+            email: `${String(idToken).slice(0, 8)}@dev.local`,
+            email_verified: true
+        };
+        return GoogleIdTokenPayloadSchema.parse(payload);
+    }
+
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({ idToken, audience: clientId });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.sub) throw new Error('Invalid Google token');
     return GoogleIdTokenPayloadSchema.parse(payload);
 }
 

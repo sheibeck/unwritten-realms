@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { schema, table, t, SenderError } from "spacetimedb/server";
 import { handleIntent } from './intent-handler';
 import { signSession } from './auth';
@@ -35,7 +36,7 @@ export const spacetimedb = schema(
         }
     ),
     table(
-        { name: "narrative_events" },
+        { name: "narrative_events", public: true },
         {
             id: t.string(),
             character_id: t.string(),

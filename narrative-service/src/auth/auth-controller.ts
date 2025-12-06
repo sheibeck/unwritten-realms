@@ -7,10 +7,16 @@ export async function loginWithGoogle(req: FastifyRequest, res: FastifyReply) {
     try {
         const { idToken } = (req.body as any) ?? {};
         if (!idToken) return res.code(400).send('Missing token');
+        let googleUser: { sub: string; email?: string };
+        if (!process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID === 'DEV') {
+            // Dev fallback: treat idToken as the Google sub directly
+            googleUser = { sub: String(idToken), email: `${String(idToken)}@dev.local` };
+        } else {
+            const verified = await verifyGoogleIdToken(idToken);
+            googleUser = { sub: verified.sub!, email: verified.email };
+        }
 
-        const googleUser = await verifyGoogleIdToken(idToken);
-
-        const stIdentity = await createSpacetimeIdentity({ sub: googleUser.sub! });
+        const stIdentity = await createSpacetimeIdentity({ sub: googleUser.sub });
 
         const reducerRes = await axios.post(
             `${process.env.SPACETIMEDB_URL}/call/ensure_user`,
