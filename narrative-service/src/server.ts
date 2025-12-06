@@ -1,5 +1,8 @@
 import Fastify from 'fastify';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from '@fastify/cors';
 import fetch from 'cross-fetch';
 import { z } from 'zod';
@@ -7,8 +10,29 @@ import { IntentSchema } from '../../shared/intent-schema.js';
 import { CharacterContextSchema, WorldContextSchema } from '../../shared/types.js';
 import { loginWithGoogle } from './auth/auth-controller.js';
 
-// Load environment variables from project root .env
-dotenv.config({ path: '../../.env' });
+// Load environment variables from .env
+// Try common locations to work both from project root and narrative-service folder
+(() => {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const candidates = [
+        // Try from current working directory (when running from narrative-service or repo root)
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(process.cwd(), '../.env'),
+        path.resolve(process.cwd(), '../../.env'),
+        // Try relative to compiled file location in dist
+        path.resolve(__dirname, '../.env'),
+        path.resolve(__dirname, '../../.env'),
+        path.resolve(__dirname, '../../../.env'),
+        path.resolve(__dirname, '../../../../.env'),
+    ];
+    for (const p of candidates) {
+        if (fs.existsSync(p)) {
+            dotenv.config({ path: p });
+            break;
+        }
+    }
+})();
 
 const app = Fastify({ logger: true });
 

@@ -34,6 +34,7 @@ export type Users = {
   providerSub: string,
   email: string,
   createdAt: number,
+  online: boolean,
 };
 let _cached_Users_type_value: __AlgebraicTypeType | null = null;
 
@@ -54,6 +55,7 @@ export const Users = {
       { name: "providerSub", algebraicType: __AlgebraicTypeValue.String },
       { name: "email", algebraicType: __AlgebraicTypeValue.String },
       { name: "createdAt", algebraicType: __AlgebraicTypeValue.F64 },
+      { name: "online", algebraicType: __AlgebraicTypeValue.Bool },
     );
     return _cached_Users_type_value;
   },

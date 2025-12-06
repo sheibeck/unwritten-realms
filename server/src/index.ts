@@ -45,7 +45,8 @@ export const spacetimedb = schema(
             provider: t.string(),
             provider_sub: t.string(),
             email: t.string().unique(),
-            created_at: t.number()
+            created_at: t.number(),
+            online: t.bool()
         }
     ),
     table(
@@ -84,10 +85,61 @@ spacetimedb.reducer("init", (_ctx) => {
 
 spacetimedb.reducer("client_connected", (_ctx) => {
     // Called every time a new client connects
+    const ctx = _ctx as any;
+    const sender = ctx.sender;
+    if (!sender) {
+        throw new SenderError('Unauthenticated');
+    }
+    console.info(`Connect ${String(sender)}`);
+
+    // Attempt to find user by identity (id)
+    let user: any = null;
+    for (const u of ctx.db.users.id.filter(sender)) {
+        user = u;
+        break;
+    }
+
+    if (user) {
+        user.online = true;
+        // Update via unique accessor: email is unique; if present, use it
+        if (user.email) {
+            ctx.db.users.email.update(user);
+        } else {
+            // Fallback: delete+insert when no unique accessor is available
+            ctx.db.users.insert(user);
+        }
+    } else {
+        ctx.db.users.insert({
+            id: sender,
+            provider: 'google',
+            provider_sub: '',
+            email: '',
+            created_at: Date.now(),
+            online: true,
+        });
+    }
 });
 
 spacetimedb.reducer("client_disconnected", (_ctx) => {
     // Called every time a client disconnects
+    const ctx = _ctx as any;
+    const sender = ctx.sender;
+    if (!sender) {
+        return;
+    }
+    let user: any = null;
+    for (const u of ctx.db.users.id.filter(sender)) {
+        user = u;
+        break;
+    }
+    if (user) {
+        user.online = false;
+        if (user.email) {
+            ctx.db.users.email.update(user);
+        } else {
+            ctx.db.users.insert(user);
+        }
+    }
 });
 
 // Application reducers
@@ -111,8 +163,12 @@ spacetimedb.reducer(
                 provider_sub,
                 email,
                 created_at: Date.now(),
+                online: true,
             };
             ctx.db.users.insert(newUser);
+        } else {
+            existing.online = true;
+            ctx.db.users.email.update(existing);
         }
     }
 );

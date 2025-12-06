@@ -13,7 +13,8 @@ export function useSpacetime() {
     let connection: any | null = null;
 
     /**
-     * Exchange Google ID token for SpacetimeDB token via narrative-service
+     * Exchange Google ID token via narrative-service and use that JWT to
+     * authenticate directly with SpacetimeDB.
      */
     async function loginWithGoogle(idToken: string) {
         const narrativeServiceUrl = import.meta.env.VITE_NARRATIVE_SERVICE_URL || 'http://localhost:8081';
@@ -26,8 +27,8 @@ export function useSpacetime() {
             throw new Error(`Login failed: ${response.statusText}`);
         }
         const data = await response.json();
-        // Automatically connect with the returned SpacetimeDB token
-        await connect(data.spacetimedb_token);
+        // Automatically connect using the Google-issued id_token
+        await connect(data.id_token);
         return data;
     }
 
@@ -50,7 +51,7 @@ export function useSpacetime() {
             .withModuleName(moduleName)
             .withToken(token)
             .onConnect((_ctx: any, _identity: Identity) => {
-
+                // Persist the bearer used for SpacetimeDB auth (Google id_token)
                 localStorage.setItem('auth_token', token || '');
                 console.log(
                     'Connected to SpacetimeDB with identity:',
