@@ -1,8 +1,6 @@
 import { ref } from 'vue';
-// Module bindings are generated via `spacetime generate`.
-// We load them dynamically to avoid build errors if not present in dev.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let moduleBindings: any | null = null;
+// Module bindings are generated at build time (`spacetime generate`), so import statically.
+import * as moduleBindings from '../module_bindings';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Identity = any;
 
@@ -36,16 +34,6 @@ export function useSpacetime() {
     async function connect(token?: string) {
         const uri = import.meta.env.VITE_SPACETIMEDB_URL ?? 'http://localhost:3000';
         const moduleName = import.meta.env.VITE_SPACETIMEDB_MODULE ?? 'unwrittenrealms';
-        if (!moduleBindings) {
-            try {
-                // @ts-ignore: module bindings may not exist in dev until generated
-                moduleBindings = await import('../module_bindings/index');
-            } catch (e) {
-                console.warn('SpacetimeDB module bindings not found. Generate them via `spacetime generate`.');
-                connected.value = false;
-                return;
-            }
-        }
         console.log('Connecting to SpacetimeDB', { uri, moduleName, hasToken: Boolean(token) });
         connection = moduleBindings.DbConnection
             .builder()
