@@ -40,13 +40,16 @@ const app = Fastify({ logger: true });
 app.register(cors, {
     // Allow wildcard during local dev when CORS_ORIGIN='*'
     origin: (origin, cb) => {
-        const cfg = process.env.CORS_ORIGIN || 'http://localhost:5173';
+        // Default: permit both HTTP and HTTPS Vite dev origins.
+        const cfg = process.env.CORS_ORIGIN || 'https://localhost:5173';
         if (cfg === '*') {
             cb(null, true);
             return;
         }
-        const allowed = Array.isArray(cfg) ? cfg : cfg.split(',').map(s => s.trim());
-        if (!origin || allowed.includes(origin)) {
+        const normalize = (s: string) => s.trim().replace(/\/$/, '');
+        const allowed = Array.isArray(cfg) ? cfg.map(normalize) : cfg.split(',').map(normalize);
+        const current = normalize(origin || '');
+        if (!origin || allowed.includes(current)) {
             cb(null, true);
         } else {
             cb(new Error('Not allowed by CORS'), false);

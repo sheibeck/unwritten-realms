@@ -28,7 +28,7 @@ Client (Vue.js) → Narrative Service (Fastify) → Google OAuth → SpacetimeDB
 3. Select **Web application**
 4. Configure:
    - **Authorized JavaScript origins**:
-     - `http://localhost:5173` (Vite dev server)
+     - `https://localhost:5173` (Vite dev server)
      - `http://localhost:3000` (production)
    - **Authorized redirect URIs**:
      - `http://localhost:8081/auth/callback` (narrative-service)
@@ -71,7 +71,7 @@ pnpm dev
 
 ### Development Mode (Simple Token Test)
 
-1. Open http://localhost:5173
+1. Open https://localhost:5173
 2. Click **Sign in with Google**
 3. When prompted, enter a test token (or use a real Google ID token)
 4. The narrative service will:
@@ -168,7 +168,7 @@ To test without a real Google account:
 | "Could not import spacetime:sys@1.2" | Update SpacetimeDB CLI: `spacetime update` |
 | "Invalid audience" | Verify `GOOGLE_CLIENT_ID` matches your OAuth credentials |
 | "Unauthorized: JWT is required" | SpacetimeDB connection needs a valid token |
-| "CORS error" | Add http://localhost:5173 to OAuth allowed origins |
+| "CORS error" | Add https://localhost:5173 to OAuth allowed origins |
 
 ## Next Steps
 

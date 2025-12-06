@@ -3,10 +3,7 @@
     <h2>Login</h2>
     <p>Sign in with your Google account.</p>
     <div id="google-signin-button" class="button-container"></div>
-    <form v-if="devMode" @submit.prevent="handleDevLogin" class="dev-form">
-      <input v-model="idToken" placeholder="Dev: Google ID token or sub" />
-      <button type="submit">Dev Login</button>
-    </form>
+
     <p v-if="error" class="error">{{ error }}</p>
     <p v-if="isLoading" class="loading">Logging in...</p>
   </div>
@@ -42,10 +39,6 @@ onMounted(async () => {
     error.value = googleError.value;
   }
 });
-
-async function handleDevLogin() {
-  await login();
-}
 
 async function login(token?: string) {
   error.value = '';

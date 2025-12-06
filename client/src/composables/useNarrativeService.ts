@@ -1,7 +1,8 @@
 import { ref } from 'vue';
 
 export function useNarrativeService() {
-    const baseUrl = import.meta.env.VITE_NARRATIVE_URL || 'http://localhost:8081';
+    // Default to the Vite dev proxy prefix to avoid mixed-content/CORS in https dev
+    const baseUrl = import.meta.env.VITE_NARRATIVE_SERVICE_URL || '/narrative';
     const loading = ref(false);
     const error = ref<string | null>(null);
 

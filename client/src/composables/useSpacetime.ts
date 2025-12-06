@@ -17,7 +17,8 @@ export function useSpacetime() {
      * authenticate directly with SpacetimeDB.
      */
     async function loginWithGoogle(idToken: string) {
-        const narrativeServiceUrl = import.meta.env.VITE_NARRATIVE_SERVICE_URL || 'http://localhost:8081';
+        // Default to the Vite dev proxy prefix to avoid mixed-content/CORS in https dev
+        const narrativeServiceUrl = import.meta.env.VITE_NARRATIVE_SERVICE_URL || '/narrative';
         const response = await fetch(`${narrativeServiceUrl}/auth/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
