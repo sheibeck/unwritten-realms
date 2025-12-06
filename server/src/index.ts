@@ -1,22 +1,6 @@
 import { schema, table, t, SenderError } from "spacetimedb/server";
 import { handleIntent } from './intent-handler';
 
-// Helper to authorize by email
-function requireEmail(ctx: any, requiredEmail: string): any {
-    if (!ctx.sender) throw new SenderError('Unauthenticated');
-
-    let user: any = null;
-    for (const u of ctx.db.users.id.filter(ctx.sender)) {
-        user = u;
-        break;
-    }
-
-    if (!user) throw new SenderError('User not found');
-    if (user.email !== requiredEmail) throw new SenderError('Email mismatch: unauthorized');
-
-    return user;
-}
-
 // Helper to get current user
 function getCurrentUser(ctx: any): any {
     if (!ctx.sender) throw new SenderError('Unauthenticated');
@@ -86,14 +70,14 @@ spacetimedb.reducer("init", (_ctx) => {
 
 // Application reducers
 // ensure_user: inserts or fetches a user based on email
-spacetimedb.clientDisconnected((ctx) => {
-    const identity = ctx.sender;
+spacetimedb.reducer('client_disconnected', (_ctx) => {
+    const identity = _ctx.sender;
     if (!identity) throw new SenderError('Unauthenticated');
 
-    const user = ctx.db.users.id.find(identity);
+    const user = _ctx.db.users.id.find(identity);
     if (user) {
         user.online = false;
-        ctx.db.users.id.update(user);
+        _ctx.db.users.id.update(user);
     }
 }
 );
@@ -103,7 +87,7 @@ spacetimedb.clientDisconnected((ctx) => {
 const OIDC_CLIENT_IDS = ["client_local_dev"]; // comma-separated client IDs not supported inside module
 const OIDC_ISSUER = "http://localhost:8081/oidc";
 
-spacetimedb.clientConnected((ctx) => {
+spacetimedb.reducer('client_connected', (ctx) => {
     const jwt = ctx.senderAuth.jwt;
     if (jwt == null) {
         throw new SenderError("Unauthorized: JWT is required to connect");
