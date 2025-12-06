@@ -72,7 +72,10 @@ async function login(token?: string) {
       provider_sub: '',
       created_at: Date.now()
     }, id_token);
-    // Stay on the login page for troubleshooting; do not auto-navigate
+
+    // Redirect to Game.vue after successful login
+    router.push({ name: 'game' });
+
     isLoading.value = false;
   } catch (e: any) {
     error.value = e.message || 'Login failed';

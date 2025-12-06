@@ -1,6 +1,9 @@
 <template>
   <div class="container">
-    <h1>Unwritten Realms</h1>
+    <div class="header">
+      <h1>Unwritten Realms</h1>
+      <button class="logout" type="button" @click="logout">Log out</button>
+    </div>
     <div class="events">
       <div v-for="e in events" :key="e.id" class="event">
         <span class="time">{{ new Date(e.timestamp).toLocaleTimeString() }}</span>
@@ -21,12 +24,14 @@ import { useGameStore } from '../store/game';
 import { useAuthStore } from '../store/auth';
 import { useSpacetime } from '../composables/useSpacetime';
 import { useNarrativeService } from '../composables/useNarrativeService';
+import { useGoogleAuth } from '../composables/useGoogleAuth';
 
 const router = useRouter();
 const store = useGameStore();
 const authStore = useAuthStore();
-const { connected, connect } = useSpacetime();
+const { connect } = useSpacetime();
 const { interpret } = useNarrativeService();
+const { logoffGoogle } = useGoogleAuth();
 
 const input = ref('');
 const events = computed(() => store.narrative_events);
@@ -52,10 +57,20 @@ async function send() {
   }
   input.value = '';
 }
+
+async function logout() {
+  const emailHint = authStore.user?.email;
+  await logoffGoogle(emailHint);
+  authStore.logout();
+  router.push({ name: 'login' });
+}
 </script>
 
 <style scoped>
 .container { max-width: 800px; margin: 0 auto; padding: 24px; }
+.header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.logout { background: #f3f4f6; border: 1px solid #d1d5db; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+.logout:hover { background: #e5e7eb; }
 .events { height: 300px; overflow: auto; border: 1px solid #ddd; margin-bottom: 12px; padding: 8px; }
 .event { display: flex; gap: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco; }
 form { display: flex; gap: 8px; }

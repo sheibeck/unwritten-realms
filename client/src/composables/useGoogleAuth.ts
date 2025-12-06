@@ -65,11 +65,33 @@ export function useGoogleAuth() {
         });
     }
 
+    /**
+     * Disable Google's auto-sign-in and revoke the current session so the user
+     * can fully log off and switch accounts on the next login.
+     */
+    async function logoffGoogle(emailHint?: string) {
+        if (!google?.accounts?.id) {
+            error.value = 'Google Identity Services not loaded';
+            return;
+        }
+
+        // Prevent automatic re-selection of the previous account.
+        google.accounts.id.disableAutoSelect();
+
+        if (emailHint) {
+            // Wrap revoke callback in a promise so callers can await completion.
+            await new Promise<void>((resolve) => {
+                google.accounts.id.revoke(emailHint, () => resolve());
+            });
+        }
+    }
+
     return {
         isLoading,
         error,
         initializeGoogleSignIn,
         renderSignInButton,
-        renderOneTapUI
+        renderOneTapUI,
+        logoffGoogle
     };
 }

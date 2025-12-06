@@ -152,7 +152,6 @@ The Fastify server logs all requests:
 ```
 [8081/auth/google] POST received
 [google-auth.ts] Token validated
-[spacetimedb-auth.ts] Identity created
 ```
 
 ### Mock Google Token (Dev)
