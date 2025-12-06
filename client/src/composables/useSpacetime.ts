@@ -25,11 +25,15 @@ export function useSpacetime() {
         if (!response.ok) {
             throw new Error(`Login failed: ${response.statusText}`);
         }
-        return response.json();
+        const data = await response.json();
+        // Automatically connect with the returned SpacetimeDB token
+        await connect(data.spacetimedb_token);
+        return data;
     }
 
     async function connect(token?: string) {
         const uri = import.meta.env.VITE_SPACETIMEDB_URL ?? 'http://localhost:3000';
+        const moduleName = import.meta.env.VITE_SPACETIMEDB_MODULE ?? 'unwrittenrealms';
         if (!moduleBindings) {
             try {
                 // @ts-ignore: module bindings may not exist in dev until generated
@@ -43,7 +47,7 @@ export function useSpacetime() {
         connection = moduleBindings.DbConnection
             .builder()
             .withUri(uri)
-            .withModuleName('unwrittenrealms')
+            .withModuleName(moduleName)
             .withToken(token)
             .onConnect((_ctx: any, _identity: Identity) => {
 

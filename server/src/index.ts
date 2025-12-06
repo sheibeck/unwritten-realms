@@ -117,7 +117,10 @@ spacetimedb.reducer(
     }
 );
 
-const OIDC_CLIENT_IDS = ["client_XXXXXXXXXXXXXXXXXXXXXX"];
+// OIDC configuration for local auth (modules cannot read process.env)
+// Adjust these literals during development/publish as needed.
+const OIDC_CLIENT_IDS = ["client_local_dev"]; // comma-separated client IDs not supported inside module
+const OIDC_ISSUER = "http://localhost:8081/oidc";
 
 spacetimedb.clientConnected((ctx) => {
     const jwt = ctx.senderAuth.jwt;
@@ -138,7 +141,7 @@ spacetimedb.reducer('login_with_google_id', { device_id: t.option(t.string()), e
     if (!email) {
         throw new SenderError("Email is required");
     }
-    if (jwt?.issuer != "https://auth.spacetimedb.com/oidc") {
+    if (jwt?.issuer != OIDC_ISSUER) {
         throw new SenderError(`Unauthorized: Invalid issuer ${jwt?.issuer}`);
     }
     if (!jwt?.audience.some((aud) => OIDC_CLIENT_IDS.includes(aud))) {

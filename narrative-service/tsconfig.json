@@ -6,12 +6,15 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "dist",
+      "outDir": "./dist/narrative-service",
     "rootDir": "..",
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["../shared/*"]
     }
   },
-  "include": ["src", "../shared"]
+  "include": [
+    "src",
+    "../shared/**/*.ts"
+  ]
 }

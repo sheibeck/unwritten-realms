@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import dotenv from 'dotenv';
 import cors from '@fastify/cors';
 import fetch from 'cross-fetch';
 import { z } from 'zod';
@@ -6,12 +7,31 @@ import { IntentSchema } from '../../shared/intent-schema.js';
 import { CharacterContextSchema, WorldContextSchema } from '../../shared/types.js';
 import { loginWithGoogle } from './auth/auth-controller.js';
 
+// Load environment variables from project root .env
+dotenv.config({ path: '../../.env' });
+
 const app = Fastify({ logger: true });
 
 // Enable CORS for development
 app.register(cors, {
-    origin: process.env.CORS_ORIGIN || ['http://localhost:5173', 'http://localhost:3000'],
-    credentials: true
+    // Allow wildcard during local dev when CORS_ORIGIN='*'
+    origin: (origin, cb) => {
+        const cfg = process.env.CORS_ORIGIN || 'http://localhost:5173';
+        if (cfg === '*') {
+            cb(null, true);
+            return;
+        }
+        const allowed = Array.isArray(cfg) ? cfg : cfg.split(',').map(s => s.trim());
+        if (!origin || allowed.includes(origin)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Not allowed by CORS'), false);
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    strictPreflight: true
 });
 
 const InterpretInputSchema = z.object({
@@ -26,7 +46,7 @@ app.post('/interpret', async (req, reply) => {
         return reply.code(400).send({ error: parsed.error.message });
     }
 
-    const { text } = parsed.data;
+    const { text } = parsed.data as z.infer<typeof InterpretInputSchema>;
 
     // TODO: Replace with real OpenAI structured output call
     const intentGuess = IntentSchema.parse({ kind: guessIntent(text), payload: { text } });
@@ -48,6 +68,21 @@ app.post('/interpret', async (req, reply) => {
 });
 
 // Auth route: Google OAuth -> SpacetimeDB identity -> ensure_user
+// Simple health check for auth endpoint
+app.get('/auth/health', async (_req, reply) => {
+    return reply.send({ status: 'ok' });
+});
+
+// Global health check
+app.get('/health', async (_req, reply) => {
+    return reply.send({ status: 'ok' });
+});
+
+// Root check
+app.get('/', async (_req, reply) => {
+    return reply.send({ status: 'ok' });
+});
+
 app.post('/auth/google', async (req, reply) => {
     try {
         const result = await loginWithGoogle(req as any, reply as any);
@@ -76,4 +111,9 @@ const port = Number(process.env.PORT || 8081);
 app.listen({ port, host: '0.0.0.0' }).catch(err => {
     app.log.error(err);
     process.exit(1);
+});
+
+// Print routes on readiness to verify registration
+app.ready().then(() => {
+    app.log.info(app.printRoutes());
 });

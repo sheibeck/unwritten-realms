@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsc -p tsconfig.json && node dist/server.js",
+    "dev": "tsc -p tsconfig.json && node dist/narrative-service/server.js",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "start": "node dist/narrative-service/narrative-service/src/server.js"
   },
   "dependencies": {
     "fastify": "^4.26.2",
+    "dotenv": "^16.4.5",
     "@fastify/cors": "^8.5.0",
     "openai": "^4.57.0",
     "zod": "^3.23.8",

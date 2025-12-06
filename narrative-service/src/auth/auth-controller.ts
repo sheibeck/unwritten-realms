@@ -15,22 +15,38 @@ export async function loginWithGoogle(req: FastifyRequest, res: FastifyReply) {
             const verified = await verifyGoogleIdToken(idToken);
             googleUser = { sub: verified.sub!, email: verified.email };
         }
+        if (!process.env.SPACETIMEDB_URL) {
+            req.log.error('SPACETIMEDB_URL env not set');
+            return res.code(500).send('Server misconfigured: SPACETIMEDB_URL');
+        }
 
-        const stIdentity = await createSpacetimeIdentity({ sub: googleUser.sub });
+        let stIdentity: any;
+        try {
+            stIdentity = await createSpacetimeIdentity({ sub: googleUser.sub });
+        } catch (e: any) {
+            req.log.error({ err: e }, 'Failed to create Spacetime identity');
+            const msg = e?.response?.data ?? e?.message ?? 'Identity error';
+            return res.code(500).send(String(msg));
+        }
 
-        const reducerRes = await axios.post(
-            `${process.env.SPACETIMEDB_URL}/call/ensure_user`,
-            {
-                provider: 'google',
-                provider_sub: googleUser.sub,
-                email: googleUser.email,
-            },
-            {
-                headers: { Authorization: `Bearer ${stIdentity.token}` },
-            }
-        );
-
-        return res.send({ spacetimedb_token: stIdentity.token, user: reducerRes.data });
+        try {
+            const reducerRes = await axios.post(
+                `${process.env.SPACETIMEDB_URL}/call/ensure_user`,
+                {
+                    provider: 'google',
+                    provider_sub: googleUser.sub,
+                    email: googleUser.email,
+                },
+                {
+                    headers: { Authorization: `Bearer ${stIdentity.token}` },
+                }
+            );
+            return res.send({ spacetimedb_token: stIdentity.token, user: reducerRes.data });
+        } catch (e: any) {
+            req.log.error({ err: e }, 'Reducer call failed');
+            const msg = e?.response?.data ?? e?.message ?? 'Reducer error';
+            return res.code(500).send(String(msg));
+        }
     } catch (err) {
         req.log.error(err);
         return res.code(500).send('Google login failed');
