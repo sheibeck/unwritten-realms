@@ -37,33 +37,7 @@ export function useSpacetime() {
             return { id_token: idToken, email };
         }
 
-        // Non-JWT token (likely an access token). Use the Google userinfo endpoint to get the email.
-        try {
-            const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: {
-                    Authorization: `Bearer ${idToken}`,
-                },
-            });
-
-            if (!resp.ok) {
-                const text = await resp.text();
-                throw new Error(`Failed to fetch Google userinfo: ${resp.status} ${text}`);
-            }
-
-            const data = await resp.json();
-            email = data.email as string | undefined;
-            if (!email) {
-                throw new Error('Google userinfo did not contain an email claim');
-            }
-
-            // We still need an id_token to pass to connect(); if server expects id_token, you might
-            // need to exchange the access token for an id_token on the server. For now we pass the
-            // access token through to connect() as a best-effort bearer.
-            await connect(idToken);
-            return { id_token: idToken, email };
-        } catch (e) {
-            throw e;
-        }
+        throw new Error('Provided Google token is not a valid id_token (JWT)');
     }
 
     // Minimal JWT payload decoder (base64url -> JSON), no signature verification.
