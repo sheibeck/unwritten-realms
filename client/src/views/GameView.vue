@@ -31,7 +31,7 @@ const store = useGameStore();
 const authStore = useAuthStore();
 const { connect } = useSpacetime();
 const { interpret } = useNarrativeService();
-const { logoffGoogle } = useGoogleAuth();
+const { signOut } = useGoogleAuth();
 
 const input = ref('');
 const events = computed(() => store.narrative_events);
@@ -60,7 +60,7 @@ async function send() {
 
 async function logout() {
   const emailHint = authStore.user?.email;
-  await logoffGoogle(emailHint);
+  await signOut();
   authStore.logout();
   router.push({ name: 'login' });
 }

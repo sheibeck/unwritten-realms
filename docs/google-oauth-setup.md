@@ -95,19 +95,6 @@ npm install @react-oauth/google
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 ```
 
-Then in LoginView.vue:
-```typescript
-function handleGoogleSignIn() {
-  google.accounts.id.initialize({
-    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-    callback: async (response) => {
-      await login(response.credential);
-    }
-  });
-  google.accounts.id.renderButton(document.getElementById('signInButton'), {});
-}
-```
-
 ## Data Flow
 
 ### User Creation on First Login

@@ -10,6 +10,7 @@ export default defineConfig({
     server: {
         port: 5173,
         https: true,
+        // Note: COOP/COEP headers removed to avoid interfering with Google Identity popup
         proxy: {
             // Proxy narrative-service during dev to avoid CORS/mixed-content from https dev origin.
             '/narrative': {

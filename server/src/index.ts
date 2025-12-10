@@ -67,7 +67,6 @@ spacetimedb.reducer("init", (_ctx) => {
     // Called when the module is initially published
 });
 
-
 // Application reducers
 // ensure_user: inserts or fetches a user based on email
 spacetimedb.reducer('client_disconnected', (_ctx) => {
@@ -84,12 +83,16 @@ spacetimedb.reducer('client_disconnected', (_ctx) => {
 
 spacetimedb.clientConnected((ctx) => {
     const jwt = ctx.senderAuth.jwt;
+
+    //throw new SenderError("DEBUG JWT: " + safeStringify(jwt));
+
     if (jwt == null) {
         throw new SenderError("Unauthorized: JWT is required to connect");
     }
 
-    const emailClaim = (jwt as any)?.claims?.email as string | undefined;
-    const email = emailClaim || (jwt.subject ? `${jwt.subject}@placeholder.local` : undefined);
+    const payload = (jwt as any)?.fullPayload ?? {};
+    const emailClaim = typeof payload.email === 'string' ? payload.email : undefined;
+    const email = emailClaim ?? (jwt.subject ? `${jwt.subject}@placeholder.local` : undefined);
 
     console.log(`Client connected with sub: ${jwt.subject}, iss: ${jwt.issuer}, email: ${email ?? 'missing'}`);
 

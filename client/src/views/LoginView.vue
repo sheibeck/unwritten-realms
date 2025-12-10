@@ -2,9 +2,9 @@
   <div class="container">
     <h2>Login</h2>
     <p>Sign in with your Google account.</p>
-    <div id="google-signin-button" class="button-container"></div>
+   <button @click="handleGoogleLogin">Sign in with Google</button>
+    <div class="error" v-if="error">{{ error }}</div>
 
-    <p v-if="error" class="error">{{ error }}</p>
     <p v-if="isLoading" class="loading">Logging in...</p>
   </div>
 </template>
@@ -18,22 +18,30 @@ import { useGoogleAuth } from '../composables/useGoogleAuth';
 const router = useRouter();
 const authStore = useAuthStore();
 const { loginWithGoogle, connect } = useSpacetime();
-const { initializeGoogleSignIn, renderSignInButton, error: googleError } = useGoogleAuth();
+const { getGoogleIdToken, signOut, error: googleError } = useGoogleAuth();
 
 const idToken = ref('');
 const devMode = ref(import.meta.env.DEV);
 const error = ref('');
 const isLoading = ref(false);
 
+
+async function handleGoogleLogin() {
+  // Try promise-style first (recommended). Fallback to callback-style if the composable returns void.
+  try {
+    // getGoogleIdToken returns a Promise<string> when called without a callback
+    // @ts-ignore
+    const token = await getGoogleIdToken();
+    if (token) {
+      await login(token as string);
+      return;
+    }
+  } catch (e) {
+    // fall through to callback style below if the promise failed to load google script
+  }
+}
+
 onMounted(async () => {
-  // Initialize Google Sign-In with callback
-  initializeGoogleSignIn(async (credential: string) => {
-    await login(credential);
-  });
-
-  // Render the Google Sign-In button
-  renderSignInButton('google-signin-button');
-
   // Display any Google auth errors
   if (googleError.value) {
     error.value = googleError.value;

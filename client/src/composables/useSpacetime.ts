@@ -15,20 +15,55 @@ export function useSpacetime() {
      * Validate that the token carries an email claim and matches our client id.
      */
     async function loginWithGoogle(idToken: string) {
-        const payload = decodeJwt(idToken);
-        const email = payload?.email as string | undefined;
-        const aud = Array.isArray(payload?.aud) ? payload?.aud[0] : (payload?.aud as string | undefined);
+        let email: string | undefined;
+        let aud: string | undefined;
         const expectedAud = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-        if (!email) {
-            throw new Error('Google token missing email claim. Ensure you are using the correct Google Web client ID.');
-        }
-        if (expectedAud && aud && aud !== expectedAud) {
-            console.warn(`Google token audience mismatch. token aud=${aud}, expected=${expectedAud}`);
+        // Distinguish JWT (id_token) from opaque access tokens
+        if (idToken.includes('.') && idToken.split('.').length === 3) {
+            const payload = decodeJwt(idToken);
+            email = payload?.email as string | undefined;
+            aud = Array.isArray(payload?.aud) ? payload?.aud[0] : (payload?.aud as string | undefined);
+
+            if (!email) {
+                throw new Error('Google id_token missing email claim. Ensure you are using the correct Google Web client ID.');
+            }
+            if (expectedAud && aud && aud !== expectedAud) {
+                console.warn(`Google token audience mismatch. token aud=${aud}, expected=${expectedAud}`);
+            }
+
+            // Use the id_token directly to connect
+            await connect(idToken);
+            return { id_token: idToken, email };
         }
 
-        await connect(idToken);
-        return { id_token: idToken, email };
+        // Non-JWT token (likely an access token). Use the Google userinfo endpoint to get the email.
+        try {
+            const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: {
+                    Authorization: `Bearer ${idToken}`,
+                },
+            });
+
+            if (!resp.ok) {
+                const text = await resp.text();
+                throw new Error(`Failed to fetch Google userinfo: ${resp.status} ${text}`);
+            }
+
+            const data = await resp.json();
+            email = data.email as string | undefined;
+            if (!email) {
+                throw new Error('Google userinfo did not contain an email claim');
+            }
+
+            // We still need an id_token to pass to connect(); if server expects id_token, you might
+            // need to exchange the access token for an id_token on the server. For now we pass the
+            // access token through to connect() as a best-effort bearer.
+            await connect(idToken);
+            return { id_token: idToken, email };
+        } catch (e) {
+            throw e;
+        }
     }
 
     // Minimal JWT payload decoder (base64url -> JSON), no signature verification.
