@@ -79,27 +79,29 @@ const InterpretInputSchema = z.object({
 });
 
 // Normalize Zod-generated JSON Schema to meet Responses API requirements.
-function normalizeJsonSchema(js: any): any {
+function normalizeJsonSchema(js: any, opts?: { forceRequired?: boolean }): any {
+    const forceRequired = opts?.forceRequired ?? true;
     if (!js || typeof js !== 'object') return js;
     // Handle composite keywords
     ['anyOf', 'oneOf', 'allOf'].forEach(k => {
-        if (Array.isArray(js[k])) js[k] = js[k].map(normalizeJsonSchema);
+        if (Array.isArray(js[k])) js[k] = js[k].map((s: any) => normalizeJsonSchema(s, opts));
     });
 
-    // If this is an object schema with properties, ensure required lists all keys and additionalProperties is false
-    if ((js.type === 'object' || (Array.isArray(js.type) && js.type.includes('object'))) && js.properties && typeof js.properties === 'object') {
-        const keys = Object.keys(js.properties);
-        js.required = Array.isArray(js.required) ? Array.from(new Set([...js.required, ...keys])) : keys.slice();
-        js.additionalProperties = js.additionalProperties === undefined ? false : js.additionalProperties;
-        for (const k of keys) {
-            js.properties[k] = normalizeJsonSchema(js.properties[k]);
-        }
-        return js;
+    // Arrays: normalize items first
+    if (js.type === 'array' && js.items) {
+        js.items = normalizeJsonSchema(js.items, opts);
     }
 
-    // Arrays: normalize items
-    if (js.type === 'array' && js.items) {
-        js.items = normalizeJsonSchema(js.items);
+    // If this is an object schema with properties
+    if ((js.type === 'object' || (Array.isArray(js.type) && js.type.includes('object'))) && js.properties && typeof js.properties === 'object') {
+        const keys = Object.keys(js.properties);
+        if (forceRequired) {
+            js.required = Array.isArray(js.required) ? Array.from(new Set([...js.required, ...keys])) : keys.slice();
+        }
+        js.additionalProperties = js.additionalProperties === undefined ? false : js.additionalProperties;
+        for (const k of keys) {
+            js.properties[k] = normalizeJsonSchema(js.properties[k], opts);
+        }
         return js;
     }
 
@@ -363,6 +365,8 @@ const WizardStepSchema = z.object({
 
 const wizardPromptIntro = `You are the character creation engine for Unwritten Realms, a persistent, text-based MMORPG shaped by the actions of its players. The world is emergent, reactive, and bound by player agency. This game is inspired by Kyle Kirrin's Ripple System Novels. Guide the player through character creation step-by-step. Follow the exact step sequence and DO NOT advance until the player provides input. Return a JSON object with keys { step: <number>, prompt: <string>, options?: <array>, data?: <object> }.`;
 
+// Sanitize model-produced `data` to remove placeholder values the model invents (e.g., "Custom", "none").
+
 app.post('/character-wizard/step', async (req, reply) => {
     const parsed = WizardStepSchema.safeParse(req.body as unknown);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.message });
@@ -404,8 +408,28 @@ app.post('/character-wizard/step', async (req, reply) => {
             data: CharacterProfilePartialSchema.optional()
         }).strict();
 
-        // Generate JSON Schema text for structured outputs
-
+        const wizardSchemaBase = normalizeJsonSchema(z.toJSONSchema(WizardResponse), { forceRequired: false });
+        if (wizardSchemaBase.properties?.options) {
+            const previousOptionsItems = wizardSchemaBase.properties.options.items;
+            wizardSchemaBase.properties.options = {
+                type: ['array', 'null'],
+                items: {
+                    type: 'object',
+                    properties: {
+                        name: previousOptionsItems?.properties?.name ?? { type: 'string' }
+                    },
+                    required: ['name'],
+                    additionalProperties: false
+                }
+            };
+        }
+        if (wizardSchemaBase.properties?.data) {
+            wizardSchemaBase.properties.data = {
+                type: ['object', 'null'],
+                additionalProperties: false
+            };
+        }
+        wizardSchemaBase.required = ['step', 'prompt', 'options', 'data'];
 
         const resp = await client.responses.create(({
             model: openai_model,
@@ -418,7 +442,7 @@ app.post('/character-wizard/step', async (req, reply) => {
                 format: {
                     type: 'json_schema',
                     name: 'wizard_response',
-                    schema: normalizeJsonSchema(z.toJSONSchema(WizardResponse)),
+                    schema: wizardSchemaBase,
                     strict: true
                 }
             }
@@ -449,7 +473,19 @@ app.post('/character-wizard/step', async (req, reply) => {
             try {
                 const normalize = (pj: any) => {
                     const result: any = {};
-                    result.step = pj.step ?? (step || 1);
+                    const requestedStep = step || 1;
+                    const modelStep = typeof pj.step === 'number' ? pj.step : requestedStep;
+                    const hasInput = typeof input === 'string' && input.trim().length > 0;
+                    const explicitAdvance = Boolean((parsed.data as any)?.advance);
+                    const allowAdvance = hasInput || explicitAdvance;
+
+                    if (!allowAdvance) {
+                        if (modelStep > requestedStep) req.log.warn(`Wizard model attempted to advance from step ${requestedStep} -> ${modelStep} without input`);
+                        result.step = requestedStep;
+                    } else {
+                        // Allow advancing by at most +1 to avoid large jumps
+                        result.step = modelStep <= requestedStep + 1 ? modelStep : requestedStep + 1;
+                    }
                     result.prompt = typeof pj.prompt === 'string' ? pj.prompt : (typeof pj === 'string' ? pj : '');
                     // If the model appended the `data` object as JSON inside the prompt string, remove that chunk
                     if (pj.data && result.prompt) {
@@ -470,14 +506,14 @@ app.post('/character-wizard/step', async (req, reply) => {
                     return result;
                 };
                 const cleaned = normalize(parsedJson);
-                return reply.send({ ok: true, result: cleaned, raw: textOutput });
+                return reply.send({ ok: true, result: cleaned });
             } catch (e) {
                 // Fallthrough to return raw parsedJson
-                return reply.send({ ok: true, result: parsedJson, raw: textOutput });
+                return reply.send({ ok: true, result: parsedJson });
             }
         }
 
-        return reply.send({ ok: true, result: { step: step || 1, prompt: textOutput }, raw: textOutput });
+        return reply.send({ ok: true, result: { step: step || 1, prompt: textOutput } });
     } catch (e: any) {
         req.log.error(e);
         return reply.code(500).send({ error: String(e) });
