@@ -19,6 +19,22 @@ export default defineConfig({
                 secure: false,
                 rewrite: path => path.replace(/^\/narrative/, '')
             }
+            ,
+            '/character-wizard': {
+                target: 'http://localhost:8081',
+                changeOrigin: true,
+                secure: false
+            },
+            '/profession': {
+                target: 'http://localhost:8081',
+                changeOrigin: true,
+                secure: false
+            },
+            '/characters': {
+                target: 'http://localhost:8081',
+                changeOrigin: true,
+                secure: false
+            }
         }
     }
 });

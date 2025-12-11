@@ -91,15 +91,24 @@ export function useSpacetime() {
                 // subscribe to narrative_events
                 _ctx.subscriptionBuilder()
                     .onApplied((_ctx: any) => {
-                        // register insert callback when rows are present
+                        // register insert callbacks when rows are present
                         connection!.db.narrativeEvents.onInsert((_c: any, row: any) => {
-                            // handled via onNarrativeEvent registration
-                            console.log(row);
+                            console.log('narrative event', row);
                         });
+
+                        // characters owned by this identity
+                        try {
+                            connection!.db.characters.onInsert((_c: any, row: any) => {
+                                console.log('character inserted', row);
+                            });
+                        } catch (e) {
+                            // binding may not exist if module bindings weren't regenerated
+                        }
                     })
                     .subscribe([
                         'SELECT * FROM narrative_events',
-                        'SELECT * FROM users WHERE id = $1', _identity.toHexString()
+                        'SELECT * FROM users WHERE id = $1', _identity.toHexString(),
+                        'SELECT * FROM characters WHERE owner_id = $1', _identity.toHexString()
                     ]);
 
                 connected.value = true;
@@ -118,5 +127,8 @@ export function useSpacetime() {
     }
 
 
-    return { connected, connect, loginWithGoogle };
+    function getConnection() { return connection; }
+    function getDb() { return connection?.db ?? null; }
+
+    return { connected, connect, loginWithGoogle, getConnection, getDb };
 }

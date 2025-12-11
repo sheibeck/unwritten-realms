@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const IntentKind = z.enum(['move', 'combat_action', 'dialogue', 'quest_action', 'system_event']);
+export const IntentKind = z.enum(['move', 'combat_action', 'dialogue', 'quest_action', 'system_event', 'create_character']);
 
 export const IntentSchema = z.object({
     kind: IntentKind,

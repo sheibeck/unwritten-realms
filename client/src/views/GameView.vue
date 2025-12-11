@@ -4,6 +4,10 @@
       <h1>Unwritten Realms</h1>
       <button class="logout" type="button" @click="logout">Log out</button>
     </div>
+    <div v-if="characters.length === 0" class="no-characters">
+      <p>You have no characters yet.</p>
+      <button @click="goCreateCharacter">Create a Character</button>
+    </div>
     <div class="events">
       <div v-for="e in events" :key="e.id" class="event">
         <span class="time">{{ new Date(e.timestamp).toLocaleTimeString() }}</span>
@@ -32,12 +36,22 @@ import { useGoogleAuth } from '../composables/useGoogleAuth';
 const router = useRouter();
 const store = useGameStore();
 const authStore = useAuthStore();
-const { connect } = useSpacetime();
+const { connect, getDb, connected } = useSpacetime();
 const { interpret, loading } = useNarrativeService();
 const { signOut } = useGoogleAuth();
 
 const input = ref('');
 const events = computed(() => store.narrative_events);
+const characters = computed(() => {
+  // Don't report characters until connected and subscriptions have applied
+  if (!connected.value) return [];
+  try {
+    const _db = getDb();
+    return _db?.characters?.iter ? Array.from(_db.characters.iter()) : [];
+  } catch (e) {
+    return [];
+  }
+});
 
 onMounted(async () => {
   // Only connect if user is authenticated
@@ -60,6 +74,10 @@ async function send() {
     store.addEvent({ id: String(Date.now()), text: res.narrative_output, timestamp: Date.now() });
   }
   input.value = '';
+}
+
+function goCreateCharacter() {
+  router.push({ name: 'create-character' });
 }
 
 async function logout() {

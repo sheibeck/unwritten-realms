@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import GameView from '../views/GameView.vue';
 import LoginView from '../views/LoginView.vue';
+import CharacterWizard from '../views/CharacterWizard.vue';
 import { useAuthStore } from '../store/auth';
 
 const routes = [
     { path: '/', name: 'game', component: GameView, meta: { requiresAuth: true } },
+    { path: '/create-character', name: 'create-character', component: CharacterWizard, meta: { requiresAuth: true } },
     { path: '/login', name: 'login', component: LoginView }
 ];
 
