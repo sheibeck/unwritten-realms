@@ -14,5 +14,15 @@ onMounted(() => {
 </script>
 <style>
 :root { font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif; }
-body { margin: 0; }
+:root {
+  /* Dark theme variables */
+  --bg: #0b1220;
+  --panel: #0f1724;
+  --muted: #9ca3af;
+  --border: #1f2937;
+  --accent: #60a5fa;
+  --text: #e6eef8;
+  --error: #f87171;
+}
+body { margin: 0; background: var(--bg); color: var(--text); }
 </style>

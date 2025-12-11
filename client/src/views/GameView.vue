@@ -11,8 +11,11 @@
       </div>
     </div>
     <form @submit.prevent="send">
-      <input v-model="input" placeholder="Describe your action..." />
-      <button type="submit">Send</button>
+      <input v-model="input" :disabled="loading" placeholder="Describe your action..." />
+      <button type="submit" :disabled="loading || !input.trim()">
+        <span v-if="!loading">Send</span>
+        <span v-else>Processing...</span>
+      </button>
     </form>
   </div>
 </template>
@@ -30,7 +33,7 @@ const router = useRouter();
 const store = useGameStore();
 const authStore = useAuthStore();
 const { connect } = useSpacetime();
-const { interpret } = useNarrativeService();
+const { interpret, loading } = useNarrativeService();
 const { signOut } = useGoogleAuth();
 
 const input = ref('');
@@ -47,6 +50,7 @@ onMounted(async () => {
 });
 
 async function send() {
+  if (loading.value) return; // prevent spam while a request is in flight
   if (!input.value.trim()) return;
   const res = await interpret(input.value, { /* TODO */ }, { /* TODO */ });
   if (res?.intent) {
@@ -69,10 +73,13 @@ async function logout() {
 <style scoped>
 .container { max-width: 800px; margin: 0 auto; padding: 24px; }
 .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
-.logout { background: #f3f4f6; border: 1px solid #d1d5db; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-.logout:hover { background: #e5e7eb; }
-.events { height: 300px; overflow: auto; border: 1px solid #ddd; margin-bottom: 12px; padding: 8px; }
-.event { display: flex; gap: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco; }
+.logout { background: var(--panel); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; cursor: pointer; color: var(--text); }
+.logout:hover { background: #111827; }
+.events { height: 300px; overflow: auto; border: 1px solid var(--border); margin-bottom: 12px; padding: 8px; background: var(--panel); }
+.event { display: flex; gap: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco; color: var(--text); }
+.time { color: var(--muted); }
+.text { color: var(--text); }
 form { display: flex; gap: 8px; }
-input { flex: 1; padding: 8px; }
+input { flex: 1; padding: 8px; background: transparent; border: 1px solid var(--border); color: var(--text); }
+button[disabled] { opacity: 0.6; cursor: not-allowed; }
 </style>

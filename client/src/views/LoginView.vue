@@ -109,15 +109,17 @@ async function login(token?: string) {
   margin: 0 auto;
   padding: 24px;
   text-align: center;
+  background: transparent;
 }
 
 h2 {
   margin-bottom: 8px;
+  color: var(--text);
 }
 
 p {
   margin: 12px 0;
-  color: #666;
+  color: var(--muted);
 }
 
 .button-container {
@@ -125,12 +127,12 @@ p {
 }
 
 .error {
-  color: #c00;
+  color: var(--error);
   font-weight: 500;
 }
 
 .loading {
-  color: #4285f4;
+  color: var(--accent);
   font-weight: 500;
 }
 
@@ -139,12 +141,15 @@ input {
   padding: 8px;
   margin-bottom: 8px;
   box-sizing: border-box;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
 .dev-form {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--border);
   opacity: 0.6;
 }
 </style>
