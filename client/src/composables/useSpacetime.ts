@@ -92,8 +92,10 @@ export function useSpacetime() {
 
                 // subscribe to narrative_events
                 const charsStore = useCharactersStore();
-                _ctx.subscriptionBuilder()
+                connectionRef.value.subscriptionBuilder()
                     .onApplied((_ctx: any) => {
+                        console.log('Subscription applied');
+
                         // register insert callbacks when rows are present
                         conn!.db.narrativeEvents.onInsert((_c: any, row: any) => {
                             console.log('narrative event', row);
@@ -101,29 +103,28 @@ export function useSpacetime() {
 
                         // characters owned by this identity
                         try {
-                            // Seed from current rows
-                            if (conn!.db.characters?.iter) {
-                                const list = Array.from(conn!.db.characters.iter());
-                                charsStore.setCharacters(list);
-                                if (!charsStore.activeCharacter && list.length) {
-                                    charsStore.setActiveCharacter(list[0]);
-                                }
+                            const list = [];
+                            for (const row of conn.db.characters.iter()) {
+                                list.push(row);
                             }
-                            conn!.db.characters.onInsert((_c: any, row: any) => {
-                                charsStore.upsertCharacter(row);
-                                if (!charsStore.activeCharacter) {
-                                    charsStore.setActiveCharacter(row);
-                                }
-                            });
+                            charsStore.setCharacters(list);
+                            if (!charsStore.activeCharacter && list.length) {
+                                charsStore.setActiveCharacter(list[0]);
+                            }
+
                         } catch (e) {
                             // binding may not exist if module bindings weren't regenerated
                         }
                     })
+                    //.subscribeToAllTables();
                     .subscribe([
-                        'SELECT * FROM narrative_events',
-                        'SELECT * FROM users WHERE id = $1', _identity.toHexString(),
-                        'SELECT * FROM characters WHERE owner_id = $1', _identity.toHexString()
-                    ]);
+                        'SELECT * FROM characters'
+                    ])
+                // .subscribe([
+                //     'SELECT * FROM narrative_events',
+                //     'SELECT * FROM users WHERE id = $1', _ctx.identity,
+                //     'SELECT * FROM characters WHERE owner_id = $1', _identity.toHexString()
+                // ]);
 
                 connected.value = true;
             })

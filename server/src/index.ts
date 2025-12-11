@@ -1,12 +1,25 @@
 import { schema, table, t, SenderError } from "spacetimedb/server";
 import { handleIntent } from './intent-handler';
 
+function generateId(): string {
+    const cryptoObj = (globalThis as any)?.crypto;
+    if (cryptoObj && typeof cryptoObj.randomUUID === 'function') {
+        return cryptoObj.randomUUID();
+    }
+    // RFC 4122 v4 fallback when WebCrypto is unavailable.
+    const bytes = Array.from({ length: 16 }, () => Math.floor(Math.random() * 256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = bytes.map(b => b.toString(16).padStart(2, '0'));
+    return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10, 16).join('')}`;
+}
+
 // Helper to get current user
 function getCurrentUser(ctx: any): any {
     if (!ctx.sender) throw new SenderError('Unauthenticated');
 
     let user: any = null;
-    for (const u of ctx.db.users.id.filter(ctx.sender)) {
+    for (const u of ctx.db.users.id.find(ctx.sender)) {
         user = u;
         break;
     }
@@ -31,7 +44,7 @@ export const spacetimedb = schema(
         }
     ),
     table(
-        { name: "characters" },
+        { name: "characters", public: true },
         {
             id: t.string(),
             owner_id: t.identity(),
@@ -174,8 +187,7 @@ spacetimedb.reducer('create_character', {
     profession_json: t.string(),
     stats_json: t.string().optional()
 }, (ctx, args) => {
-    const user = getCurrentUser(ctx);
-    const id = args.id ?? `${Date.now()}`;
+    const id = args.id ?? generateId();
     const payload = {
         id,
         owner_id: ctx.sender,
@@ -186,5 +198,5 @@ spacetimedb.reducer('create_character', {
         stats_json: args.stats_json ?? '{}'
     };
     ctx.db.characters.insert(payload);
-    console.log(`create_character reducer: inserted ${args.name} for ${user.email}`);
+    console.log(`create_character reducer: inserted ${args.name}`);
 });
