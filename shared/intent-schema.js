@@ -3,5 +3,5 @@ export const IntentKind = z.enum(['move', 'combat_action', 'dialogue', 'quest_ac
 export const IntentSchema = z.object({
     kind: IntentKind,
     characterId: z.string().optional(),
-    payload: z.record(z.any()).optional()
+    payload: z.record(z.any(), z.any()).optional()
 });

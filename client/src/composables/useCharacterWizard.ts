@@ -62,7 +62,11 @@ export function useCharacterWizard() {
             const body = await res.json();
             if (body.result) {
                 wizardPrompt.value = body.result.prompt ?? '';
-                options.value = body.result.options ?? [];
+                // Normalize options to { name, description, raw }
+                options.value = (body.result.options ?? []).map((o: any) => {
+                    if (typeof o === 'string') return { name: o, description: '', raw: o };
+                    return { name: o.name ?? o.race ?? o.title ?? o.label ?? '', description: o.description ?? o.desc ?? '', raw: o };
+                });
                 data.value = body.result.data ?? null;
                 // merge returned data into context for subsequent steps
                 if (body.result.data && typeof body.result.data === 'object') {
@@ -93,6 +97,12 @@ export function useCharacterWizard() {
             if (step.value === 3 && input) {
                 context.value = { ...context.value, profession: input };
             }
+            if (step.value === 4 && input) {
+                context.value = { ...context.value, starting_region: input };
+            }
+            if (step.value === 5 && input) {
+                context.value = { ...context.value, visual_description: input };
+            }
             if (step.value === 6 && input) {
                 context.value = { ...context.value, name: input };
             }
@@ -109,7 +119,10 @@ export function useCharacterWizard() {
             if (body.result) {
                 // update based on parsed result
                 wizardPrompt.value = body.result.prompt ?? '';
-                options.value = body.result.options ?? [];
+                options.value = (body.result.options ?? []).map((o: any) => {
+                    if (typeof o === 'string') return { name: o, description: '', raw: o };
+                    return { name: o.name ?? o.race ?? o.title ?? o.label ?? '', description: o.description ?? o.desc ?? '', raw: o };
+                });
                 data.value = body.result.data ?? null;
                 if (body.result.data && typeof body.result.data === 'object') {
                     context.value = { ...context.value, ...body.result.data };

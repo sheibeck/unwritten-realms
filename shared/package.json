@@ -12,6 +12,6 @@
     "./types": "./types.ts"
   },
   "dependencies": {
-    "zod": "^3.23.8"
+    "zod": "^4.0.0"
   }
 }

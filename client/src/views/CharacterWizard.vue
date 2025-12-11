@@ -10,8 +10,8 @@
 
       <div class="options" v-if="options.length">
         <div v-for="(opt, idx) in options" :key="idx">
-          <button :disabled="loading" @click="onSubmit(typeof opt === 'string' ? opt : opt.name)">
-            <div class="opt-title">{{ typeof opt === 'string' ? opt : opt.name }}</div>
+          <button :disabled="loading" @click="onSubmit(opt.name)">
+            <div class="opt-title">{{ opt.name }}</div>
             <div v-if="opt && opt.description" class="opt-desc">{{ opt.description }}</div>
           </button>
         </div>

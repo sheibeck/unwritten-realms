@@ -4,7 +4,7 @@ export const CharacterContextSchema = z.object({
     id: z.string(),
     name: z.string().optional(),
     class: z.string().optional(),
-    stats: z.record(z.any()).optional()
+    stats: z.record(z.any(), z.any()).optional()
 });
 
 export const WorldContextSchema = z.object({

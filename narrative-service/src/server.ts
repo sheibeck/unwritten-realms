@@ -10,7 +10,16 @@ import { z } from 'zod';
 import { IntentSchema } from '../../shared/intent-schema.js';
 import { CharacterContextSchema, WorldContextSchema } from '../../shared/types.js';
 import { ProfessionSchema } from '../../shared/profession.js';
+import { CharacterProfilePartialSchema } from '../../shared/character-profile.js';
+
+// Strict shape for interpret responses
+const InterpretResponseSchema = z.object({
+    intent: IntentSchema,
+    narrative_output: z.string().min(1)
+}).strict();
 import { loginWithGoogle } from './auth/auth-controller.js';
+
+const openai_model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 // Load environment variables from .env
 // Try common locations to work both from project root and narrative-service folder
@@ -69,6 +78,34 @@ const InterpretInputSchema = z.object({
     world_context: WorldContextSchema.optional()
 });
 
+// Normalize Zod-generated JSON Schema to meet Responses API requirements.
+function normalizeJsonSchema(js: any): any {
+    if (!js || typeof js !== 'object') return js;
+    // Handle composite keywords
+    ['anyOf', 'oneOf', 'allOf'].forEach(k => {
+        if (Array.isArray(js[k])) js[k] = js[k].map(normalizeJsonSchema);
+    });
+
+    // If this is an object schema with properties, ensure required lists all keys and additionalProperties is false
+    if ((js.type === 'object' || (Array.isArray(js.type) && js.type.includes('object'))) && js.properties && typeof js.properties === 'object') {
+        const keys = Object.keys(js.properties);
+        js.required = Array.isArray(js.required) ? Array.from(new Set([...js.required, ...keys])) : keys.slice();
+        js.additionalProperties = js.additionalProperties === undefined ? false : js.additionalProperties;
+        for (const k of keys) {
+            js.properties[k] = normalizeJsonSchema(js.properties[k]);
+        }
+        return js;
+    }
+
+    // Arrays: normalize items
+    if (js.type === 'array' && js.items) {
+        js.items = normalizeJsonSchema(js.items);
+        return js;
+    }
+
+    return js;
+}
+
 app.post('/interpret', async (req, reply) => {
     const parsed = InterpretInputSchema.safeParse(req.body as unknown);
     if (!parsed.success) {
@@ -87,34 +124,28 @@ app.post('/interpret', async (req, reply) => {
 
         const client = new OpenAI({ apiKey: openaiKey });
 
-        // Build a prompt asking for strict JSON with `intent` and `narrative_output` fields.
-        const system = `You are a game assistant. When given player input and optional contexts, produce ONLY valid JSON that matches exactly this schema:\n` +
-            `{\n` +
-            `  "intent": {\n` +
-            `    "kind": "move|combat_action|dialogue|quest_action|system_event|create_character",\n` +
-            `    "characterId": "string (optional)",\n` +
-            `    "payload": { /* object with intent-specific fields */ }\n` +
-            `  },\n` +
-            `  "narrative_output": "short string describing the result"\n` +
-            `}\n\n` +
-            `Return only the JSON object (no commentary, no markdown). Use these examples as a guide.\n\n` +
-            `Example 1:\n` +
-            `Input: \"move north\"\n` +
-            `Output: {"intent":{"kind":"move","payload":{"direction":"north"}},"narrative_output":"You move north along the path."}\n\n` +
-            `Example 2:\n` +
-            `Input: \"say hello to the guard\"\n` +
-            `Output: {"intent":{"kind":"dialogue","payload":{"text":"hello to the guard"}},"narrative_output":"You greet the guard and they nod in acknowledgment."}\n\n` +
-            `Now produce a JSON response for the provided input.`;
+        // Use structured outputs: provide a minimal prompt and pass the JSON Schema via `text_format`.
+        const system = `You are a concise game assistant. Produce the structured response described by the provided JSON Schema.`;
 
         const user = `Player input: ${text}\nCharacter context: ${JSON.stringify(character_context || {})}\nWorld context: ${JSON.stringify(world_context || {})}`;
 
-        const resp = await client.responses.create({
-            model: process.env.OPENAI_MODEL || 'gpt-4o‑mini',
+        const interpretJsonSchema = normalizeJsonSchema(z.toJSONSchema(InterpretResponseSchema));
+
+        const resp = await client.responses.create(({
+            model: openai_model,
             input: [
                 { role: 'system', content: system },
                 { role: 'user', content: user }
-            ]
-        });
+            ],
+            text: {
+                format: {
+                    type: 'json_schema',
+                    name: 'interpret_response',
+                    schema: interpretJsonSchema,
+                    strict: true
+                }
+            }
+        }) as any);
 
         // Responses API may return structured output in different fields; try to extract text
         const out = (resp.output ?? []).map((o: any) => o.content).flat();
@@ -217,50 +248,63 @@ app.post('/profession/generate', async (req, reply) => {
         if (!openaiKey) throw new Error('OPENAI_API_KEY not configured');
         const client = new OpenAI({ apiKey: openaiKey });
 
-        const system = `You are a fantasy game design assistant. Produce ONLY valid JSON that matches this schema:\n` +
-            `{\n` +
-            `  "name": "string",\n` +
-            `  "lore": "short flavorful paragraph",\n` +
-            `  "mechanics": { /* key-value object with simple mechanical properties like abilities or stats */ }\n` +
-            `}\n\n` +
-            `Return only the JSON object. Use these examples as a guide.\n\n` +
-            `Example 1:\n` +
-            `Input: Race=Elf, Archetype=Archer\n` +
-            `Output: {"name":"Grove Sentinel","lore":"Elven archers who guard the ancient groves...","mechanics":{"range":6,"precision":8}}\n\n` +
-            `Example 2:\n` +
-            `Input: Race=Human, Archetype=Mage\n` +
-            `Output: {"name":"Arcane Scholar","lore":"A scholar of lost rites...","mechanics":{"mana":30,"spell_power":5}}\n\n` +
-            `Now generate a profession for the provided input.`;
-        const user = `Race: ${race || 'any'}\nArchetype: ${archetype || 'any'}\nPrompt: ${prompt || ''}`;
+        // Ask the model to return an InterpretResponseSchema so we get an intent + narrative_output
+        const system = `You are a concise profession generator for a fantasy game. Return the structured response described by the provided JSON Schema.`;
+        const user = `Generate a profession based on Race: ${race || 'any'} and Archetype: ${archetype || 'any'}. Additional prompt: ${prompt || ''}`;
 
-        const resp = await client.responses.create({
-            model: process.env.OPENAI_MODEL || 'gpt-5.1',
+        // Use the InterpretResponseSchema so callers receive intent + narrative_output alongside the profession JSON
+        const interpretJsonSchema = normalizeJsonSchema(z.toJSONSchema(InterpretResponseSchema));
+
+        const resp = await client.responses.create(({
+            model: openai_model,
             input: [
                 { role: 'system', content: system },
                 { role: 'user', content: user }
-            ]
-        });
+            ],
+            text: {
+                format: {
+                    type: 'json_schema',
+                    name: 'profession_response',
+                    schema: interpretJsonSchema,
+                    strict: true
+                }
+            }
+        }) as any);
 
+        // Extract structured JSON parts and text fallback (reuse interpret extraction logic)
         const out = (resp.output ?? []).map((o: any) => o.content).flat();
         let textOutput = '';
-        if (Array.isArray(out)) {
-            for (const o of out) {
-                if (typeof o === 'string') textOutput += o;
-                else if (o?.type === 'output_text' && typeof o.text === 'string') textOutput += o.text;
-                else if (o?.type === 'json' && o.json) textOutput += typeof o.json === 'string' ? o.json : JSON.stringify(o.json);
-            }
-        } else if (typeof resp.output_text === 'string') {
-            textOutput = resp.output_text;
-        }
-
         let parsedJson: any = null;
-        try { parsedJson = JSON.parse(textOutput.trim()); } catch (e) {
-            const stripped = textOutput.replace(/^[`\s]+|[`\s]+$/g, '');
-            try { parsedJson = JSON.parse(stripped); } catch (_e) { parsedJson = null; }
+        for (const part of out) {
+            if (typeof part === 'string') textOutput += part;
+            else if (part?.type === 'output_text' && typeof part.text === 'string') textOutput += part.text;
+            else if (part?.type === 'json' && part.json) {
+                if (!parsedJson) parsedJson = typeof part.json === 'string' ? JSON.parse(part.json) : part.json;
+                textOutput += typeof part.json === 'string' ? part.json : JSON.stringify(part.json);
+            }
         }
+        if (!parsedJson && typeof resp.output_text === 'string') {
+            try { parsedJson = JSON.parse(resp.output_text.trim()); } catch (e) { parsedJson = null; }
+        }
+        if (!textOutput && typeof resp.output_text === 'string') textOutput = resp.output_text;
 
         if (parsedJson) {
-            prof = ProfessionSchema.parse(parsedJson);
+            try {
+                const interp = InterpretResponseSchema.parse(parsedJson);
+                // Attempt to parse a profession object from the narrative_output or payload if included
+                try {
+                    const maybeProf = JSON.parse(interp.narrative_output);
+                    prof = ProfessionSchema.parse(maybeProf);
+                } catch (_) {
+                    // If narrative_output isn't raw JSON, try to find a JSON blob inside the text
+                    const m = interp.narrative_output.match(/\{[\s\S]*\}/);
+                    if (m) {
+                        try { prof = ProfessionSchema.parse(JSON.parse(m[0])); } catch (_) { /* ignore */ }
+                    }
+                }
+            } catch (zerr) {
+                req.log.warn('Interpret parse failed for profession generation: ' + String(zerr));
+            }
         }
     } catch (e) {
         req.log.warn('Profession generation failed: ' + String(e));
@@ -283,7 +327,7 @@ const CharacterCreateSchema = z.object({
     id: z.string().optional(),
     name: z.string(),
     class: z.string().optional(),
-    stats: z.record(z.any()).optional()
+    stats: z.record(z.any(), z.any()).optional()
 });
 
 app.post('/characters', async (req, reply) => {
@@ -314,7 +358,7 @@ const WizardStepSchema = z.object({
     session_id: z.string().optional(),
     step: z.number().min(1).max(6).optional(),
     input: z.string().optional(),
-    context: z.record(z.any()).optional()
+    context: z.record(z.any(), z.any()).optional()
 });
 
 const wizardPromptIntro = `You are the character creation engine for Unwritten Realms, a persistent, text-based MMORPG shaped by the actions of its players. The world is emergent, reactive, and bound by player agency. This game is inspired by Kyle Kirrin's Ripple System Novels. Guide the player through character creation step-by-step. Follow the exact step sequence and DO NOT advance until the player provides input. Return a JSON object with keys { step: <number>, prompt: <string>, options?: <array>, data?: <object> }.`;
@@ -347,33 +391,59 @@ app.post('/character-wizard/step', async (req, reply) => {
 
         const contextSystem = `Session context (do not re-ask):\n${contextSummary}\n\nRULES: If a field (Race, Archetype, Profession, Name, etc.) is present in the session context above, DO NOT ask the player to repeat it. Use the provided values as authoritative and proceed to the next logical step. If the current step's output should reveal derived values (e.g., profession from race+archetype), compute them now based on the context.`;
 
-        const resp = await client.responses.create({
-            model: process.env.OPENAI_MODEL || 'gpt-5.1',
+        // Build the Zod schemas for wizard response and options
+        const WizardOption = z.object({
+            name: z.string(),
+            description: z.string().optional(),
+            value: z.string().optional()
+        }).strict();
+        const WizardResponse = z.object({
+            step: z.number().int().min(1).max(7),
+            prompt: z.string().min(1),
+            options: z.array(WizardOption).max(6).optional(),
+            data: CharacterProfilePartialSchema.optional()
+        }).strict();
+
+        // Generate JSON Schema text for structured outputs
+
+
+        const resp = await client.responses.create(({
+            model: openai_model,
             input: [
                 { role: 'system', content: system },
                 { role: 'system', content: contextSystem },
                 { role: 'user', content: userMsg }
-            ]
-        });
+            ],
+            text: {
+                format: {
+                    type: 'json_schema',
+                    name: 'wizard_response',
+                    schema: normalizeJsonSchema(z.toJSONSchema(WizardResponse)),
+                    strict: true
+                }
+            }
+        }) as any);
 
+        // Prefer structured JSON part from Responses API; also build a text fallback
+        let parsedJson: any = null;
         const out = (resp.output ?? []).map((o: any) => o.content).flat();
         let textOutput = '';
-        if (Array.isArray(out)) {
-            for (const o of out) {
-                if (typeof o === 'string') textOutput += o;
-                else if (o?.type === 'output_text' && typeof o.text === 'string') textOutput += o.text;
-                else if (o?.type === 'json' && o.json) textOutput += typeof o.json === 'string' ? o.json : JSON.stringify(o.json);
+        for (const part of out) {
+            if (typeof part === 'string') {
+                textOutput += part;
+            } else if (part?.type === 'output_text' && typeof part.text === 'string') {
+                textOutput += part.text;
+            } else if (part?.type === 'json' && part.json) {
+                if (!parsedJson) {
+                    parsedJson = typeof part.json === 'string' ? JSON.parse(part.json) : part.json;
+                }
+                textOutput += typeof part.json === 'string' ? part.json : JSON.stringify(part.json);
             }
-        } else if (typeof resp.output_text === 'string') {
-            textOutput = resp.output_text;
         }
-
-        // Attempt to parse JSON
-        let parsedJson: any = null;
-        try { parsedJson = JSON.parse(textOutput.trim()); } catch (e) {
-            const stripped = textOutput.replace(/^[`\s]+|[`\s]+$/g, '');
-            try { parsedJson = JSON.parse(stripped); } catch (_e) { parsedJson = null; }
+        if (!parsedJson && typeof resp.output_text === 'string') {
+            try { parsedJson = JSON.parse(resp.output_text.trim()); } catch (e) { parsedJson = null; }
         }
+        if (!textOutput && typeof resp.output_text === 'string') textOutput = resp.output_text;
 
         if (parsedJson) {
             try {
