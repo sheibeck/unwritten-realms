@@ -4,11 +4,12 @@ import * as moduleBindings from '../module_bindings';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Identity = any;
 
-export function useSpacetime() {
-    const connected = ref(false);
+// Singleton connection + state so multiple composable consumers share it
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const connectionRef = ref<any | null>(null);
+const connected = ref(false);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let connection: any | null = null;
+export function useSpacetime() {
 
     /**
      * Directly authenticate with SpacetimeDB using the Google ID token.
@@ -75,7 +76,7 @@ export function useSpacetime() {
         const uri = import.meta.env.VITE_SPACETIMEDB_URL ?? 'http://localhost:3000';
         const moduleName = import.meta.env.VITE_SPACETIMEDB_MODULE ?? 'unwrittenrealms';
         console.log('Connecting to SpacetimeDB', { uri, moduleName, hasToken: Boolean(token) });
-        connection = moduleBindings.DbConnection
+        const conn = moduleBindings.DbConnection
             .builder()
             .withUri(uri)
             .withModuleName(moduleName)
@@ -92,13 +93,13 @@ export function useSpacetime() {
                 _ctx.subscriptionBuilder()
                     .onApplied((_ctx: any) => {
                         // register insert callbacks when rows are present
-                        connection!.db.narrativeEvents.onInsert((_c: any, row: any) => {
+                        conn!.db.narrativeEvents.onInsert((_c: any, row: any) => {
                             console.log('narrative event', row);
                         });
 
                         // characters owned by this identity
                         try {
-                            connection!.db.characters.onInsert((_c: any, row: any) => {
+                            conn!.db.characters.onInsert((_c: any, row: any) => {
                                 console.log('character inserted', row);
                             });
                         } catch (e) {
@@ -124,11 +125,12 @@ export function useSpacetime() {
                 connected.value = false;
             })
             .build();
+        connectionRef.value = conn;
     }
 
 
-    function getConnection() { return connection; }
-    function getDb() { return connection?.db ?? null; }
+    function getConnection() { return connectionRef.value; }
+    function getDb() { return connectionRef.value?.db ?? null; }
 
     return { connected, connect, loginWithGoogle, getConnection, getDb };
 }

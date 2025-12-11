@@ -8,7 +8,7 @@
         <div v-else class="ai-prompt-text" v-html="wizardHtml"></div>
       </div>
 
-      <div class="options" v-if="options.length && stepId !== 'profession_preview'">
+      <div class="options" v-if="!saved && options.length && stepId !== 'profession_preview'">
         <div v-for="(opt, idx) in options" :key="idx">
           <button :disabled="loading" @click="onSelect(opt)">
             <div class="opt-title">{{ opt.name }}</div>
@@ -51,13 +51,16 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useCharacterWizard } from '../composables/useCharacterWizard';
+import { useSpacetime } from '../composables/useSpacetime';
 import MarkdownIt from 'markdown-it';
 import DOMPurify from 'dompurify';
 
-const { stepId, wizardPrompt, options, preview, loading, error, sessionId, startOver, assist, lock } = useCharacterWizard();
+const { stepId, wizardPrompt, options, preview, loading, error, sessionId, context, startOver, assist, lock } = useCharacterWizard();
+const { getConnection } = useSpacetime();
 
 const userText = ref('');
 const stagedSelection = ref<string>('');
+const saved = ref(false);
 
 // Start the interactive wizard when the component mounts
 onMounted(() => {
@@ -67,12 +70,33 @@ onMounted(() => {
 function onStartOver() {
   stagedSelection.value = '';
   userText.value = '';
+  saved.value = false;
   startOver();
 }
 
 async function onSelect(opt: any) {
   const val = opt?.value || opt?.name;
   stagedSelection.value = val;
+  // Summary step: handle locally (confirm/save or start over) without re-hitting the AI
+  if (stepId.value === 'summary') {
+    if (val && val.toLowerCase().includes('start')) {
+      await onStartOver();
+    } else if (val && val.toLowerCase().includes('confirm')) {
+      try {
+        await persistCharacter();
+        wizardPrompt.value = 'Character saved. You are ready to enter the world.';
+        options.value = [];
+        preview.value = null;
+      }
+      catch(e) {
+        console.warn('Failed to save character to SpacetimeDB', e);
+        saved.value = false;
+      }
+    }
+    stagedSelection.value = '';
+    userText.value = '';
+    return;
+  }
   // Single call to lock and advance; no double-submit
   await lock(val);
   stagedSelection.value = '';
@@ -85,9 +109,39 @@ async function onAsk() {
   await assist(text);
 }
 
+async function persistCharacter() {
+  try {
+    const conn = getConnection();
+    if (!conn || !conn.callReducer) throw new Error('not_connected');
+    const ctx = context.value || {};
+    const payload = {
+      id: `${Date.now()}`,
+      name: ctx.name || '',
+      race: ctx.race || '',
+      archetype: ctx.archetype || '',
+      profession_json: JSON.stringify(ctx.profession || preview.value || {}),
+      stats_json: JSON.stringify(ctx.stats || {})
+    };
+    await conn.callReducer('create_character', payload);
+    saved.value = true;
+  } catch (e) {
+    console.warn('Failed to save character to SpacetimeDB', e);
+    saved.value = false;
+  }
+}
+
 async function onLock() {
-  const val = stepId === 'name' ? userText.value : stagedSelection.value;
-  if (stepId === 'name' && !val && !preview.value) return;
+  const val = stepId.value === 'name' ? userText.value : stagedSelection.value;
+  if (stepId.value === 'name' && !val && !preview.value) return;
+  if (stepId.value === 'summary') {
+    await persistCharacter();
+    wizardPrompt.value = 'Character saved. You are ready to enter the world.';
+    options.value = [];
+    preview.value = null;
+    stagedSelection.value = '';
+    userText.value = '';
+    return;
+  }
   await lock(val || (preview.value ? preview.value.name : ''));
   stagedSelection.value = '';
   userText.value = '';

@@ -14,8 +14,9 @@ export default __t.object("Characters", {
   id: __t.string(),
   ownerId: __t.identity(),
   name: __t.string(),
-  class: __t.string(),
+  race: __t.string(),
+  archetype: __t.string(),
+  professionJson: __t.string(),
   statsJson: __t.string(),
 });
-
 

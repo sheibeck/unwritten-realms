@@ -36,7 +36,9 @@ export const spacetimedb = schema(
             id: t.string(),
             owner_id: t.identity(),
             name: t.string().unique(),
-            class: t.string(),
+            race: t.string(),
+            archetype: t.string(),
+            profession_json: t.string(),
             stats_json: t.string()
         }
     ),
@@ -151,14 +153,38 @@ spacetimedb.reducer('apply_intent', { intent_json: t.string() }, (ctx, { intent_
             const owner = ctx.sender;
             const id = intentObj.payload?.id ?? `${Date.now()}`;
             const name = intentObj.payload?.name ?? 'Unnamed';
-            const cls = intentObj.payload?.class ?? '';
+            const race = intentObj.payload?.race ?? '';
+            const archetype = intentObj.payload?.archetype ?? '';
+            const professionJson = JSON.stringify(intentObj.payload?.profession ?? {});
             const statsJson = JSON.stringify(intentObj.payload?.stats ?? {});
-            // Insert using the table column names: id, owner_id, name, class, stats_json
-            ctx.db.characters.insert({ id, owner_id: owner, name, class: cls, stats_json: statsJson });
+            ctx.db.characters.insert({ id, owner_id: owner, name, race, archetype, profession_json: professionJson, stats_json: statsJson });
             console.log(`create_character: inserted ${name} for ${owner}`);
         }
     } catch (e) {
         // ignore parse errors
     }
     console.log(`apply_intent: ${event.text} by ${user.email}`);
+});
+
+spacetimedb.reducer('create_character', {
+    id: t.string().optional(),
+    name: t.string(),
+    race: t.string(),
+    archetype: t.string(),
+    profession_json: t.string(),
+    stats_json: t.string().optional()
+}, (ctx, args) => {
+    const user = getCurrentUser(ctx);
+    const id = args.id ?? `${Date.now()}`;
+    const payload = {
+        id,
+        owner_id: ctx.sender,
+        name: args.name,
+        race: args.race,
+        archetype: args.archetype,
+        profession_json: args.profession_json,
+        stats_json: args.stats_json ?? '{}'
+    };
+    ctx.db.characters.insert(payload);
+    console.log(`create_character reducer: inserted ${args.name} for ${user.email}`);
 });

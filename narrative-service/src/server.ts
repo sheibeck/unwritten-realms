@@ -330,7 +330,9 @@ app.post('/profession/generate', async (req, reply) => {
 const CharacterCreateSchema = z.object({
     id: z.string().optional(),
     name: z.string(),
-    class: z.string().optional(),
+    race: z.string(),
+    archetype: z.string(),
+    profession: z.record(z.any(), z.any()),
     stats: z.record(z.any(), z.any()).optional()
 });
 

@@ -37,6 +37,8 @@ import OnConnect from "./on_connect_reducer";
 export { OnConnect };
 import ApplyIntent from "./apply_intent_reducer";
 export { ApplyIntent };
+import CreateCharacter from "./create_character_reducer";
+export { CreateCharacter };
 
 // Import and reexport all procedure arg types
 
@@ -113,6 +115,7 @@ const tablesSchema = __schema(
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("apply_intent", ApplyIntent),
+  __reducerSchema("create_character", CreateCharacter),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
@@ -168,4 +171,3 @@ export class DbConnection extends __DbConnectionImpl<typeof REMOTE_MODULE> {
     return new SubscriptionBuilder(this);
   };
 }
-
