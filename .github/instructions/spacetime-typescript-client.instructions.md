@@ -1,7 +1,4 @@
 ---
-applyTo: '**'
----
----
 title: TypeScript Reference
 slug: /sdks/typescript
 ---

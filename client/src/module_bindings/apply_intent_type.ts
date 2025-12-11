@@ -10,10 +10,8 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.object("Sessions", {
-  accountId: __t.identity(),
-  deviceId: __t.string(),
-  lastSeen: __t.f64(),
+export default __t.object("ApplyIntent", {
+  intentJson: __t.string(),
 });
 
 

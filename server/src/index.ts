@@ -78,7 +78,7 @@ function safeStringify(obj: any) {
 
 // Application reducers
 // ensure_user: inserts or fetches a user based on email
-spacetimedb.reducer('client_disconnected', (_ctx) => {
+spacetimedb.clientDisconnected(_ctx => {
     const identity = _ctx.sender;
     if (!identity) throw new SenderError('Unauthenticated');
 
@@ -87,13 +87,12 @@ spacetimedb.reducer('client_disconnected', (_ctx) => {
         user.online = false;
         _ctx.db.users.id.update(user);
     }
-}
-);
+});
 
 spacetimedb.clientConnected((ctx) => {
     const jwt = ctx.senderAuth.jwt;
 
-    //throw new SenderError("DEBUG ctx.SenderAuth: " + safeStringify(ctx));
+    throw new SenderError("DEBUG ctx.SenderAuth: " + safeStringify(ctx));
 
     if (jwt == null) {
         throw new SenderError("Unauthorized: JWT is required to connect");
@@ -110,32 +109,21 @@ spacetimedb.clientConnected((ctx) => {
     }
 
     // Prefer lookup by email; only insert if email doesn't exist
-    const byEmail = ctx.db.users.email.find(email);
-    if (byEmail) {
-        byEmail.online = true;
-        byEmail.provider = 'google';
-        byEmail.provider_sub = jwt.subject ?? byEmail.provider_sub ?? '';
-        ctx.db.users.email.update(byEmail);
-        return;
+    const user = ctx.db.users.id.find(ctx.sender);
+    if (user) {
+        ctx.db.users.id.update({ ...user, online: true });
     }
-
-    // No existing user for this email; create new bound to current identity
-    ctx.db.users.insert({
-        id: ctx.sender,
-        provider: 'google',
-        provider_sub: jwt.subject ?? '',
-        email,
-        created_at: Date.now(),
-        online: true,
-    });
-    return;
-});
-
-// Auth: logout
-spacetimedb.reducer('logout', (ctx) => {
-    // Event-driven: write a logout marker by inserting a new session heartbeat
-    ctx.db.sessions.insert({ account_id: ctx.sender, device_id: 'unknown', last_seen: Date.now() });
-    console.log(`logout: ${String(ctx.sender)}`);
+    else {
+        // No existing user for this email; create new bound to current identity
+        ctx.db.users.insert({
+            id: ctx.sender,
+            provider: 'google',
+            provider_sub: jwt.subject ?? '',
+            email,
+            created_at: Date.now(),
+            online: true,
+        });
+    }
 });
 
 spacetimedb.reducer('apply_intent', { intent_json: t.string() }, (ctx, { intent_json }) => {

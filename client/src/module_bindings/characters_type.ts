@@ -4,68 +4,17 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
 
-export type Characters = {
-  id: string,
-  ownerId: string,
-  class: string,
-  statsJson: string,
-};
-let _cached_Characters_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const Characters = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Characters_type_value) return _cached_Characters_type_value;
-    _cached_Characters_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Characters_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.String },
-      { name: "ownerId", algebraicType: __AlgebraicTypeValue.String },
-      { name: "class", algebraicType: __AlgebraicTypeValue.String },
-      { name: "statsJson", algebraicType: __AlgebraicTypeValue.String },
-    );
-    return _cached_Characters_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: Characters): void {
-    __AlgebraicTypeValue.serializeValue(writer, Characters.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): Characters {
-    return __AlgebraicTypeValue.deserializeValue(reader, Characters.getTypeScriptAlgebraicType());
-  },
-
-}
-
-export default Characters;
+export default __t.object("Characters", {
+  id: __t.string(),
+  ownerId: __t.string(),
+  class: __t.string(),
+  statsJson: __t.string(),
+});
 
 

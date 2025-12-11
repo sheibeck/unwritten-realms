@@ -4,72 +4,19 @@
 /* eslint-disable */
 /* tslint:disable */
 import {
-  AlgebraicType as __AlgebraicTypeValue,
-  BinaryReader as __BinaryReader,
-  BinaryWriter as __BinaryWriter,
-  ClientCache as __ClientCache,
-  ConnectionId as __ConnectionId,
-  DbConnectionBuilder as __DbConnectionBuilder,
-  DbConnectionImpl as __DbConnectionImpl,
-  Identity as __Identity,
-  SubscriptionBuilderImpl as __SubscriptionBuilderImpl,
-  TableCache as __TableCache,
-  TimeDuration as __TimeDuration,
-  Timestamp as __Timestamp,
-  deepEqual as __deepEqual,
-  type AlgebraicType as __AlgebraicTypeType,
-  type AlgebraicTypeVariants as __AlgebraicTypeVariants,
-  type CallReducerFlags as __CallReducerFlags,
-  type ErrorContextInterface as __ErrorContextInterface,
-  type Event as __Event,
-  type EventContextInterface as __EventContextInterface,
-  type ReducerEventContextInterface as __ReducerEventContextInterface,
-  type SubscriptionEventContextInterface as __SubscriptionEventContextInterface,
-  type TableHandle as __TableHandle,
+  TypeBuilder as __TypeBuilder,
+  t as __t,
+  type AlgebraicTypeType as __AlgebraicTypeType,
+  type Infer as __Infer,
 } from "spacetimedb";
 
-export type Users = {
-  id: __Identity,
-  provider: string,
-  providerSub: string,
-  email: string,
-  createdAt: number,
-  online: boolean,
-};
-let _cached_Users_type_value: __AlgebraicTypeType | null = null;
-
-/**
- * An object for generated helper functions.
- */
-export const Users = {
-  /**
-  * A function which returns this type represented as an AlgebraicType.
-  * This function is derived from the AlgebraicType used to generate this type.
-  */
-  getTypeScriptAlgebraicType(): __AlgebraicTypeType {
-    if (_cached_Users_type_value) return _cached_Users_type_value;
-    _cached_Users_type_value = __AlgebraicTypeValue.Product({ elements: [] });
-    _cached_Users_type_value.value.elements.push(
-      { name: "id", algebraicType: __AlgebraicTypeValue.createIdentityType() },
-      { name: "provider", algebraicType: __AlgebraicTypeValue.String },
-      { name: "providerSub", algebraicType: __AlgebraicTypeValue.String },
-      { name: "email", algebraicType: __AlgebraicTypeValue.String },
-      { name: "createdAt", algebraicType: __AlgebraicTypeValue.F64 },
-      { name: "online", algebraicType: __AlgebraicTypeValue.Bool },
-    );
-    return _cached_Users_type_value;
-  },
-
-  serialize(writer: __BinaryWriter, value: Users): void {
-    __AlgebraicTypeValue.serializeValue(writer, Users.getTypeScriptAlgebraicType(), value);
-  },
-
-  deserialize(reader: __BinaryReader): Users {
-    return __AlgebraicTypeValue.deserializeValue(reader, Users.getTypeScriptAlgebraicType());
-  },
-
-}
-
-export default Users;
+export default __t.object("Users", {
+  id: __t.identity(),
+  provider: __t.string(),
+  providerSub: __t.string(),
+  email: __t.string(),
+  createdAt: __t.f64(),
+  online: __t.bool(),
+});
 
 

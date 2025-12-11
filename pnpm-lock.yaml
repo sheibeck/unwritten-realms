@@ -18,8 +18,8 @@ importers:
         specifier: ^2.1.7
         version: 2.3.1(typescript@5.9.3)(vue@3.5.25(typescript@5.9.3))
       spacetimedb:
-        specifier: 1.8.0
-        version: 1.8.0
+        specifier: 1.11.0
+        version: 1.11.0
       vue:
         specifier: ^3.4.27
         version: 3.5.25(typescript@5.9.3)
@@ -95,8 +95,8 @@ importers:
         specifier: ^9.1.0
         version: 9.15.1
       spacetimedb:
-        specifier: 1.8.0
-        version: 1.8.0
+        specifier: 1.11.0
+        version: 1.11.0
     devDependencies:
       '@types/node':
         specifier: ^20.11.30
@@ -877,6 +877,9 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
+  headers-polyfill@4.0.3:
+    resolution: {integrity: sha512-IScLbePpkvO846sIwOtOTDjutRMWdXdJmXdMvk6gCBHxFO8d+QKOQedyZSxFTTFYRSmlgSTDtXqqq4pcenBXLQ==}
+
   https-proxy-agent@7.0.6:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
@@ -1176,8 +1179,8 @@ packages:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
 
-  spacetimedb@1.8.0:
-    resolution: {integrity: sha512-f0dw91qR+U3PWemUgV4Ar1x4g5p6xZqc3XGASIyueVvcgKXhtzVaxOHFrkZWis4SQ34UF//CIFMHAG8CiTSNqA==}
+  spacetimedb@1.11.0:
+    resolution: {integrity: sha512-pDqC0dcUGxvYlsDuEiHG+Uv7xx2j6frwUan42h8cf0rc4kzcyvy/dEcRMbnVb46FGNAWMc7NcZhsLC1s4XuESw==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0-0 || ^19.0.0
       undici: ^6.19.2
@@ -1193,6 +1196,10 @@ packages:
   split2@4.2.0:
     resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
     engines: {node: '>= 10.x'}
+
+  statuses@2.0.2:
+    resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
+    engines: {node: '>= 0.8'}
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -1281,6 +1288,9 @@ packages:
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
+
+  url-polyfill@1.1.14:
+    resolution: {integrity: sha512-p4f3TTAG6ADVF3mwbXw7hGw+QJyw5CnNGvYh5fCuQQZIiuKUswqcznyV3pGDP9j0TSmC4UvRKm8kl1QsX1diiQ==}
 
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
@@ -2118,6 +2128,8 @@ snapshots:
 
   he@1.2.0: {}
 
+  headers-polyfill@4.0.3: {}
+
   https-proxy-agent@7.0.6:
     dependencies:
       agent-base: 7.1.4
@@ -2401,15 +2413,20 @@ snapshots:
 
   source-map@0.6.1: {}
 
-  spacetimedb@1.8.0:
+  spacetimedb@1.11.0:
     dependencies:
       base64-js: 1.5.1
       fast-text-encoding: 1.0.6
+      headers-polyfill: 4.0.3
       prettier: 3.7.4
+      statuses: 2.0.2
+      url-polyfill: 1.1.14
 
   spawn-command@0.0.2: {}
 
   split2@4.2.0: {}
+
+  statuses@2.0.2: {}
 
   string-width@4.2.3:
     dependencies:
@@ -2499,6 +2516,8 @@ snapshots:
   undici-types@5.26.5: {}
 
   undici-types@6.21.0: {}
+
+  url-polyfill@1.1.14: {}
 
   uuid@9.0.1: {}
 

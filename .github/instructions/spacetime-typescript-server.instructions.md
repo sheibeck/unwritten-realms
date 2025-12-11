@@ -1,7 +1,4 @@
 ---
-applyTo: '**'
----
----
 title: TypeScript Reference
 slug: /modules/typescript
 toc_max_heading_level: 6
