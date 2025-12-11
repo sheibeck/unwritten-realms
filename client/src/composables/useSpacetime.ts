@@ -22,8 +22,26 @@ export function useSpacetime() {
         // Distinguish JWT (id_token) from opaque access tokens
         if (idToken.includes('.') && idToken.split('.').length === 3) {
             const payload = decodeJwt(idToken);
+            console.debug('loginWithGoogle: decoded JWT payload', payload);
             email = payload?.email as string | undefined;
             aud = Array.isArray(payload?.aud) ? payload?.aud[0] : (payload?.aud as string | undefined);
+
+            // If email is not present in the decoded JWT, try Google's tokeninfo endpoint
+            if (!email) {
+                try {
+                    const infoResp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+                    if (infoResp.ok) {
+                        const info = await infoResp.json();
+                        console.debug('loginWithGoogle: tokeninfo response', info);
+                        email = info.email as string | undefined;
+                        aud = aud || (info.aud as string | undefined);
+                    } else {
+                        console.warn('loginWithGoogle: tokeninfo fetch failed', infoResp.status);
+                    }
+                } catch (e) {
+                    console.warn('loginWithGoogle: tokeninfo fetch error', e);
+                }
+            }
 
             if (!email) {
                 throw new Error('Google id_token missing email claim. Ensure you are using the correct Google Web client ID.');

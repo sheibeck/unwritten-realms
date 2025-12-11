@@ -67,6 +67,15 @@ spacetimedb.reducer("init", (_ctx) => {
     // Called when the module is initially published
 });
 
+function safeStringify(obj: any) {
+    return JSON.stringify(
+        obj,
+        (_key, value) =>
+            typeof value === "bigint" ? value.toString() : value,
+        2
+    );
+}
+
 // Application reducers
 // ensure_user: inserts or fetches a user based on email
 spacetimedb.reducer('client_disconnected', (_ctx) => {
@@ -84,7 +93,7 @@ spacetimedb.reducer('client_disconnected', (_ctx) => {
 spacetimedb.clientConnected((ctx) => {
     const jwt = ctx.senderAuth.jwt;
 
-    //throw new SenderError("DEBUG JWT: " + safeStringify(jwt));
+    //throw new SenderError("DEBUG ctx.SenderAuth: " + safeStringify(ctx));
 
     if (jwt == null) {
         throw new SenderError("Unauthorized: JWT is required to connect");

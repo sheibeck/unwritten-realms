@@ -33,8 +33,25 @@ async function handleGoogleLogin() {
     // @ts-ignore
     const token = await getGoogleIdToken();
     if (token) {
-      await login(token as string);
-      return;
+      // ensure token is a JWT and contains email claim
+      if (token.includes('.') && token.split('.').length === 3) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+          if (!payload?.email) {
+            error.value = 'ID token missing email claim';
+            return;
+          }
+        } catch (e) {
+          error.value = 'Failed to parse ID token';
+          return;
+        }
+
+        await login(token as string);
+        return;
+      } else {
+        error.value = 'Expected ID token (JWT) but received non-JWT token';
+        return;
+      }
     }
   } catch (e) {
     // fall through to callback style below if the promise failed to load google script
