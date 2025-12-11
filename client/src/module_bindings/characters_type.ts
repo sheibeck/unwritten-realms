@@ -13,6 +13,7 @@ import {
 export default __t.object("Characters", {
   id: __t.string(),
   ownerId: __t.string(),
+  name: __t.string(),
   class: __t.string(),
   statsJson: __t.string(),
 });

@@ -31,16 +31,12 @@ import {
 } from "spacetimedb";
 
 // Import and reexport all reducer arg types
-import Init from "./init_reducer";
-export { Init };
 import OnDisconnect from "./on_disconnect_reducer";
 export { OnDisconnect };
 import OnConnect from "./on_connect_reducer";
 export { OnConnect };
 import ApplyIntent from "./apply_intent_reducer";
 export { ApplyIntent };
-import Tick from "./tick_reducer";
-export { Tick };
 
 // Import and reexport all procedure arg types
 
@@ -57,13 +53,10 @@ export { UsersRow };
 // Import and reexport all types
 import Characters from "./characters_type";
 export { Characters };
-
 import NarrativeEvents from "./narrative_events_type";
 export { NarrativeEvents };
-
 import Sessions from "./sessions_type";
 export { Sessions };
-
 import Users from "./users_type";
 export { Users };
 
@@ -72,8 +65,14 @@ const tablesSchema = __schema(
   __table({
     name: 'characters',
     indexes: [
+      {
+        name: 'name', algorithm: 'btree', columns: [
+          'name',
+        ]
+      },
     ],
     constraints: [
+      { name: 'characters_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, CharactersRow),
   __table({
@@ -103,11 +102,6 @@ const tablesSchema = __schema(
           'id',
         ]
       },
-      {
-        name: 'byProviderSub', algorithm: 'btree', columns: [
-          'providerSub',
-        ]
-      },
     ],
     constraints: [
       { name: 'users_email_key', constraint: 'unique', columns: ['email'] },
@@ -118,9 +112,7 @@ const tablesSchema = __schema(
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
-  __reducerSchema("init", Init),
   __reducerSchema("apply_intent", ApplyIntent),
-  __reducerSchema("tick", Tick),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
