@@ -10,11 +10,13 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {
+export default __t.object("CreateCharacter", {
   id: __t.option(__t.string()),
   name: __t.string(),
   race: __t.string(),
   archetype: __t.string(),
   professionJson: __t.string(),
   statsJson: __t.option(__t.string()),
-};
+});
+
+

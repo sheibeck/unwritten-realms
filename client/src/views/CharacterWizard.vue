@@ -65,6 +65,10 @@ const saved = ref(false);
 // Start the interactive wizard when the component mounts
 onMounted(() => {
   startOver();
+
+  getConnection().reducers.onCreateCharacter((e: any) => {
+    console.log('Character created!');
+  });
 });
 
 function onStartOver() {
@@ -112,7 +116,7 @@ async function onAsk() {
 async function persistCharacter() {
   try {
     const conn = getConnection();
-    if (!conn || !conn.callReducer) throw new Error('not_connected');
+    if (!conn) throw new Error('not_connected');
     const ctx = context.value || {};
     const payload = {
       id: `${Date.now()}`,
@@ -122,7 +126,7 @@ async function persistCharacter() {
       profession_json: JSON.stringify(ctx.profession || preview.value || {}),
       stats_json: JSON.stringify(ctx.stats || {})
     };
-    await conn.callReducer('create_character', payload);
+    await conn.reducers.createCharacter(payload);
     saved.value = true;
   } catch (e) {
     console.warn('Failed to save character to SpacetimeDB', e);

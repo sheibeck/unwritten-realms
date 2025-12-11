@@ -20,3 +20,4 @@ export default __t.object("Characters", {
   statsJson: __t.string(),
 });
 
+

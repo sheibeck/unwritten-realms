@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 // Module bindings are generated at build time (`spacetime generate`), so import statically.
 import * as moduleBindings from '../module_bindings';
+import { useCharactersStore } from '../store/characters';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Identity = any;
 
@@ -90,6 +91,7 @@ export function useSpacetime() {
                 );
 
                 // subscribe to narrative_events
+                const charsStore = useCharactersStore();
                 _ctx.subscriptionBuilder()
                     .onApplied((_ctx: any) => {
                         // register insert callbacks when rows are present
@@ -99,8 +101,19 @@ export function useSpacetime() {
 
                         // characters owned by this identity
                         try {
+                            // Seed from current rows
+                            if (conn!.db.characters?.iter) {
+                                const list = Array.from(conn!.db.characters.iter());
+                                charsStore.setCharacters(list);
+                                if (!charsStore.activeCharacter && list.length) {
+                                    charsStore.setActiveCharacter(list[0]);
+                                }
+                            }
                             conn!.db.characters.onInsert((_c: any, row: any) => {
-                                console.log('character inserted', row);
+                                charsStore.upsertCharacter(row);
+                                if (!charsStore.activeCharacter) {
+                                    charsStore.setActiveCharacter(row);
+                                }
                             });
                         } catch (e) {
                             // binding may not exist if module bindings weren't regenerated
