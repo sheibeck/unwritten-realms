@@ -5,12 +5,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import cors from '@fastify/cors';
 import fetch from 'cross-fetch';
+import crypto from 'crypto';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { IntentSchema } from '../../shared/intent-schema.js';
 import { CharacterContextSchema, WorldContextSchema } from '../../shared/types.js';
 import { ProfessionSchema } from '../../shared/profession.js';
 import { CharacterProfilePartialSchema } from '../../shared/character-profile.js';
+import { firstStepId, nextStepId, stepNumber, wizardSteps } from '../../shared/wizard-steps.js';
 
 // Strict shape for interpret responses
 const InterpretResponseSchema = z.object({
@@ -355,87 +357,200 @@ app.post('/characters', async (req, reply) => {
     return reply.send({ status: 'ok', character: payload });
 });
 
-// Character wizard iterative step endpoint
+// Character wizard iterative step endpoint (step-at-a-time, name is final, no description step)
+type WizardStepId = (typeof wizardSteps)[number];
+type WizardSession = {
+    currentStepId: WizardStepId;
+    context: Record<string, any>;
+    staged: Record<string, any>;
+    locked: Record<string, boolean>;
+    preview?: any;
+};
+
 const WizardStepSchema = z.object({
     session_id: z.string().optional(),
-    step: z.number().min(1).max(6).optional(),
-    input: z.string().optional(),
+    step_id: z.string().optional(),
+    intent: z.enum(['assist', 'select', 'lock', 'regenerate', 'start_over']).default('assist'),
+    message: z.string().optional(),
+    selection: z.string().optional(),
     context: z.record(z.any(), z.any()).optional()
 });
 
-const wizardPromptIntro = `You are the character creation engine for Unwritten Realms, a persistent, text-based MMORPG shaped by the actions of its players. The world is emergent, reactive, and bound by player agency. This game is inspired by Kyle Kirrin's Ripple System Novels. Guide the player through character creation step-by-step. Follow the exact step sequence and DO NOT advance until the player provides input. Return a JSON object with keys { step: <number>, prompt: <string>, options?: <array>, data?: <object> }.`;
+const wizardPromptIntro = `You are the character creation engine for Unwritten Realms, a persistent, text-based MMORPG shaped by the actions of its players. The world is emergent, reactive, and bound by player agency. This game is inspired by Kyle Kirrin's Ripple System Novels. Guide the player through character creation step-by-step. DO NOT advance steps on your own. Respect the current step and only provide content for that step. Return JSON: { step: <number>, prompt: <string>, options?: <array>, preview?: <object>, data?: <object> }.`;
 
-// Sanitize model-produced `data` to remove placeholder values the model invents (e.g., "Custom", "none").
+function makeSessionId() {
+    try {
+        return crypto.randomUUID();
+    } catch {
+        return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+}
+
+const wizardSessions = new Map<string, WizardSession>();
+
+function getSession(sessionId?: string): { id: string; session: WizardSession } {
+    const id = sessionId || makeSessionId();
+    if (!wizardSessions.has(id)) {
+        wizardSessions.set(id, {
+            currentStepId: firstStepId,
+            context: {},
+            staged: {},
+            locked: {},
+            preview: null
+        });
+    }
+    return { id, session: wizardSessions.get(id)! };
+}
+
+function normalizeOption(o: any) {
+    if (!o) return null;
+    const name = o.name ?? o.label ?? o.title ?? o.value ?? '';
+    const description = o.description ?? o.desc ?? '';
+    const value = o.value ?? name;
+    return { name, description, value };
+}
+
+function commitStepValue(stepId: WizardStepId, value: any, session: WizardSession) {
+    if (!value) return;
+    if (stepId === 'profession_preview') {
+        session.context.profession = session.preview || value;
+        return;
+    }
+    if (stepId === 'name') {
+        session.context.name = value;
+        return;
+    }
+    // race / archetype
+    session.context[stepId] = value;
+}
 
 app.post('/character-wizard/step', async (req, reply) => {
     const parsed = WizardStepSchema.safeParse(req.body as unknown);
     if (!parsed.success) return reply.code(400).send({ error: parsed.error.message });
 
-    const { session_id, step, input } = parsed.data;
+    const { id: resolvedSessionId, session } = getSession(parsed.data.session_id);
+    const intent = parsed.data.intent || 'assist';
+    const message = parsed.data.message || '';
+    const selection = parsed.data.selection || '';
+    const incomingStepId = (parsed.data.step_id as WizardStepId | undefined) || session.currentStepId;
+
+    // If client asks for start over, reset the session but still proceed to generate fresh options via the model
+    if (intent === 'start_over') {
+        session.currentStepId = firstStepId;
+        session.context = {};
+        session.staged = {};
+        session.locked = {};
+        session.preview = null;
+        wizardSessions.set(resolvedSessionId, session);
+    }
+
+    let currentStepId: WizardStepId = session.currentStepId;
+    if (incomingStepId !== currentStepId) {
+        req.log.warn(`Ignoring mismatched step_id=${incomingStepId}, using current=${currentStepId}`);
+    }
+
+    // Handle lock before calling the model so we advance to the next step's prompt immediately
+    if (intent === 'lock') {
+        const value = session.staged[currentStepId] || selection || message;
+        commitStepValue(currentStepId, value, session);
+        session.locked[currentStepId] = true;
+        const next = nextStepId(currentStepId);
+        if (next) {
+            session.currentStepId = next;
+            currentStepId = next;
+        }
+        // clear staged for the new step
+        session.staged[currentStepId] = null;
+    } else {
+        // Allow selection staging or regenerate
+        if (intent === 'select') {
+            session.staged[currentStepId] = selection || message;
+        }
+        if (intent === 'regenerate') {
+            session.staged[currentStepId] = null;
+            if (currentStepId === 'profession_preview') {
+                session.preview = null;
+            }
+        }
+    }
+
+    // Build context summary for model
+    const rawContext = { ...(parsed.data.context || {}), ...(session.context || {}) };
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    let contextSummary = 'None';
+    if (rawContext && typeof rawContext === 'object' && Object.keys(rawContext).length) {
+        contextSummary = Object.entries(rawContext).map(([k, v]) => {
+            let val = v;
+            if (typeof v === 'object') val = JSON.stringify(v);
+            return `${capitalize(k)}: ${val}`;
+        }).join('\n');
+    }
+
+    // Prepare AI prompt for the current step only
+    const stepNum = stepNumber(currentStepId);
+    const system = wizardPromptIntro + `\n\nSTEPS (name is last):\n1: Race (provide 3-5 races with name+description)\n2: Archetype (ONLY TWO CHOICES: Warrior and Mystic. Provide exactly these two with name+description.)\n3: Profession preview (generate exactly one profession with FULL DETAILS: name, lore, mechanics, starter weapon, and 1-3 abilities; include exactly one option representing that profession and NO other options)\n4: Name (provide 3-5 suggested CHARACTER NAMES; do not reuse or include the profession name/title)\n5: Summary (recap selections; options must include Confirm Character and Start Over)\n\nRULES: Stay on the current step (${stepNum}). Do NOT move to another step. Always include an options array for the current step with at least one entry (for archetype it must be exactly the two specified; for profession it must be exactly one option). Provide the profession details in the 'preview' object when on the profession step. For the name step, never suggest the profession name or title—only plausible character names. If you cannot comply, return an error message in 'prompt' explaining what is missing.`;
+    const userMsg = `Current step: ${stepNum} (${currentStepId}). Intent: ${intent}. Player text: ${message || selection || ''}\nSession context:\n${contextSummary}\nRespond JSON: { step: ${stepNum}, prompt: <string>, options: [...], preview?: <object>, data?: <object> }`;
+
+    let modelResult: any = null;
+    let modelDebug: any = {};
     try {
         const openaiKey = process.env.OPENAI_API_KEY;
         if (!openaiKey) throw new Error('OPENAI_API_KEY not configured');
         const client = new OpenAI({ apiKey: openaiKey });
 
-        const system = wizardPromptIntro + `\n\nSTEPS:\n1: Ask race (suggest examples, allow custom).\n2: Ask archetype (Fighter or Mystic).\n3: Reveal profession based on race+archetype (provide name, lore, mechanics, 1-3 abilities, starter weapon).\n4: Ask starting region.\n5: Ask brief visual description.\n6: Ask for character name.\nAfter step 6, return a final data object with the full character profile and a narrative wrap-up.`;
-
-        // Build a human-friendly summary of previous choices so the model doesn't re-ask
-        const rawContext = parsed.data.context || {};
-        const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-        let contextSummary = 'None';
-        if (rawContext && typeof rawContext === 'object' && Object.keys(rawContext).length) {
-            contextSummary = Object.entries(rawContext).map(([k, v]) => {
-                let val = v;
-                if (typeof v === 'object') val = JSON.stringify(v);
-                return `${capitalize(k)}: ${val}`;
-            }).join('\n');
-        }
-
-        const userMsg = `Current step: ${step || 1}. Player input: ${input || ''}\nRespond with JSON: { step: <number>, prompt: <string>, options?: [..], data?: {...} }`;
-
-        const contextSystem = `Session context (do not re-ask):\n${contextSummary}\n\nRULES: If a field (Race, Archetype, Profession, Name, etc.) is present in the session context above, DO NOT ask the player to repeat it. Use the provided values as authoritative and proceed to the next logical step. If the current step's output should reveal derived values (e.g., profession from race+archetype), compute them now based on the context.`;
-
-        // Build the Zod schemas for wizard response and options
         const WizardOption = z.object({
             name: z.string(),
             description: z.string().optional(),
             value: z.string().optional()
         }).strict();
+        const ProfessionPreview = z.object({
+            name: z.string(),
+            lore: z.string(),
+            mechanics: z.record(z.string(), z.any()).optional(),
+            abilities: z.array(z.string()).min(1),
+            starterWeapon: z.string()
+        }).strict();
         const WizardResponse = z.object({
-            step: z.number().int().min(1).max(7),
+            step: z.number().int(),
             prompt: z.string().min(1),
-            options: z.array(WizardOption).max(6).optional(),
-            data: CharacterProfilePartialSchema.optional()
+            options: z.array(WizardOption).min(1).max(8),
+            data: z.record(z.any(), z.any()).optional(),
+            preview: ProfessionPreview.optional()
         }).strict();
 
         const wizardSchemaBase = normalizeJsonSchema(z.toJSONSchema(WizardResponse), { forceRequired: false });
-        if (wizardSchemaBase.properties?.options) {
-            const previousOptionsItems = wizardSchemaBase.properties.options.items;
-            wizardSchemaBase.properties.options = {
-                type: ['array', 'null'],
-                items: {
-                    type: 'object',
-                    properties: {
-                        name: previousOptionsItems?.properties?.name ?? { type: 'string' }
-                    },
-                    required: ['name'],
-                    additionalProperties: false
-                }
-            };
+        // Responses validator expects every property to be listed in required, even if null is allowed
+        if (wizardSchemaBase.properties) {
+            wizardSchemaBase.required = Object.keys(wizardSchemaBase.properties);
         }
+        // Require option properties to satisfy Responses validator expectations
+        if (wizardSchemaBase.properties?.options?.items) {
+            const itemProps = wizardSchemaBase.properties.options.items.properties || {};
+            wizardSchemaBase.properties.options.items.required = Object.keys(itemProps);
+            wizardSchemaBase.properties.options.items.additionalProperties = false;
+            wizardSchemaBase.properties.options.items.properties = itemProps;
+        }
+        // Allow arbitrary data/preview but satisfy validator by setting additionalProperties=false
         if (wizardSchemaBase.properties?.data) {
-            wizardSchemaBase.properties.data = {
-                type: ['object', 'null'],
-                additionalProperties: false
-            };
+            wizardSchemaBase.properties.data = { type: ['object', 'null'], additionalProperties: false };
         }
-        wizardSchemaBase.required = ['step', 'prompt', 'options', 'data'];
+        if (wizardSchemaBase.properties?.preview) {
+            wizardSchemaBase.properties.preview.additionalProperties = false;
+            // Ensure all preview properties are required
+            const pprops = wizardSchemaBase.properties.preview.properties || {};
+            wizardSchemaBase.properties.preview.required = Object.keys(pprops);
+            if (wizardSchemaBase.properties.preview.properties?.mechanics) {
+                wizardSchemaBase.properties.preview.properties.mechanics = {
+                    type: ['object', 'null'],
+                    additionalProperties: false
+                };
+            }
+        }
 
         const resp = await client.responses.create(({
             model: openai_model,
             input: [
                 { role: 'system', content: system },
-                { role: 'system', content: contextSystem },
                 { role: 'user', content: userMsg }
             ],
             text: {
@@ -448,76 +563,88 @@ app.post('/character-wizard/step', async (req, reply) => {
             }
         }) as any);
 
-        // Prefer structured JSON part from Responses API; also build a text fallback
-        let parsedJson: any = null;
         const out = (resp.output ?? []).map((o: any) => o.content).flat();
+        let parsedJson: any = null;
         let textOutput = '';
         for (const part of out) {
-            if (typeof part === 'string') {
-                textOutput += part;
-            } else if (part?.type === 'output_text' && typeof part.text === 'string') {
-                textOutput += part.text;
-            } else if (part?.type === 'json' && part.json) {
-                if (!parsedJson) {
-                    parsedJson = typeof part.json === 'string' ? JSON.parse(part.json) : part.json;
-                }
+            if (typeof part === 'string') textOutput += part;
+            else if (part?.type === 'output_text' && typeof part.text === 'string') textOutput += part.text;
+            else if (part?.type === 'json' && part.json) {
+                if (!parsedJson) parsedJson = typeof part.json === 'string' ? JSON.parse(part.json) : part.json;
                 textOutput += typeof part.json === 'string' ? part.json : JSON.stringify(part.json);
             }
         }
         if (!parsedJson && typeof resp.output_text === 'string') {
-            try { parsedJson = JSON.parse(resp.output_text.trim()); } catch (e) { parsedJson = null; }
+            try { parsedJson = JSON.parse(resp.output_text.trim()); } catch { parsedJson = null; }
         }
         if (!textOutput && typeof resp.output_text === 'string') textOutput = resp.output_text;
 
-        if (parsedJson) {
-            try {
-                const normalize = (pj: any) => {
-                    const result: any = {};
-                    const requestedStep = step || 1;
-                    const modelStep = typeof pj.step === 'number' ? pj.step : requestedStep;
-                    const hasInput = typeof input === 'string' && input.trim().length > 0;
-                    const explicitAdvance = Boolean((parsed.data as any)?.advance);
-                    const allowAdvance = hasInput || explicitAdvance;
-
-                    if (!allowAdvance) {
-                        if (modelStep > requestedStep) req.log.warn(`Wizard model attempted to advance from step ${requestedStep} -> ${modelStep} without input`);
-                        result.step = requestedStep;
-                    } else {
-                        // Allow advancing by at most +1 to avoid large jumps
-                        result.step = modelStep <= requestedStep + 1 ? modelStep : requestedStep + 1;
-                    }
-                    result.prompt = typeof pj.prompt === 'string' ? pj.prompt : (typeof pj === 'string' ? pj : '');
-                    // If the model appended the `data` object as JSON inside the prompt string, remove that chunk
-                    if (pj.data && result.prompt) {
-                        try {
-                            const dataStr = JSON.stringify(pj.data);
-                            if (dataStr && result.prompt.includes(dataStr)) {
-                                result.prompt = result.prompt.replace(dataStr, '').trim();
-                            }
-                        } catch (e) {
-                            // ignore
-                        }
-                    }
-                    // Normalize options to array
-                    if (Array.isArray(pj.options)) result.options = pj.options;
-                    else if (pj.options) result.options = [pj.options];
-                    else result.options = [];
-                    result.data = pj.data ?? null;
-                    return result;
-                };
-                const cleaned = normalize(parsedJson);
-                return reply.send({ ok: true, result: cleaned });
-            } catch (e) {
-                // Fallthrough to return raw parsedJson
-                return reply.send({ ok: true, result: parsedJson });
-            }
-        }
-
-        return reply.send({ ok: true, result: { step: step || 1, prompt: textOutput } });
+        modelResult = parsedJson || { step: stepNum, prompt: textOutput };
+        modelDebug = {
+            rawText: textOutput,
+            parsedJson,
+            responseOutput: resp.output,
+            responseOutputText: resp.output_text,
+            system,
+            userMsg
+        };
     } catch (e: any) {
-        req.log.error(e);
-        return reply.code(500).send({ error: String(e) });
+        req.log.warn('Wizard model failed: ' + String(e));
+        return reply.send({
+            ok: false,
+            error: 'model_call_failed',
+            result: {
+                stepId: currentStepId,
+                prompt: 'Model call failed',
+                options: [],
+                preview: null,
+                data: null,
+                context: session.context,
+                locked: false,
+                canAdvance: false,
+                sessionId: resolvedSessionId,
+                nextStepId: nextStepId(currentStepId)
+            },
+            debug: {
+                error: String(e),
+                system,
+                userMsg
+            }
+        });
     }
+
+    const normalizedOptions = Array.isArray(modelResult.options) ? modelResult.options.map(normalizeOption).filter(Boolean) : [];
+    const cleaned: any = {};
+    cleaned.prompt = typeof modelResult.prompt === 'string' ? modelResult.prompt : '';
+    cleaned.preview = modelResult.preview || (modelResult.data?.profession ?? null);
+    cleaned.data = modelResult.data || null;
+    cleaned.options = normalizedOptions;
+
+    if (currentStepId === 'profession_preview') {
+        session.preview = cleaned.preview || session.preview || cleaned.data;
+    } else {
+        // Do not leak profession preview into other steps
+        cleaned.preview = null;
+    }
+
+    cleaned.stepId = currentStepId;
+    cleaned.context = session.context;
+    cleaned.locked = Boolean(session.locked[currentStepId]);
+    cleaned.canAdvance = cleaned.locked;
+    cleaned.sessionId = resolvedSessionId;
+    cleaned.nextStepId = nextStepId(currentStepId);
+    cleaned.debug = { ...modelDebug, stepId: currentStepId };
+
+    // If the model failed to provide options, surface an error instead of falling back
+    if (!Array.isArray(cleaned.options) || cleaned.options.length === 0) {
+        return reply.send({
+            ok: false,
+            error: 'model_missing_options',
+            result: cleaned
+        });
+    }
+
+    return reply.send({ ok: true, result: cleaned });
 });
 
 function guessIntent(text: string): 'move' | 'combat_action' | 'dialogue' | 'quest_action' | 'system_event' {
